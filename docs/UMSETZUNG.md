@@ -100,7 +100,7 @@ Tickets are written in English. Every acceptance criterion is at least one test,
 - Script `npm run try:sources` (reads keys from `.env.local`, never prints them) that, run by the PO in his own terminal:
   1. Rebrickable: looks up minifig `sw0194` (via set/minifig search) and set `75372-1` incl. its minifigs.
   2. Brickognize: sends a photo from `scripts/samples/` (PO supplies one photo of an official minifig) to the minifig endpoint and prints the top 3 with confidence.
-  3. BrickLink: price guide (sold, last 6 months) for one minifig, new and used, in EUR. Reports clearly if access is refused and why.
+  3. BrickLink: price guide (sold, last 6 months) for one minifig, new and used, in EUR. Reports clearly if access is refused and why. Note (31.10.2026): the PO’s account is upgraded to seller and the Store API is registered (IP 0.0.0.0), but the seller verification (shipping method, listing, ID upload) is deliberately not done. Record exactly whether the price guide answers in this state.
   4. Merlins Steine SetDB: fetches one set page whose address the PO pastes, extracts name, manufacturer, set number, piece count, image; reports which fields were found.
 - Result document `docs/DATENQUELLEN.md`: endpoints, auth, limits, CORS behaviour, field mapping to our model, observed quality, go/no-go per service.
 

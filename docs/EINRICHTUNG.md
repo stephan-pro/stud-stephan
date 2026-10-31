@@ -5,7 +5,7 @@ Stand: 31.10.2026 · Für den Product Owner. Jeder Schritt mit genauen Klicks un
 So liest du die Anleitung:
 - `Grau hinterlegt` = genau so abtippen oder kopieren.
 - **Fett** = so heißt der Knopf oder Menüpunkt auf dem Bildschirm.
-- Zugangsschlüssel und Passwörter gehören **nie** in den Chat, in Bildschirmfotos oder ins Repository. Nur in deinen Passwortmanager und in die Datei `.env.local` auf deinem PC.
+- Zugangsschlüssel und Passwörter gehören **nie** in den Chat, in Bildschirmfotos oder ins Repository. Sie bleiben bei den Diensten selbst (Rebrickable und BrickLink zeigen sie dir jederzeit wieder an) und stehen zusätzlich nur in der Datei `.env.local` auf deinem PC. Ein Passwortmanager ist nicht nötig.
 
 ## Überblick: Was wann dran ist
 
@@ -82,7 +82,7 @@ Paket P2 prüft, was die Dienste wirklich liefern. Dafür braucht es deine Zugan
 
 1. Konto anlegen: https://rebrickable.com/register/ (falls du noch keins hast), E-Mail bestätigen.
 2. Öffne https://rebrickable.com/api/ und folge dem Link zum API-Schlüssel. Er führt in deine Kontoeinstellungen, Reiter **API**. Dort auf **Generate new API Key** klicken.
-3. Den Schlüssel kopieren und in deinen Passwortmanager legen (Eintrag „Rebrickable API Key – Stud Stephan“).
+3. Nichts weiter aufbewahren: Der Schlüssel steht jederzeit auf dieser Seite, wenn du angemeldet bist. Du kopierst ihn in Schritt B3 direkt von dort. Erledigt am 31.10.2026.
 
 ### B2 BrickLink (Marktwerte)
 
@@ -90,7 +90,9 @@ Paket P2 prüft, was die Dienste wirklich liefern. Dafür braucht es deine Zugan
 2. Öffne https://www.bricklink.com/v2/api/register_consumer.page und bestätige die API-Nutzungsbedingungen.
 3. **Wenn BrickLink jetzt eine Registrierung als Verkäufer verlangt:** Hier nicht weitermachen, sondern ein Bildschirmfoto der Meldung machen (ohne Schlüssel darauf) und es mir schicken. Wir entscheiden dann gemeinsam, ob du das willst. Ohne BrickLink trägst du Werte von Hand ein.
 4. Sonst: Unter **Access Token** einen neuen Zugang anlegen. Bei **IP Address** und **IP Mask** jeweils `0.0.0.0` eintragen. Das heißt „von überall“; nötig, weil später der Server in Supabase die Preise abruft.
-5. Du bekommst vier Werte: **Consumer Key**, **Consumer Secret**, **Token Value**, **Token Secret**. Alle vier in den Passwortmanager (Eintrag „BrickLink API – Stud Stephan“).
+5. Du bekommst vier Werte: **Consumer Key**, **Consumer Secret**, **Token Value**, **Token Secret**. Sie stehen jederzeit auf https://www.bricklink.com/v2/api/register_consumer.page; du kopierst sie in Schritt B3 direkt von dort.
+
+Stand 31.10.2026: Als Verkäufer angemeldet und API registriert, aber **nicht verifiziert** (die drei Schritte „Become a verified seller“ mit Versandart, Artikel und Ausweis sind bewusst nicht erledigt). P2 prüft, ob der Preisguide trotzdem antwortet.
 
 ### B3 Schlüssel auf dem PC hinterlegen
 
@@ -105,7 +107,7 @@ Erst möglich, wenn Paket P1 fertig ist (dann gibt es die Vorlage `.env.example`
    ```
    code .env.local
    ```
-4. Hinter jedes `=` den passenden Wert aus dem Passwortmanager einfügen, speichern (`Strg+S`), schließen.
+4. Hinter jedes `=` den passenden Wert einfügen, direkt kopiert von der Seite des Dienstes (Rebrickable: https://rebrickable.com/api/ → **Generate an API Key**; BrickLink: https://www.bricklink.com/v2/api/register_consumer.page). Die beiden Supabase-Zeilen bleiben vorerst leer (kommen mit P4a). Speichern (`Strg+S`), schließen.
 
 `.env.local` wird nie hochgeladen (sie steht in `.gitignore`, und der Prüf-Hook bricht ab, falls doch ein Schlüssel auftaucht).
 
@@ -124,7 +126,7 @@ Supabase ist die Datenbank mit Anmeldung und Dateispeicher, wie bei Krümel.
 2. Klick auf **New project**.
 3. **Organization:** deine Organisation (dieselbe wie bei Krümel).
 4. **Project name:** `stud-stephan`
-5. **Database Password:** auf **Generate a password** klicken, dann kopieren und sofort in den Passwortmanager legen (Eintrag „Supabase DB – Stud Stephan“).
+5. **Database Password:** auf **Generate a password** klicken. Du brauchst es nur einmal in P4a beim Befehl `npx supabase link`. Supabase zeigt es danach nicht wieder an; geht es verloren, setzt du es im Dashboard neu (Project Settings → Database → **Reset database password**).
 6. **Region:** eine Region in der EU wählen, z. B. Frankfurt.
 7. **Plan:** Free.
 8. **Create new project** klicken und warten, bis das Projekt bereit ist (ein paar Minuten).
