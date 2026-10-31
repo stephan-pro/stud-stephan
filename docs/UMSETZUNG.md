@@ -47,7 +47,7 @@ pg_cron (wöchentlich) ──► Edge Function „prices“ ──► BrickLink 
 | Paket | Inhalt | Modell | Effort | Status |
 |---|---|---|---|---|
 | P1 | Grundgerüst, Prüfungen, Design-Tokens, Navigation | Opus | High | ✅ 31.10.2026 |
-| P2 | Datenquellen prüfen (Spike) | Sonnet | Medium | Skript fertig 31.10.2026, wartet auf Lauf des PO |
+| P2 | Datenquellen prüfen (Spike) | Sonnet | Medium | ✅ 31.10.2026 |
 | P3 | Datenmodell und Fachlogik | Opus | High | offen |
 | P4a | Supabase: Tabellen, Regeln, Dateispeicher, Fake-Server | Opus | High | offen |
 | P4b | Anmeldung per Code (nur Stephan) | Opus | High | offen |
@@ -289,6 +289,7 @@ Tickets are written in English. Every acceptance criterion is at least one test,
 - 31.10.2026: Repository öffentlich, Lizenz EUPL-1.2.
 - 31.10.2026: Keine Serienerfassung in Version 1.
 - 31.10.2026: Stil F „Steinkasten-Mix“, Klick-Dummy abgenommen.
+- 31.10.2026 (Ergebnis P2): BrickLink ist go, der Preisguide antwortet ohne Verkäufer-Verifizierung. Die BrickLink-Nummer einer Figur kommt nicht aus Rebrickable, sondern aus Brickognize, von Hand oder aus der SetDB (Details: `docs/DATENQUELLEN.md`).
 
 ## 8. Abhängigkeiten
 

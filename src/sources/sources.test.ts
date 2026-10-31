@@ -271,9 +271,10 @@ describe("Merlins Steine: one set page", () => {
   const page = `<html><head><title>Demo Set - Merlins Steine</title>
     <meta property="og:title" content="Burg &amp; Turm"><meta property="og:image" content="/img/burg.jpg"></head>
     <body><h1>Burg</h1><table>
-      <tr><th>Hersteller</th><td>Cobi</td></tr>
-      <tr><th>Set-Nr.</th><td>2345</td></tr>
-      <tr><th>Teile</th><td>1.234</td></tr></table>
+      <tr><th>Hersteller:</th><td>Cobi</td></tr>
+      <tr><th>Set-Nr.:</th><td>2345</td></tr>
+      <tr><th>Teile:</th><td>1.234</td></tr></table>
+      <nav><a>Hersteller</a><a>Kategorien</a></nav>
       <script>var Hersteller = "falsch";</script></body></html>`;
 
   it("takes name, manufacturer, set number, piece count and image from a table page", () => {
@@ -285,7 +286,29 @@ describe("Merlins Steine: one set page", () => {
       pieceCount: 1234,
       imageUrl: "https://www.merlinssteine.de/img/burg.jpg",
     });
-    expect(labels).toEqual([]);
+    expect(labels).toEqual(["Hersteller", "Set-Nr.", "Teile"]);
+  });
+
+  it("reads a real SetDB page: product data inside @graph, number and pieces from the texts", () => {
+    const real = `<title>BlueBrixx Burg &bull; Set 110374</title>
+      <meta name=description property="og:description" content="Infos zu Burg (110374) aus 2026 in der SetDB • 929 Teile">
+      <meta property="og:image" content="https://cdn.merlinssteine.de/b.jpeg?v=2">
+      <script type=application/ld+json>{"@graph":[{"@type":["Organization","Brand"],"name":"Merlins Steine"},
+        {"@type":"Product","name":"BlueBrixx - Burg | Set 110374","brand":{"@type":"Brand","name":"BlueBrixx"},"sku":"110374"}]}</script>
+      <a>Hersteller</a><a>Kategorien</a>
+      <ul><li>Von: <a href=/x>BlueBrixx</a></li><li>EAN: 4060904030462</li><li>Steine von: Xingbao</li></ul>`;
+    const { fields, labels } = extractSetPage(real, "https://www.merlinssteine.de/sets/bb-110374/");
+    expect(fields).toEqual({
+      name: "BlueBrixx - Burg",
+      manufacturer: "BlueBrixx",
+      setNumber: "110374",
+      pieceCount: 929,
+      imageUrl: "https://cdn.merlinssteine.de/b.jpeg?v=2",
+    });
+    expect(labels).toEqual(["Von", "EAN", "Steine von"]);
+    expect(extractSetPage("<title>A &bull; B</title>", "https://x/").fields.name).toBe("A • B");
+    const manufacturerOnly = "<ul><li>Von: <a>Cobi</a></li></ul>";
+    expect(extractSetPage(manufacturerOnly, "https://x/").fields.manufacturer).toBe("Cobi");
   });
 
   it("prefers structured data and reads 'Label: value' lines", () => {

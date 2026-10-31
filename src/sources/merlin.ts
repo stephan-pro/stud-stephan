@@ -16,7 +16,7 @@ export interface MerlinResult {
 }
 
 const LABELS = {
-  manufacturer: /^(hersteller|marke|hersteller\/marke)$/i,
+  manufacturer: /^(von|hersteller|marke|hersteller\/marke)$/i,
   setNumber: /^(set-?nr\.?|set-?nummer|setnummer|artikel-?nr\.?|artikelnummer|nummer)$/i,
   pieceCount: /^(teile|teilezahl|anzahl teile|teile gesamt|steine|anzahl steine)$/i,
 } as const;
@@ -35,6 +35,14 @@ const ENTITIES: Record<string, string> = {
   Ouml: "Ö",
   Uuml: "Ü",
   szlig: "ß",
+  bull: "•",
+  middot: "·",
+  ndash: "–",
+  mdash: "—",
+  hellip: "…",
+  copy: "©",
+  reg: "®",
+  euro: "€",
 };
 
 export function decodeEntities(text: string): string {
@@ -70,7 +78,10 @@ function jsonLdProduct(html: string): Record<string, unknown> | undefined {
   for (const block of blocks) {
     try {
       const parsed: unknown = JSON.parse(block[1] ?? "");
-      const candidates = Array.isArray(parsed) ? parsed : [parsed];
+      // The SetDB puts several objects (organisation, page, product) into one `@graph`.
+      const candidates = (Array.isArray(parsed) ? parsed : [parsed]).flatMap((entry) =>
+        isRecord(entry) && Array.isArray(entry["@graph"]) ? entry["@graph"] : [entry],
+      );
       for (const candidate of candidates) {
         if (isRecord(candidate) && /product/i.test(String(candidate["@type"]))) return candidate;
       }
@@ -95,10 +106,10 @@ function textLines(html: string): string[] {
 
 function labelled(lines: string[], label: RegExp): string | undefined {
   for (const [index, line] of lines.entries()) {
+    // Only "Label: value" counts; a bare word like "Hersteller" is a menu entry.
     const match = /^([^:]{1,40}?)\s*:\s*(.*)$/.exec(line);
-    const name = match ? match[1] : line;
-    if (name === undefined || !label.test(name.trim())) continue;
-    const value = match?.[2] || lines[index + 1];
+    if (!match?.[1] || !label.test(match[1].trim())) continue;
+    const value = match[2] || lines[index + 1];
     if (value) return value;
   }
   return undefined;
@@ -121,11 +132,19 @@ export function extractSetPage(html: string, pageUrl: string): MerlinResult {
       ? str(list(ld.image)[0])
       : str(ld.image)
     : undefined;
-  const name =
+  const rawName =
     str(ld?.name) ?? metaContent(html, "og:title") ?? tagText(html, "h1") ?? tagText(html, "title");
+  // The SetDB appends the number to every title ("… | Set 110374"); it has its own field.
+  const name = str(rawName?.replace(/\s*[|•]\s*Set\s+\S+\s*$/, "").trim());
   const manufacturer = brand ?? labelled(lines, LABELS.manufacturer);
   const setNumber = str(ld?.sku) ?? str(ld?.mpn) ?? labelled(lines, LABELS.setNumber);
-  const pieceCount = toPieceCount(labelled(lines, LABELS.pieceCount));
+  // "… | 929 Teile |" sits in the description of the product data and of the meta tags.
+  const pieceCount = toPieceCount(
+    labelled(lines, LABELS.pieceCount) ??
+      [str(ld?.description), metaContent(html, "og:description")]
+        .map((text) => /(\d[\d.]*)\s*Teile\b/.exec(text ?? "")?.[1])
+        .find(Boolean),
+  );
   const image = metaContent(html, "og:image") ?? ldImage;
 
   if (name) fields.name = name;
