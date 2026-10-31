@@ -6,7 +6,7 @@ Doku: Anforderungen `docs/ANFORDERUNGEN.md` · Screens und Abläufe `docs/STRUKT
 
 ## Stand
 
-P1: Gerüst mit Navigation und leeren Seiten. Fortschritt: Tabelle in `docs/UMSETZUNG.md`, Abschnitt 4.
+P3: Gerüst mit Navigation und leeren Seiten; Datenmodell und Fachlogik in `src/domain/`, Demo-Daten in `src/demo/` (noch nicht in der Oberfläche). Fortschritt: Tabelle in `docs/UMSETZUNG.md`, Abschnitt 4.
 
 ## Befehle
 
@@ -25,6 +25,8 @@ P1: Gerüst mit Navigation und leeren Seiten. Fortschritt: Tabelle in `docs/UMSE
 - `src/main.tsx` lädt Schriften, `src/ui/tokens.css` (alle Design-Werte) und `src/ui/app.css`, zeichnet `src/ui/App.tsx`.
 - `src/ui/route.ts` – Hash-Router (`#/vitrine` …), reine Funktionen. `src/ui/texts.ts` – alle Texte.
 - `src/ui/components/` – `Navigation` (Handy-Leiste und PC-Seitenleiste), `PageHeader` (die eine `h1`, bekommt nach Seitenwechsel den Fokus), `Icon` (SVG-Pfade aus dem Dummy).
+- `src/domain/` – `types.ts` (alle Objekte, `SCHEMA_VERSION`), `money.ts` (`formatMoney` …), `prices.ts` (Marktpreis, Preisabruf `recordPriceRun`), `value.ts` (`valueOfItem`, `modSpend`), `totals.ts`, `showcase.ts` (Gruppen ×3, Filter, Sortierung), `dioramas.ts`, `wishlist.ts`, `series.ts`. Testbausteine `fixtures.ts` (`aMinifig`, `aPrice`, `aCollection` …).
+- `src/demo/collection.ts` – `DEMO_COLLECTION`, `DEMO_SERIES`, `DEMO_TODAY` nach dem Klick-Dummy.
 - Tests: `*.test.ts` neben dem Code; `tokens.test.ts` prüft Tokens gegen DESIGN.md und Kontraste, `designRules.test.ts` verbietet feste Farben, Radien und Abstände außerhalb von `tokens.css`. E2E in `tests/e2e/` (`helpers.ts`: Größen `PHONE`/`PC`, `expectNoAccessibilityViolations`).
 - `scripts/check.mjs` (Kurzausgabe), `scripts/short-reporter.mjs`, `scripts/scan-secrets.mjs` (Pre-Commit-Hook `.githooks/`).
 - Workflows: `check` (jeder Push), `pages` (nach grünem `check` auf `main`), `check-full` (nachts, von Hand).

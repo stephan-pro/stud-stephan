@@ -51,7 +51,7 @@ pg_cron (wöchentlich) ──► Edge Function „bricklink“ ──► BrickLi
 |---|---|---|---|---|
 | P1 | Grundgerüst, Prüfungen, Design-Tokens, Navigation | Opus | High | ✅ 31.10.2026 |
 | P2 | Datenquellen prüfen (Spike) | Sonnet | Medium | ✅ 31.10.2026 |
-| P3 | Datenmodell und Fachlogik | Opus | High | offen |
+| P3 | Datenmodell und Fachlogik | Opus | High | ✅ 31.10.2026 |
 | P4a | Supabase: Tabellen, Regeln, Dateispeicher, Fake-Server | Opus | High | offen |
 | P4b | Anmeldung per Code (nur Stephan) | Opus | High | offen |
 | P4c | Fotos und Studio-Dateien hochladen | Sonnet | Medium | offen |
@@ -295,6 +295,13 @@ Tickets are written in English. Every acceptance criterion is at least one test,
 - 31.10.2026: Keine Serienerfassung in Version 1.
 - 31.10.2026: Stil F „Steinkasten-Mix“, Klick-Dummy abgenommen.
 - 31.10.2026 (Ergebnis P2): BrickLink ist go, der Preisguide antwortet ohne Verkäufer-Verifizierung. Die BrickLink-Nummer einer Figur kommt nicht aus Rebrickable, sondern aus Brickognize, von Hand oder aus der SetDB (Details: `docs/DATENQUELLEN.md`). Ergänzt am selben Tag: Die BrickLink-Nummer ist die Kennung jeder offiziellen Figur; Katalogdaten kommen aus dem BrickLink-Katalog, Rebrickable nur für Namenssuche und Themen (Abschnitt 1).
+- 31.10.2026 (P3, von Claude entschieden, vom PO änderbar):
+  - Wert eines Objekts in dieser Reihenfolge: Marktwert (nur LEGO mit BrickLink- bzw. Setnummer, im eigenen Zustand) → selbst geschätzter Wert → Kaufpreis → 0 € und „ohne Wert“. Auch eine LEGO-Figur ohne BrickLink-Nummer zählt also mit ihrem Kaufpreis statt mit 0 €.
+  - Fehlt im neuesten Preisstand ein Zustand, gilt dessen letzter bekannter Preis mit „Stand vom …“. Ein zweiter Abruf am selben Tag ersetzt den Stand dieses Tages; ohne Verkäufe entsteht kein Preisstand.
+  - Dioramen zählen nur mit einem selbst geschätzten Wert zum Gesamtwert und nie als „ohne Wert“ (ihre Figuren zählen einzeln).
+  - Gleiche Figur (Kachel „×3“) = gleicher Hersteller und gleiche Nummer, ohne Nummer gleicher Name. Zustand und Mods trennen die Kachel nicht.
+  - Die Filter „Modifiziert ja/nein“ und „ohne Diorama“ zeigen nur Figuren. Thema-Filter und Dashboard nutzen das Hauptthema („Star Wars“ statt „Star Wars – The Clone Wars“).
+  - Reihen: Eine vorhandene Figur bleibt „vorhanden“, auch wenn ein weiteres Exemplar auf der Wunschliste steht.
 
 ## 8. Abhängigkeiten
 
