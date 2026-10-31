@@ -47,7 +47,7 @@ pg_cron (wöchentlich) ──► Edge Function „prices“ ──► BrickLink 
 | Paket | Inhalt | Modell | Effort | Status |
 |---|---|---|---|---|
 | P1 | Grundgerüst, Prüfungen, Design-Tokens, Navigation | Opus | High | ✅ 31.10.2026 |
-| P2 | Datenquellen prüfen (Spike) | Sonnet | Medium | offen |
+| P2 | Datenquellen prüfen (Spike) | Sonnet | Medium | Skript fertig 31.10.2026, wartet auf Lauf des PO |
 | P3 | Datenmodell und Fachlogik | Opus | High | offen |
 | P4a | Supabase: Tabellen, Regeln, Dateispeicher, Fake-Server | Opus | High | offen |
 | P4b | Anmeldung per Code (nur Stephan) | Opus | High | offen |
@@ -300,5 +300,6 @@ Tickets are written in English. Every acceptance criterion is at least one test,
 | `@biomejs/biome` | Entwicklung | Formatierung und Linting in einem Werkzeug |
 | `vitest`, `@vitest/coverage-v8` | Entwicklung | Unit-Tests mit Abdeckung |
 | `@playwright/test`, `@axe-core/playwright` | Entwicklung | Abläufe im Browser, Barrierefreiheit |
+| `@types/node` | Entwicklung | Typen für `node:crypto` (BrickLink-Signatur, später Edge Functions) |
 
 Symbole sind eigene SVG-Pfade aus dem Klick-Dummy (keine Symbol-Bibliothek).

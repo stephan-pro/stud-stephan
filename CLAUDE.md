@@ -15,6 +15,7 @@ P1: Gerüst mit Navigation und leeren Seiten. Fortschritt: Tabelle in `docs/UMSE
 - `npm run check:full` – wie `check`, Playwright in allen vier Projekten. Vor einem Release.
 - `npm run fix` – einzige Stelle, die formatiert (`biome check --write .`).
 - `npm run dev` · `npm run demo` (Beispieldaten aus `src/demo/`) · `npm run setup` (Pakete + Playwright-Browser).
+- `npm run try:sources` – P2, nur der PO in seinem Terminal (liest `.env.local`, ruft echte Dienste auf, gibt keine Schlüssel aus). Code in `src/sources/` (Tests mit Fake-Fetch), Ergebnis in `docs/DATENQUELLEN.md`.
 - `npm run check:db` – ab P4a, nur in CI (der PO hat kein Docker).
 - `/paket <Kennung> [Hinweise]` – setzt ein Arbeitspaket aus `docs/UMSETZUNG.md` um (Skill `.claude/skills/paket/SKILL.md`).
 - Vorschau im Browser-Fenster: `.claude/launch.json` → `demo` (Port 5190), dann `http://localhost:5190/stud-stephan/` öffnen.

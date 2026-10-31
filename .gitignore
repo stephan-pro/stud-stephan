@@ -11,5 +11,8 @@ test-results/
 # Working files of the Supabase CLI (from P4a).
 supabase/.temp/
 supabase/.branches/
+# Sample photo for `npm run try:sources` stays on the PC.
+scripts/samples/*
+!scripts/samples/README.md
 .DS_Store
 Thumbs.db
