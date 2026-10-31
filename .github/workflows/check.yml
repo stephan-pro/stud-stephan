@@ -31,3 +31,22 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  # Tables, rules and storage against a local Supabase instance (Docker is there on the runner; no
+  # secrets needed). "pages" publishes only when this workflow, i.e. both jobs, passed.
+  db:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run check:db
+      - if: failure()
+        name: Protokolle der lokalen Instanz (Datenbank, Dateispeicher)
+        run: |
+          docker logs supabase_db_stud-stephan --tail 60 2>&1 || true
+          docker logs supabase_storage_stud-stephan --tail 60 2>&1 || true

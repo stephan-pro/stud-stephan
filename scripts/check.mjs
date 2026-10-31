@@ -91,9 +91,11 @@ if (!unit.ok) {
 }
 const unitCount = JSON.parse(readFileSync(unitReport, "utf8")).numPassedTests;
 
-// 4. Build
+// 4. Build (the app, and the fake server the end-to-end tests talk to)
 const build = run("vite build");
 if (!build.ok) fail("Build (Vite)", tail(build.output));
+const fakeServer = run("vite build --ssr scripts/fake-server.ts --outDir dist-fake");
+if (!fakeServer.ok) fail("Build des Fake-Servers (Vite)", tail(fakeServer.output));
 
 // 5. End-to-end tests with axe (short reporter prints one line plus the failures)
 const e2e = run("playwright test", full ? { E2E_FULL: "1" } : {});

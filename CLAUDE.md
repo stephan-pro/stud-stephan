@@ -6,7 +6,7 @@ Doku: Anforderungen `docs/ANFORDERUNGEN.md` · Screens und Abläufe `docs/STRUKT
 
 ## Stand
 
-P3: Gerüst mit Navigation und leeren Seiten; Datenmodell und Fachlogik in `src/domain/`, Demo-Daten in `src/demo/` (noch nicht in der Oberfläche). Fortschritt: Tabelle in `docs/UMSETZUNG.md`, Abschnitt 4.
+P4a: Gerüst mit Navigation und leeren Seiten; Datenmodell und Fachlogik in `src/domain/`, Demo-Daten in `src/demo/` (noch nicht in der Oberfläche); Supabase-Tabellen, Regeln, Dateiablagen und `Remote` in `src/backend/` (App nutzt es ab P4b). Fortschritt: Tabelle in `docs/UMSETZUNG.md`, Abschnitt 4. Supabase: `docs/SUPABASE.md`.
 
 ## Befehle
 
@@ -16,7 +16,8 @@ P3: Gerüst mit Navigation und leeren Seiten; Datenmodell und Fachlogik in `src/
 - `npm run fix` – einzige Stelle, die formatiert (`biome check --write .`).
 - `npm run dev` · `npm run demo` (Beispieldaten aus `src/demo/`) · `npm run setup` (Pakete + Playwright-Browser).
 - `npm run try:sources` – P2, nur der PO in seinem Terminal (liest `.env.local`, ruft echte Dienste auf, gibt keine Schlüssel aus). Code in `src/sources/` (Tests mit Fake-Fetch), Ergebnis in `docs/DATENQUELLEN.md`.
-- `npm run check:db` – ab P4a, nur in CI (der PO hat kein Docker).
+- `npm run check:db` – nur in CI (Job `db`; der PO hat kein Docker): lokale Supabase, Migrationen, `supabase/tests/` (Sicherheit, Vertrag).
+- `npm run build:fake` – Fake-Server nach `dist-fake/` (macht `check` selbst; Playwright startet ihn auf Port 4180).
 - `/paket <Kennung> [Hinweise]` – setzt ein Arbeitspaket aus `docs/UMSETZUNG.md` um (Skill `.claude/skills/paket/SKILL.md`).
 - Vorschau im Browser-Fenster: `.claude/launch.json` → `demo` (Port 5190), dann `http://localhost:5190/stud-stephan/` öffnen.
 
@@ -27,9 +28,11 @@ P3: Gerüst mit Navigation und leeren Seiten; Datenmodell und Fachlogik in `src/
 - `src/ui/components/` – `Navigation` (Handy-Leiste und PC-Seitenleiste), `PageHeader` (die eine `h1`, bekommt nach Seitenwechsel den Fokus), `Icon` (SVG-Pfade aus dem Dummy).
 - `src/domain/` – `types.ts` (alle Objekte, `SCHEMA_VERSION`), `money.ts` (`formatMoney` …), `prices.ts` (Marktpreis, Preisabruf `recordPriceRun`), `value.ts` (`valueOfItem`, `modSpend`), `totals.ts`, `showcase.ts` (Gruppen ×3, Filter, Sortierung), `dioramas.ts`, `wishlist.ts`, `series.ts`. Testbausteine `fixtures.ts` (`aMinifig`, `aPrice`, `aCollection` …).
 - `src/demo/collection.ts` – `DEMO_COLLECTION`, `DEMO_SERIES`, `DEMO_TODAY` nach dem Klick-Dummy.
+- `src/backend/` – `remote.ts` (Schnittstelle `Remote`: `load`, `save(kind, …)`, `remove`, `savePrice`, `putFile`/`getFile`/`removeFile`; `RemoteError` mit `permanent`, `reason`), `rules.ts` (Arten, Grenzen, Prüfungen wie in SQL), `supabaseRemote.ts`, `fakeStore.ts` + `fakeRemote.ts` (im Speicher), `fakeServer.ts` + `fakeHttpServer.ts` + `fakeHttpRemote.ts` (Fake-Server). `remote.contract.ts` – dieselben Tests für Fake und echte Datenbank.
+- `supabase/` – `config.toml` (lokale Instanz), `migrations/` (Regeln dort und in `rules.ts`/`fakeStore.ts` immer gleich halten), `tests/` (nur `check:db`).
 - Tests: `*.test.ts` neben dem Code; `tokens.test.ts` prüft Tokens gegen DESIGN.md und Kontraste, `designRules.test.ts` verbietet feste Farben, Radien und Abstände außerhalb von `tokens.css`. E2E in `tests/e2e/` (`helpers.ts`: Größen `PHONE`/`PC`, `expectNoAccessibilityViolations`).
 - `scripts/check.mjs` (Kurzausgabe), `scripts/short-reporter.mjs`, `scripts/scan-secrets.mjs` (Pre-Commit-Hook `.githooks/`).
-- Workflows: `check` (jeder Push), `pages` (nach grünem `check` auf `main`), `check-full` (nachts, von Hand).
+- Workflows: `check` (jeder Push; Jobs `check` und `db`), `pages` (nach grünem `check` auf `main`), `check-full` (nachts, von Hand), `keepalive` (täglich `ping`, braucht die Repo-Variablen `VITE_SUPABASE_*`).
 
 ## Regeln
 

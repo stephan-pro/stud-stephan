@@ -4,6 +4,8 @@ import { defineConfig, devices } from "@playwright/test";
 declare const process: { env: Record<string, string | undefined> };
 
 const port = 4173;
+// The fake server of the backend (`src/backend/fakeServer.ts`); the tests know it from helpers.ts.
+const fakeServerPort = 4180;
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -19,12 +21,21 @@ export default defineConfig({
     locale: "de-DE",
     trace: "on-first-retry",
   },
-  // Runs against the production build; `npm run check` builds before this step.
-  webServer: {
-    command: `npx vite preview --port ${port} --strictPort`,
-    url: `http://localhost:${port}/stud-stephan/`,
-    reuseExistingServer: !process.env.CI,
-  },
+  // Runs against the production build and the fake server; `npm run check` builds both before
+  // this step (the fake server into dist-fake, `npm run build:fake`).
+  webServer: [
+    {
+      command: `npx vite preview --port ${port} --strictPort`,
+      url: `http://localhost:${port}/stud-stephan/`,
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: "node dist-fake/fake-server.js",
+      url: `http://localhost:${fakeServerPort}/health`,
+      env: { FAKE_SERVER_PORT: String(fakeServerPort) },
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
   // `npm run check` (every push): Chromium on the desktop; the specs set phone and PC sizes
   // themselves where the layout matters. `npm run check:full` (E2E_FULL=1: nightly and before a
   // release) adds WebKit and real phone emulation.

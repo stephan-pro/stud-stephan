@@ -52,7 +52,7 @@ pg_cron (wöchentlich) ──► Edge Function „bricklink“ ──► BrickLi
 | P1 | Grundgerüst, Prüfungen, Design-Tokens, Navigation | Opus | High | ✅ 31.10.2026 |
 | P2 | Datenquellen prüfen (Spike) | Sonnet | Medium | ✅ 31.10.2026 |
 | P3 | Datenmodell und Fachlogik | Opus | High | ✅ 31.10.2026 |
-| P4a | Supabase: Tabellen, Regeln, Dateispeicher, Fake-Server | Opus | High | offen |
+| P4a | Supabase: Tabellen, Regeln, Dateispeicher, Fake-Server | Opus | High | umgesetzt 31.10.2026, PO-Schritte offen (`db push`, Advisor, Variablen) |
 | P4b | Anmeldung per Code (nur Stephan) | Opus | High | offen |
 | P4c | Fotos und Studio-Dateien hochladen | Sonnet | Medium | offen |
 | P5 | Vitrine, Filter, Detailseiten | Sonnet | Medium | offen |
@@ -302,6 +302,9 @@ Tickets are written in English. Every acceptance criterion is at least one test,
   - Gleiche Figur (Kachel „×3“) = gleicher Hersteller und gleiche Nummer, ohne Nummer gleicher Name. Zustand und Mods trennen die Kachel nicht.
   - Die Filter „Modifiziert ja/nein“ und „ohne Diorama“ zeigen nur Figuren. Thema-Filter und Dashboard nutzen das Hauptthema („Star Wars“ statt „Star Wars – The Clone Wars“).
   - Reihen: Eine vorhandene Figur bleibt „vorhanden“, auch wenn ein weiteres Exemplar auf der Wunschliste steht.
+- 31.10.2026 (P4a, von Claude entschieden, vom PO änderbar):
+  - Set löschen → seine Figuren bleiben; „Stammt aus Set“ behält die Katalogangabe (z. B. „75372-1“), nur die Verknüpfung mit dem eigenen Set entfällt. Diorama löschen → seine Fotos und Studio-Dateien werden mitgelöscht, die Figuren bleiben (F8).
+  - Grenzen: höchstens 20 Fotos je Objekt, Foto höchstens 2 MB (WebP, JPEG oder PNG), höchstens 20 Studio-Dateien je Diorama, Studio-Datei höchstens 25 MB, Objekt ohne Dateien höchstens 32 KB Text.
 - 31.10.2026 (PO, ersetzt den Punkt „Thema-Filter und Dashboard nutzen das Hauptthema“ aus P3): **Themen zweistufig.** Der Filter der Vitrine zeigt Hauptthemen mit ihren Unterthemen darunter (z. B. Star Wars → The Clone Wars, The Mandalorian); wählbar ist beides. Das Dashboard „Nach Thema“ zeigt die Verteilung nach **Unterthema**. Umsetzung: Fachlogik bei Bedarf in P5 anpassen (Filter) bzw. in P13 (Dashboard).
 
 ## 8. Abhängigkeiten
@@ -315,5 +318,7 @@ Tickets are written in English. Every acceptance criterion is at least one test,
 | `vitest`, `@vitest/coverage-v8` | Entwicklung | Unit-Tests mit Abdeckung |
 | `@playwright/test`, `@axe-core/playwright` | Entwicklung | Abläufe im Browser, Barrierefreiheit |
 | `@types/node` | Entwicklung | Typen für `node:crypto` (BrickLink-Signatur, später Edge Functions) |
+| `@supabase/supabase-js` | App | Datenbank, Dateispeicher und ab P4b Anmeldung (Leitentscheidung Supabase, wie Krümel) |
+| `supabase` | Entwicklung | Supabase-CLI: lokale Instanz für `check:db` in CI, `db push` und `secrets set` beim PO |
 
 Symbole sind eigene SVG-Pfade aus dem Klick-Dummy (keine Symbol-Bibliothek).

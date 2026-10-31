@@ -5,6 +5,9 @@ import { expect, type Locator, type Page } from "@playwright/test";
 export const PHONE = { width: 390, height: 844 } as const;
 export const PC = { width: 1280, height: 800 } as const;
 
+/** The fake server of the backend (started by Playwright, see playwright.config.ts). */
+export const FAKE_SERVER = "http://localhost:4180";
+
 /** Colours of tokens.css as the browser reports them. */
 export const COLOURS = {
   nav: "rgb(17, 17, 17)",
