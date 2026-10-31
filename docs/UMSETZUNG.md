@@ -12,7 +12,7 @@ Grundlage: `docs/ANFORDERUNGEN.md` (v1.0), `docs/STRUKTUR.md` (v1.0), `docs/desi
 | Tests | Vitest (Fachlogik, Abdeckung ≥ 90 %), Playwright + axe (Abläufe, Chromium und WebKit, Desktop und Handy) | Wie Krümel |
 | Daten, Anmeldung, Dateien | Supabase, eigenes Projekt `stud-stephan`, Free Plan, Region EU | Wie Krümel; Datenbank, Anmeldung per Code und Dateispeicher in einem |
 | Externe Dienste | Nur über Supabase Edge Functions (Rebrickable, Brickognize, BrickLink, Link-Vorschau) | Schlüssel bleiben geheim, keine Probleme mit Browser-Sperren (CORS) |
-| Preisabruf | Wöchentlich per `pg_cron` in Supabase, ruft die Edge Function `prices` | Kostenlos, läuft ohne PC |
+| Preisabruf | Wöchentlich per `pg_cron` in Supabase, ruft die Edge Function `bricklink` | Kostenlos, läuft ohne PC |
 | Online-Version | GitHub Pages: https://stephan-pro.github.io/stud-stephan/ | Kostenlos bei öffentlichem Repo |
 | Repository | https://github.com/stephan-pro/stud-stephan, öffentlich, Lizenz EUPL-1.2 | Entscheidung des PO (31.10.2026) |
 | Sprache | Nur Deutsch (keine Übersetzungs-Schicht) | N3; spart Aufwand gegenüber Krümel |
@@ -199,7 +199,7 @@ Tickets are written in English. Every acceptance criterion is at least one test,
 
 **Done when:** F4, F6 (incl. “Ausgaben für Mods” and value unchanged), F7, F9 forms work end to end; E2E with axe for every form state.
 
-### P7 – Catalog search (Rebrickable)
+### P7 – Catalog (BrickLink numbers, Rebrickable search)
 
 **Goal:** Official LEGO items fill themselves in.
 
@@ -281,7 +281,7 @@ Tickets are written in English. Every acceptance criterion is at least one test,
 
 | Risiko | Auswirkung | Gegenmaßnahme |
 |---|---|---|
-| BrickLink verlangt Verkäufer-Registrierung | keine automatischen Marktwerte | P2 klärt es zuerst; Rückfall in P11 |
+| BrickLink verlangt später doch die Verkäufer-Verifizierung | keine automatischen Marktwerte, kein BrickLink-Katalog | Rückfall in P11 („Wert von Hand“); Katalog dann über Rebrickable, BrickLink-Nummer von Hand oder per Foto |
 | Brickognize ändert oder sperrt die Schnittstelle | Fotoerkennung fällt aus | Erfassen per Nummer bleibt immer möglich |
 | Merlins Steine ändert den Seitenaufbau | Link-Vorschau füllt weniger aus | F3 öffnet trotzdem das Formular |
 | 1 GB Dateispeicher wird knapp | Upload schlägt fehl | Fotos verkleinern (P4c), Anzeige der Belegung (P14) |
@@ -292,7 +292,7 @@ Tickets are written in English. Every acceptance criterion is at least one test,
 - 31.10.2026: Repository öffentlich, Lizenz EUPL-1.2.
 - 31.10.2026: Keine Serienerfassung in Version 1.
 - 31.10.2026: Stil F „Steinkasten-Mix“, Klick-Dummy abgenommen.
-- 31.10.2026 (Ergebnis P2): BrickLink ist go, der Preisguide antwortet ohne Verkäufer-Verifizierung. Die BrickLink-Nummer einer Figur kommt nicht aus Rebrickable, sondern aus Brickognize, von Hand oder aus der SetDB (Details: `docs/DATENQUELLEN.md`).
+- 31.10.2026 (Ergebnis P2): BrickLink ist go, der Preisguide antwortet ohne Verkäufer-Verifizierung. Die BrickLink-Nummer einer Figur kommt nicht aus Rebrickable, sondern aus Brickognize, von Hand oder aus der SetDB (Details: `docs/DATENQUELLEN.md`). Ergänzt am selben Tag: Die BrickLink-Nummer ist die Kennung jeder offiziellen Figur; Katalogdaten kommen aus dem BrickLink-Katalog, Rebrickable nur für Namenssuche und Themen (Abschnitt 1).
 
 ## 8. Abhängigkeiten
 
