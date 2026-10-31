@@ -46,7 +46,7 @@ pg_cron (wöchentlich) ──► Edge Function „prices“ ──► BrickLink 
 
 | Paket | Inhalt | Modell | Effort | Status |
 |---|---|---|---|---|
-| P1 | Grundgerüst, Prüfungen, Design-Tokens, Navigation | Opus | High | offen |
+| P1 | Grundgerüst, Prüfungen, Design-Tokens, Navigation | Opus | High | ✅ 31.10.2026 |
 | P2 | Datenquellen prüfen (Spike) | Sonnet | Medium | offen |
 | P3 | Datenmodell und Fachlogik | Opus | High | offen |
 | P4a | Supabase: Tabellen, Regeln, Dateispeicher, Fake-Server | Opus | High | offen |
