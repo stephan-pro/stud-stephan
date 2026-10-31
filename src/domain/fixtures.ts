@@ -20,7 +20,7 @@ export function aMinifig(fields: Partial<Minifig> = {}): Minifig {
     type: "minifig",
     id: id("minifig"),
     name: "Captain Rex",
-    catalogNumber: "sw0194",
+    bricklinkId: "sw0194",
     manufacturer: { kind: "lego" },
     theme: "Star Wars – The Clone Wars",
     condition: "used",
@@ -37,7 +37,7 @@ export function aSet(fields: Partial<LegoSet> = {}): LegoSet {
     type: "legoSet",
     id: id("set"),
     name: "Clone Trooper & Battle Droid Battle Pack",
-    catalogNumber: "75372-1",
+    setNumber: "75372-1",
     manufacturer: { kind: "lego" },
     theme: "Star Wars",
     condition: "used",
@@ -83,7 +83,7 @@ export function aWish(fields: Partial<WishItem> = {}): WishItem {
     id: id("wish"),
     type: "minifig",
     name: "Commander Cody",
-    catalogNumber: "sw0196",
+    bricklinkId: "sw0196",
     manufacturer: { kind: "lego" },
     priority: "medium",
     desiredCondition: "used",
@@ -94,12 +94,12 @@ export function aWish(fields: Partial<WishItem> = {}): WishItem {
 }
 
 export function aPrice(
-  catalogNumber: string,
+  bricklinkId: string,
   date: string,
   cents: PricePoint["cents"],
   itemType: PricedType = "minifig",
 ): PricePoint {
-  return { itemType, catalogNumber, date, source: "bricklink", cents };
+  return { itemType, bricklinkId, date, source: "bricklink", cents };
 }
 
 export function aCollection(parts: Partial<Collection> = {}): Collection {

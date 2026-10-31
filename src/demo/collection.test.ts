@@ -123,9 +123,9 @@ describe("P3 Demo-Daten passen zum Klick-Dummy", () => {
       if (minifig.fromSet?.setId) expect(sets).toContain(minifig.fromSet.setId);
     }
     // Every official item with a number has a price, and no price is newer than "today".
-    const priced = new Set(demo.prices.map((point) => `${point.itemType}:${point.catalogNumber}`));
+    const priced = new Set(demo.prices.map((point) => `${point.itemType}:${point.bricklinkId}`));
     for (const item of itemsToPrice(demo)) {
-      expect(priced).toContain(`${item.itemType}:${item.catalogNumber}`);
+      expect(priced).toContain(`${item.itemType}:${item.bricklinkId}`);
     }
     expect(demo.prices.every((point) => point.date <= DEMO_TODAY)).toBe(true);
     const createdAt = all.map((item) => item.createdAt.slice(0, 10));

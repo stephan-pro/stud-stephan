@@ -1,6 +1,7 @@
 // The showcase (F11): which tiles there are, filtered and sorted. Copies of the same figure share
 // one tile with a count ("×3", F5).
 
+import { itemNumber } from "./prices";
 import type {
   Collection,
   Condition,
@@ -47,9 +48,9 @@ export function entryItems(entry: ShowcaseEntry): ShowcaseItem[] {
 const newestFirst = (a: { createdAt: string; id: string }, b: { createdAt: string; id: string }) =>
   b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id);
 
-/** Same figure = same manufacturer and catalog number; without a number, the same name. */
+/** Same figure = same manufacturer and BrickLink number; without a number, the same name. */
 function copyKey(minifig: Minifig): string {
-  const number = minifig.catalogNumber?.trim();
+  const number = itemNumber(minifig);
   const identity = number ? `#${normalize(number)}` : `name:${normalize(minifig.name)}`;
   return `minifig:${manufacturerKey(minifig.manufacturer)}:${identity}`;
 }
@@ -125,7 +126,7 @@ function matchesQuery(item: ShowcaseItem, query: string): boolean {
   const manufacturer =
     "name" in item.manufacturer ? item.manufacturer.name : item.manufacturer.kind;
   const text = normalize(
-    [item.name, item.catalogNumber, item.theme, manufacturer].filter(Boolean).join(" "),
+    [item.name, itemNumber(item), item.theme, manufacturer].filter(Boolean).join(" "),
   );
   return words.every((word) => text.includes(word));
 }

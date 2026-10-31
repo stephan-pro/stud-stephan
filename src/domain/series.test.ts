@@ -4,23 +4,23 @@ import { seriesProgress } from "./series";
 import type { CatalogFigure } from "./types";
 
 const SERIES: CatalogFigure[] = [
-  { name: "Captain Rex", catalogNumber: "sw0194", rebrickableId: "fig-000001" },
-  { name: "Clone Trooper", rebrickableId: "fig-000002" },
-  { name: "Commander Cody", catalogNumber: "sw0196", rebrickableId: "fig-000003" },
-  { name: "Plo Koon", rebrickableId: "fig-000004" },
-  { name: "Ahsoka Tano", catalogNumber: "sw0219" },
+  { name: "Captain Rex", bricklinkId: "sw0194" },
+  { name: "Clone Trooper", bricklinkId: "sw0631" },
+  { name: "Commander Cody", bricklinkId: "sw0196" },
+  { name: "Plo Koon" },
+  { name: "Ahsoka Tano", bricklinkId: "sw0219" },
 ];
 
 const owned = [
-  aMinifig({ id: "rex-1", catalogNumber: "SW0194" }),
-  aMinifig({ id: "rex-2", catalogNumber: "sw0194" }),
-  aMinifig({ id: "trooper", catalogNumber: "sw0631", rebrickableId: "fig-000002" }),
-  aMinifig({ id: "fives", catalogNumber: "sw0542" }),
+  aMinifig({ id: "rex-1", bricklinkId: "SW0194" }),
+  aMinifig({ id: "rex-2", bricklinkId: "sw0194" }),
+  aMinifig({ id: "trooper", bricklinkId: " SW0631" }),
+  aMinifig({ id: "fives", bricklinkId: "sw0542" }),
 ];
 const wishes = [
-  aWish({ catalogNumber: "sw0196" }),
-  aWish({ catalogNumber: "sw0219", type: "legoSet" }),
-  aWish({ catalogNumber: "sw0194" }),
+  aWish({ bricklinkId: "sw0196" }),
+  aWish({ bricklinkId: "sw0219", type: "legoSet" }),
+  aWish({ bricklinkId: "sw0194" }),
 ];
 
 describe("F13 Fehlende Figuren", () => {
@@ -37,7 +37,7 @@ describe("F13 Fehlende Figuren", () => {
     ]);
   });
 
-  it("F13 Vorhanden über BrickLink- oder Rebrickable-Nummer; die eigenen Exemplare stehen dabei", () => {
+  it("F13 Vorhanden über die BrickLink-Nummer; die eigenen Exemplare stehen dabei", () => {
     expect(progress.figures[0]?.copies.map((copy) => copy.id)).toEqual(["rex-1", "rex-2"]);
     expect(progress.figures[1]?.copies.map((copy) => copy.id)).toEqual(["trooper"]);
   });
@@ -56,8 +56,8 @@ describe("F13 Fehlende Figuren", () => {
 
   it("F13 Leere Nummern passen zu nichts", () => {
     const blank = seriesProgress(
-      [{ name: "Ohne Nummer", catalogNumber: " " }],
-      [aMinifig({ catalogNumber: " " })],
+      [{ name: "Ohne Nummer", bricklinkId: " " }],
+      [aMinifig({ bricklinkId: " " })],
       [],
     );
     expect(blank).toMatchObject({ present: 0, missing: 1 });

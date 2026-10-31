@@ -3,7 +3,7 @@ import { aPrice, aWish } from "./fixtures";
 import { arrangeWishlist, targetReached, wishStatus } from "./wishlist";
 
 const priced = (cents: number, fields = {}) => {
-  const wish = aWish({ catalogNumber: "sw0196", desiredCondition: "used", ...fields });
+  const wish = aWish({ bricklinkId: "sw0196", desiredCondition: "used", ...fields });
   return { wish, prices: [aPrice("sw0196", "2026-10-27", { used: cents, new: 9999 })] };
 };
 
@@ -57,7 +57,7 @@ describe("F14 Wunschliste sortieren", () => {
   const ahsoka = aWish({
     id: "ahsoka",
     name: "Ahsoka Tano",
-    catalogNumber: "sw0219",
+    bricklinkId: "sw0219",
     priority: "high",
     targetPrice: 3000,
   });
@@ -65,7 +65,7 @@ describe("F14 Wunschliste sortieren", () => {
     id: "gunship",
     type: "legoSet",
     name: "Republic Gunship",
-    catalogNumber: "75021-1",
+    setNumber: "75021-1",
     desiredCondition: "new",
     priority: "medium",
     targetPrice: 12000,
@@ -73,7 +73,7 @@ describe("F14 Wunschliste sortieren", () => {
   const droid = aWish({
     id: "droid",
     name: "Battle Droid",
-    catalogNumber: "sw0001",
+    bricklinkId: "sw0001",
     priority: "low",
     targetPrice: 300,
   });

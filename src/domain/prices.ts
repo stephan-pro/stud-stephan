@@ -1,18 +1,22 @@
 // BrickLink market prices (F10): looking up the latest price and recording a weekly run.
-// Copies of the same figure share one catalog item and therefore one price per run.
+// Copies of the same figure share one BrickLink number and therefore one price per run.
 
-import type { Collection, Condition, IsoDate, Manufacturer, PricedType, PricePoint } from "./types";
+import type {
+  Collection,
+  Condition,
+  IsoDate,
+  PricedType,
+  PricePoint,
+  ShowcaseItem,
+  WishItem,
+} from "./types";
 
-/** Anything that can name a catalog item: owned objects and wishes. */
-interface Priceable {
-  type: PricedType;
-  manufacturer: Manufacturer;
-  catalogNumber?: string;
-}
+/** Owned objects and wishes: everything that can carry a BrickLink number. */
+type Priceable = ShowcaseItem | WishItem;
 
 export interface CatalogItem {
   itemType: PricedType;
-  catalogNumber: string;
+  bricklinkId: string;
 }
 
 export interface MarketPrice {
@@ -21,14 +25,23 @@ export interface MarketPrice {
   soldCount?: number;
 }
 
-/** "minifig:sw0194"; case and surrounding spaces of the number do not matter. */
-export function catalogKey(itemType: PricedType, catalogNumber: string): string {
-  return `${itemType}:${catalogNumber.trim().toLowerCase()}`;
+/** The number of an object: BrickLink number of a figure, set number, number of a special part. */
+export function itemNumber(item: Priceable): string | undefined {
+  let number: string | undefined;
+  if (item.type === "minifig") number = item.bricklinkId;
+  else if (item.type === "legoSet") number = item.setNumber;
+  else if (item.type === "specialPart") number = item.number;
+  return number?.trim() || undefined;
 }
 
-/** Only official LEGO items with a catalog number get a market value; everything else is estimated. */
+/** "minifig:sw0194"; case and surrounding spaces of the number do not matter. */
+export function catalogKey(itemType: PricedType, bricklinkId: string): string {
+  return `${itemType}:${bricklinkId.trim().toLowerCase()}`;
+}
+
+/** Only official LEGO items with a number get a market value; everything else is estimated. */
 export function hasMarketPrice(item: Priceable): boolean {
-  return item.manufacturer.kind === "lego" && (item.catalogNumber ?? "").trim() !== "";
+  return item.manufacturer.kind === "lego" && itemNumber(item) !== undefined;
 }
 
 export function otherCondition(condition: Condition): Condition {
@@ -44,7 +57,7 @@ function priceIndex(prices: readonly PricePoint[]): Map<string, PricePoint[]> {
   if (cached) return cached;
   const index = new Map<string, PricePoint[]>();
   for (const point of prices) {
-    const key = catalogKey(point.itemType, point.catalogNumber);
+    const key = catalogKey(point.itemType, point.bricklinkId);
     index.set(key, [...(index.get(key) ?? []), point]);
   }
   for (const points of index.values()) points.sort((a, b) => b.date.localeCompare(a.date));
@@ -61,9 +74,9 @@ export function marketPrice(
   condition: Condition,
   prices: readonly PricePoint[],
 ): MarketPrice | undefined {
-  if (!hasMarketPrice(item)) return undefined;
-  const points = priceIndex(prices).get(catalogKey(item.type, item.catalogNumber ?? "")) ?? [];
-  for (const point of points) {
+  const number = itemNumber(item);
+  if (!hasMarketPrice(item) || number === undefined) return undefined;
+  for (const point of priceIndex(prices).get(catalogKey(item.type, number)) ?? []) {
     const cents = point.cents[condition];
     if (cents === undefined) continue;
     const soldCount = point.soldCount?.[condition];
@@ -84,10 +97,10 @@ export function itemsToPrice(collection: Collection): CatalogItem[] {
     ...collection.wishlist,
   ];
   for (const item of all) {
-    if (!hasMarketPrice(item)) continue;
-    const catalogNumber = (item.catalogNumber ?? "").trim();
-    const key = catalogKey(item.type, catalogNumber);
-    if (!items.has(key)) items.set(key, { itemType: item.type, catalogNumber });
+    const bricklinkId = itemNumber(item);
+    if (!hasMarketPrice(item) || bricklinkId === undefined) continue;
+    const key = catalogKey(item.type, bricklinkId);
+    if (!items.has(key)) items.set(key, { itemType: item.type, bricklinkId });
   }
   return [...items.values()];
 }
@@ -117,16 +130,16 @@ export function recordPriceRun(
     if (result.cents.new === undefined && result.cents.used === undefined) continue;
     const point: PricePoint = {
       itemType: result.itemType,
-      catalogNumber: result.catalogNumber.trim(),
+      bricklinkId: result.bricklinkId.trim(),
       date: today,
       source: "bricklink",
       cents: { ...result.cents },
     };
     if (result.soldCount) point.soldCount = { ...result.soldCount };
-    fresh.set(catalogKey(result.itemType, result.catalogNumber), point);
+    fresh.set(catalogKey(result.itemType, result.bricklinkId), point);
   }
   const kept = prices.filter(
-    (point) => point.date !== today || !fresh.has(catalogKey(point.itemType, point.catalogNumber)),
+    (point) => point.date !== today || !fresh.has(catalogKey(point.itemType, point.bricklinkId)),
   );
   return [...kept, ...fresh.values()];
 }

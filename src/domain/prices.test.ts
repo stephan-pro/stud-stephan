@@ -14,32 +14,29 @@ const TODAY = "2026-11-02";
 const LAST_WEEK = "2026-10-26";
 
 describe("F10 Preisabruf", () => {
-  const rex = aMinifig({ catalogNumber: "sw0194" });
-  const rex2 = aMinifig({ catalogNumber: "SW0194", condition: "new" });
-  const fives = aMinifig({ name: "ARC Trooper Fives", catalogNumber: "sw0542" });
-  const set = aSet({ catalogNumber: "75372-1" });
-  const custom = aMinifig({ manufacturer: { kind: "custom", name: "Shop" }, catalogNumber: "x1" });
+  const rex = aMinifig({ bricklinkId: "sw0194" });
+  const rex2 = aMinifig({ bricklinkId: "SW0194", condition: "new" });
+  const fives = aMinifig({ name: "ARC Trooper Fives", bricklinkId: "sw0542" });
+  const set = aSet({ setNumber: "75372-1" });
+  const custom = aMinifig({ manufacturer: { kind: "custom", name: "Shop" }, bricklinkId: "x1" });
   const collection = aCollection({ minifigs: [rex, rex2, fives, custom], sets: [set] });
 
   it("F10 Abgefragt wird jedes offizielle Objekt mit Nummer, gleiche Figuren nur einmal", () => {
     expect(itemsToPrice(collection)).toEqual([
-      { itemType: "minifig", catalogNumber: "sw0194" },
-      { itemType: "minifig", catalogNumber: "sw0542" },
-      { itemType: "legoSet", catalogNumber: "75372-1" },
+      { itemType: "minifig", bricklinkId: "sw0194" },
+      { itemType: "minifig", bricklinkId: "sw0542" },
+      { itemType: "legoSet", bricklinkId: "75372-1" },
     ]);
   });
 
   it("F10 Auch Wünsche und Sonderteile von LEGO bekommen einen Marktpreis", () => {
     const withWish = aCollection({
-      wishlist: [
-        aWish({ catalogNumber: "sw0196" }),
-        aWish({ manufacturer: { kind: "bluebrixx" } }),
-      ],
-      specialParts: [aSpecialPart({ catalogNumber: "5008889" }), aSpecialPart()],
+      wishlist: [aWish({ bricklinkId: "sw0196" }), aWish({ manufacturer: { kind: "bluebrixx" } })],
+      specialParts: [aSpecialPart({ number: "5008889" }), aSpecialPart()],
     });
     expect(itemsToPrice(withWish)).toEqual([
-      { itemType: "specialPart", catalogNumber: "5008889" },
-      { itemType: "minifig", catalogNumber: "sw0196" },
+      { itemType: "specialPart", bricklinkId: "5008889" },
+      { itemType: "minifig", bricklinkId: "sw0196" },
     ]);
   });
 
@@ -54,8 +51,8 @@ describe("F10 Preisabruf", () => {
     for (const item of itemsToPrice(collection)) {
       const fresh = after.filter(
         (point) =>
-          catalogKey(point.itemType, point.catalogNumber) ===
-            catalogKey(item.itemType, item.catalogNumber) && point.date === TODAY,
+          catalogKey(point.itemType, point.bricklinkId) ===
+            catalogKey(item.itemType, item.bricklinkId) && point.date === TODAY,
       );
       expect(fresh).toHaveLength(1);
     }
@@ -68,14 +65,14 @@ describe("F10 Preisabruf", () => {
   it("F10 Ein zweiter Abruf am selben Tag ersetzt den Stand dieses Tages", () => {
     const first = recordPriceRun(
       [],
-      [{ itemType: "minifig", catalogNumber: "sw0194", ok: true, cents: { used: 1300 } }],
+      [{ itemType: "minifig", bricklinkId: "sw0194", ok: true, cents: { used: 1300 } }],
       TODAY,
     );
     const second = recordPriceRun(
       first,
       [
-        { itemType: "minifig", catalogNumber: "sw0194", ok: true, cents: { used: 1250 } },
-        { itemType: "minifig", catalogNumber: "SW0194 ", ok: true, cents: { used: 1260 } },
+        { itemType: "minifig", bricklinkId: "sw0194", ok: true, cents: { used: 1250 } },
+        { itemType: "minifig", bricklinkId: "SW0194 ", ok: true, cents: { used: 1260 } },
       ],
       TODAY,
     );
@@ -87,8 +84,8 @@ describe("F10 Preisabruf", () => {
     const after = recordPriceRun(
       before,
       [
-        { itemType: "minifig", catalogNumber: "sw0194", ok: false },
-        { itemType: "minifig", catalogNumber: "sw0542", ok: true, cents: {} },
+        { itemType: "minifig", bricklinkId: "sw0194", ok: false },
+        { itemType: "minifig", bricklinkId: "sw0542", ok: true, cents: {} },
       ],
       TODAY,
     );
@@ -102,7 +99,7 @@ describe("F10 Preisabruf", () => {
       [
         {
           itemType: "minifig",
-          catalogNumber: "sw0194",
+          bricklinkId: "sw0194",
           ok: true,
           cents: { new: 9987, used: 6739 },
           soldCount: { new: 14, used: 97 },
@@ -117,8 +114,8 @@ describe("F10 Preisabruf", () => {
   it("F10 Nur offizielle LEGO-Objekte mit Nummer haben einen Marktpreis", () => {
     expect(hasMarketPrice(rex)).toBe(true);
     expect(hasMarketPrice(custom)).toBe(false);
-    expect(hasMarketPrice(aMinifig({ catalogNumber: "  " }))).toBe(false);
-    const { catalogNumber: _, ...withoutNumber } = rex;
+    expect(hasMarketPrice(aMinifig({ bricklinkId: "  " }))).toBe(false);
+    const { bricklinkId: _, ...withoutNumber } = rex;
     expect(hasMarketPrice(withoutNumber)).toBe(false);
     expect(marketPrice(withoutNumber, "used", [aPrice("", TODAY, { used: 1 })])).toBeUndefined();
   });

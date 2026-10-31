@@ -8,7 +8,7 @@ export type SeriesStatus = "present" | "missing" | "wished";
 export interface SeriesFigure {
   figure: CatalogFigure;
   status: SeriesStatus;
-  /** Own copies of this figure. */
+  /** Own copies of this figure, found by the BrickLink number. */
   copies: Minifig[];
 }
 
@@ -22,18 +22,12 @@ export interface SeriesProgress {
   wished: number;
 }
 
-const same = (a: string | undefined, b: string | undefined) =>
-  !!a?.trim() && !!b?.trim() && a.trim().toLowerCase() === b.trim().toLowerCase();
+const normalized = (id: string | undefined) => id?.trim().toLowerCase() || undefined;
 
-/** Same figure if the BrickLink number or the Rebrickable number matches. */
-function matches(
-  figure: CatalogFigure,
-  other: { catalogNumber?: string; rebrickableId?: string },
-): boolean {
-  return (
-    same(figure.catalogNumber, other.catalogNumber) ||
-    same(figure.rebrickableId, other.rebrickableId)
-  );
+/** Same figure if the BrickLink number matches; without a number nothing matches. */
+function matches(figure: CatalogFigure, other: { bricklinkId?: string }): boolean {
+  const id = normalized(figure.bricklinkId);
+  return id !== undefined && id === normalized(other.bricklinkId);
 }
 
 /** A figure that is owned counts as present, even if another copy is wished. */

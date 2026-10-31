@@ -14,7 +14,7 @@ describe("F10/F12 Summen der Sammlung", () => {
         theme: "Ritter",
         purchasePrice: 400,
       }),
-      aMinifig({ name: "Ohne alles", catalogNumber: "sw9999", theme: "Ninjago – Staffel 1" }),
+      aMinifig({ name: "Ohne alles", bricklinkId: "sw9999", theme: "Ninjago – Staffel 1" }),
     ],
     sets: [aSet({ purchasePrice: 1999, theme: "Star Wars" })],
     specialParts: [

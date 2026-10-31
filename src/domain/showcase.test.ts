@@ -21,7 +21,7 @@ const names = (entries: ShowcaseEntry[]) =>
 
 describe("F5 Mehrere Exemplare", () => {
   const trooper = (fields = {}) =>
-    aMinifig({ name: "Clone Trooper Phase II", catalogNumber: "sw0631", ...fields });
+    aMinifig({ name: "Clone Trooper Phase II", bricklinkId: "sw0631", ...fields });
 
   it("F5 Die Vitrine fasst gleiche Figuren zu einer Kachel mit Anzahl zusammen (×3)", () => {
     const groups = groupCopies([trooper(), aMinifig(), trooper(), trooper()]);
@@ -45,9 +45,9 @@ describe("F5 Mehrere Exemplare", () => {
   it("F5 Gleich heißt: gleicher Hersteller und gleiche Nummer (Groß-/Kleinschreibung egal)", () => {
     const groups = groupCopies([
       trooper(),
-      trooper({ catalogNumber: "SW0631" }),
+      trooper({ bricklinkId: "SW0631" }),
       trooper({ manufacturer: { kind: "custom", name: "Shop" } }),
-      trooper({ catalogNumber: "sw0605" }),
+      trooper({ bricklinkId: "sw0605" }),
     ]);
     expect(groups.map((group) => group.copies.length)).toEqual([2, 1, 1]);
   });
@@ -55,7 +55,7 @@ describe("F5 Mehrere Exemplare", () => {
   it("F5 Ohne Nummer zählen Figuren mit gleichem Namen beim selben Hersteller als gleich", () => {
     const guard = (fields = {}) =>
       aMinifig({ name: "Burgwache", manufacturer: { kind: "bluebrixx" }, ...fields });
-    const { catalogNumber: _, ...noNumber } = guard();
+    const { bricklinkId: _, ...noNumber } = guard();
     const groups = groupCopies([
       noNumber,
       { ...noNumber, id: "g2", name: " burgwache" },
@@ -76,14 +76,14 @@ describe("F11 Vitrine", () => {
   const fives = aMinifig({
     id: "fives",
     name: "ARC Trooper Fives",
-    catalogNumber: "sw0542",
+    bricklinkId: "sw0542",
     condition: "new",
     createdAt: "2026-10-05T10:00:00Z",
   });
   const guard = aMinifig({
     id: "guard",
     name: "Burgwache",
-    catalogNumber: "",
+    bricklinkId: "",
     manufacturer: { kind: "bluebrixx" },
     theme: "Ritter",
     purchasePrice: 400,

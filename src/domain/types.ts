@@ -33,8 +33,6 @@ export interface ManualValue {
 interface ItemBase {
   id: Id;
   name: string;
-  /** Minifig: BrickLink number ("sw0194"); set: "75372-1"; special part: optional number. */
-  catalogNumber?: string;
   manufacturer: Manufacturer;
   /** Thema/Reihe, e.g. "Star Wars – The Clone Wars"; the part before " – " is the main theme. */
   theme?: string;
@@ -84,20 +82,21 @@ export interface FromSet {
 /** One copy of a minifig; every copy is its own entry (F5). */
 export interface Minifig extends ItemBase {
   type: "minifig";
-  /** Rebrickable's own number ("fig-014663"); not the BrickLink number (DATENQUELLEN.md). */
-  rebrickableId?: string;
+  /**
+   * BrickLink number ("sw0194"), the id of every official figure for recognition, catalog and
+   * price (UMSETZUNG.md section 1). Customs and other manufacturers have none.
+   */
+  bricklinkId?: string;
   fromSet?: FromSet;
   mods: ModPart[];
   /** The one diorama the figure stands in (F8); none if missing. */
   dioramaId?: Id;
 }
 
-/** A figure as a catalog lists it: in a set (F7) or in a series (F13). */
+/** A figure as the BrickLink catalog lists it: in a set (F7) or in a series (F13). */
 export interface CatalogFigure {
   name: string;
-  /** BrickLink number, if known. */
-  catalogNumber?: string;
-  rebrickableId?: string;
+  bricklinkId?: string;
   imageUrl?: string;
   quantity?: number;
 }
@@ -106,6 +105,8 @@ export type SetStatus = "complete" | "figuresRemoved" | "disassembled";
 
 export interface LegoSet extends ItemBase {
   type: "legoSet";
+  /** "75372-1", the same at Rebrickable and BrickLink; Bluebrixx and others have their own. */
+  setNumber?: string;
   year?: number;
   pieceCount?: number;
   minifigCount?: number;
@@ -118,6 +119,8 @@ export type SpecialPartKind = "gwp" | "coin" | "other";
 export interface SpecialPart extends ItemBase {
   type: "specialPart";
   kind: SpecialPartKind;
+  /** Optional; for LEGO the BrickLink number, which then gives the market value. */
+  number?: string;
 }
 
 /** A Studio file (`.io`) stored at a diorama. */
@@ -150,8 +153,10 @@ export interface WishItem {
   id: Id;
   type: "minifig" | "legoSet";
   name: string;
-  catalogNumber?: string;
-  rebrickableId?: string;
+  /** For a wished figure. */
+  bricklinkId?: string;
+  /** For a wished set. */
+  setNumber?: string;
   manufacturer: Manufacturer;
   theme?: string;
   priority: Priority;
@@ -171,7 +176,8 @@ export type PricedType = "minifig" | "legoSet" | "specialPart";
 /** One price run's result for one catalog item: new and used in one point (F10). */
 export interface PricePoint {
   itemType: PricedType;
-  catalogNumber: string;
+  /** BrickLink item number: "sw0194" for a figure, "75372-1" for a set. */
+  bricklinkId: string;
   date: IsoDate;
   source: "bricklink";
   /** Average sale price of the last 6 months; missing if nothing was sold. */

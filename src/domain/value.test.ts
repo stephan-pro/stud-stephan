@@ -51,16 +51,16 @@ describe("F10 Wert offizieller Objekte", () => {
       aPrice("5008889", "2026-10-26", { new: 990 }, "specialPart"),
     ];
     expect(valueOfItem(aSet({ condition: "used" }), prices).cents).toBe(2100);
-    expect(valueOfItem(aSpecialPart({ catalogNumber: "5008889" }), prices).cents).toBe(990);
+    expect(valueOfItem(aSpecialPart({ number: "5008889" }), prices).cents).toBe(990);
   });
 
   it("F10 Gleiche Nummer bei anderer Objektart zählt nicht als Preis", () => {
-    const value = valueOfItem(aSet({ catalogNumber: "sw0194", purchasePrice: 999 }), BRICKLINK);
+    const value = valueOfItem(aSet({ setNumber: "sw0194", purchasePrice: 999 }), BRICKLINK);
     expect(value.kind).toBe("purchase");
   });
 
   it("F10 Groß-/Kleinschreibung der Nummer spielt keine Rolle", () => {
-    expect(valueOfItem(aMinifig({ catalogNumber: " SW0194 " }), BRICKLINK).cents).toBe(1200);
+    expect(valueOfItem(aMinifig({ bricklinkId: " SW0194 " }), BRICKLINK).cents).toBe(1200);
   });
 
   it("F10 Der neueste Preisstand gilt", () => {
@@ -112,7 +112,7 @@ describe("F10 Wert ohne Marktpreis", () => {
   it("F10 Anderer Hersteller → selbst geschätzter Wert geht vor dem Kaufpreis", () => {
     const burgwache = aMinifig({
       manufacturer: { kind: "bluebrixx" },
-      catalogNumber: "sw0194",
+      bricklinkId: "sw0194",
       purchasePrice: 400,
       manualValue: { cents: 600, enteredOn: "2026-01-02" },
     });
@@ -131,7 +131,7 @@ describe("F10 Wert ohne Marktpreis", () => {
   });
 
   it("F10 Offizielle Figur ohne Nummer → kein Marktwert, Kaufpreis", () => {
-    const appo = aMinifig({ name: "Commander Appo", catalogNumber: "", purchasePrice: 1800 });
+    const appo = aMinifig({ name: "Commander Appo", bricklinkId: "", purchasePrice: 1800 });
     expect(valueOfItem(appo, BRICKLINK)).toMatchObject({ cents: 1800, kind: "purchase" });
   });
 
@@ -144,7 +144,7 @@ describe("F10 Wert ohne Marktpreis", () => {
   });
 
   it("F10 Weder Marktwert noch eingetragener Wert → 0 € und „ohne Wert“", () => {
-    const value = valueOfItem(aMinifig({ catalogNumber: "sw9999" }), BRICKLINK);
+    const value = valueOfItem(aMinifig({ bricklinkId: "sw9999" }), BRICKLINK);
     expect(value).toEqual({ cents: 0, kind: "none", ownValueMissing: true });
   });
 });

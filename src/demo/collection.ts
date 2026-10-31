@@ -86,7 +86,7 @@ const minifigs: Minifig[] = [
   figure({
     id: "minifig-rex",
     name: "Captain Rex",
-    catalogNumber: "sw0194",
+    bricklinkId: "sw0194",
     source: "BrickLink-Händler",
     acquiredOn: "2025-03-14",
     purchasePrice: 2500,
@@ -118,7 +118,7 @@ const minifigs: Minifig[] = [
     figure({
       id: `minifig-trooper-${copy}`,
       name: "Clone Trooper Phase II",
-      catalogNumber: "sw0631",
+      bricklinkId: "sw0631",
       source: copy < 3 ? "LEGO Store Köln" : "Kleinanzeigen",
       acquiredOn: copy < 3 ? "2025-01-18" : "2026-10-02",
       fromSet:
@@ -132,7 +132,7 @@ const minifigs: Minifig[] = [
   figure({
     id: "minifig-fives",
     name: "ARC Trooper Fives",
-    catalogNumber: "sw0542",
+    bricklinkId: "sw0542",
     source: "Kleinanzeigen",
     acquiredOn: "2026-09-30",
     purchasePrice: 1800,
@@ -221,13 +221,13 @@ const minifigs: Minifig[] = [
 /** Weekly price points, oldest first; the last run was on Tuesday 27.10.2026. */
 function weekly(
   itemType: PricePoint["itemType"],
-  catalogNumber: string,
+  bricklinkId: string,
   steps: PricePoint["cents"][],
 ): PricePoint[] {
   const last = Date.UTC(2026, 9, 27);
   return steps.map((cents, index) => ({
     itemType,
-    catalogNumber,
+    bricklinkId,
     date: new Date(last - (steps.length - 1 - index) * 7 * 86_400_000).toISOString().slice(0, 10),
     source: "bricklink",
     cents,
@@ -267,7 +267,7 @@ export const DEMO_COLLECTION: Collection = {
       type: "legoSet",
       id: "set-75372",
       name: "Clone Trooper & Battle Droid Battle Pack",
-      catalogNumber: "75372-1",
+      setNumber: "75372-1",
       manufacturer: lego,
       theme: "Star Wars",
       year: 2024,
@@ -279,8 +279,8 @@ export const DEMO_COLLECTION: Collection = {
       acquiredOn: "2025-01-18",
       purchasePrice: 1999,
       containedFigures: [
-        { name: "Clone Trooper", catalogNumber: "sw0631", quantity: 2 },
-        { name: "Battle Droid", catalogNumber: "sw0001", quantity: 2 },
+        { name: "Clone Trooper", bricklinkId: "sw0631", quantity: 2 },
+        { name: "Battle Droid", bricklinkId: "sw0001", quantity: 2 },
       ],
       photos: [],
       links: [],
@@ -311,7 +311,7 @@ export const DEMO_COLLECTION: Collection = {
       id: "wish-cody",
       type: "minifig",
       name: "Commander Cody",
-      catalogNumber: "sw0196",
+      bricklinkId: "sw0196",
       manufacturer: lego,
       theme: CLONE_WARS,
       priority: "medium",
@@ -324,7 +324,7 @@ export const DEMO_COLLECTION: Collection = {
       id: "wish-ahsoka",
       type: "minifig",
       name: "Ahsoka Tano",
-      catalogNumber: "sw0219",
+      bricklinkId: "sw0219",
       manufacturer: lego,
       theme: CLONE_WARS,
       priority: "high",
@@ -337,7 +337,7 @@ export const DEMO_COLLECTION: Collection = {
       id: "wish-gunship",
       type: "legoSet",
       name: "Republic Gunship",
-      catalogNumber: "75021-1",
+      setNumber: "75021-1",
       manufacturer: lego,
       theme: "Star Wars",
       priority: "medium",
@@ -350,7 +350,7 @@ export const DEMO_COLLECTION: Collection = {
       id: "wish-battle-droid",
       type: "minifig",
       name: "Battle Droid",
-      catalogNumber: "sw0001",
+      bricklinkId: "sw0001",
       manufacturer: lego,
       theme: CLONE_WARS,
       priority: "low",
@@ -368,12 +368,12 @@ export const DEMO_COLLECTION: Collection = {
 export const DEMO_SERIES: { name: string; figures: CatalogFigure[] } = {
   name: CLONE_WARS,
   figures: [
-    { name: "Captain Rex", catalogNumber: "sw0194" },
-    { name: "Clone Trooper Phase II", catalogNumber: "sw0631" },
-    { name: "ARC Trooper Fives", catalogNumber: "sw0542" },
-    { name: "Commander Cody", catalogNumber: "sw0196" },
-    { name: "Ahsoka Tano", catalogNumber: "sw0219" },
-    { name: "Battle Droid", catalogNumber: "sw0001" },
+    { name: "Captain Rex", bricklinkId: "sw0194" },
+    { name: "Clone Trooper Phase II", bricklinkId: "sw0631" },
+    { name: "ARC Trooper Fives", bricklinkId: "sw0542" },
+    { name: "Commander Cody", bricklinkId: "sw0196" },
+    { name: "Ahsoka Tano", bricklinkId: "sw0219" },
+    { name: "Battle Droid", bricklinkId: "sw0001" },
     { name: "Plo Koon" },
     { name: "Asajj Ventress" },
   ],
