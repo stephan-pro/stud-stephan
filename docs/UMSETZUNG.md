@@ -44,25 +44,25 @@ pg_cron (wöchentlich) ──► Edge Function „prices“ ──► BrickLink 
 
 ## 4. Arbeitspakete (Übersicht)
 
-| Paket | Inhalt | Modell | Status |
-|---|---|---|---|
-| P1 | Grundgerüst, Prüfungen, Design-Tokens, Navigation | Opus | offen |
-| P2 | Datenquellen prüfen (Spike) | Sonnet | offen |
-| P3 | Datenmodell und Fachlogik | Opus | offen |
-| P4a | Supabase: Tabellen, Regeln, Dateispeicher, Fake-Server | Opus | offen |
-| P4b | Anmeldung per Code (nur Stephan) | Opus | offen |
-| P4c | Fotos und Studio-Dateien hochladen | Sonnet | offen |
-| P5 | Vitrine, Filter, Detailseiten | Sonnet | offen |
-| P6 | Manuell erfassen, bearbeiten, löschen, Mods | Sonnet | offen |
-| P7 | Katalogsuche (Rebrickable) | Sonnet | offen |
-| P8 | Fotoerkennung (Brickognize) | Sonnet | offen |
-| P9 | Erfassen per Link (Merlins Steine, Rebrickable, andere) | Sonnet | offen |
-| P10 | Dioramen | Sonnet | offen |
-| P11 | Marktwerte und Wertentwicklung (BrickLink) | Opus | offen |
-| P12 | Wunschliste und Reihen | Sonnet | offen |
-| P13 | Dashboard | Sonnet | offen |
-| P14 | Einstellungen und Datensicherung | Sonnet | offen |
-| P15 | PWA, PC-Feinschliff, Gerätetest, Version 1.0 | Opus | offen |
+| Paket | Inhalt | Modell | Effort | Status |
+|---|---|---|---|---|
+| P1 | Grundgerüst, Prüfungen, Design-Tokens, Navigation | Opus | High | offen |
+| P2 | Datenquellen prüfen (Spike) | Sonnet | Medium | offen |
+| P3 | Datenmodell und Fachlogik | Opus | High | offen |
+| P4a | Supabase: Tabellen, Regeln, Dateispeicher, Fake-Server | Opus | High | offen |
+| P4b | Anmeldung per Code (nur Stephan) | Opus | High | offen |
+| P4c | Fotos und Studio-Dateien hochladen | Sonnet | Medium | offen |
+| P5 | Vitrine, Filter, Detailseiten | Sonnet | Medium | offen |
+| P6 | Manuell erfassen, bearbeiten, löschen, Mods | Sonnet | Medium | offen |
+| P7 | Katalogsuche (Rebrickable) | Sonnet | Medium | offen |
+| P8 | Fotoerkennung (Brickognize) | Sonnet | Medium | offen |
+| P9 | Erfassen per Link (Merlins Steine, Rebrickable, andere) | Sonnet | Medium | offen |
+| P10 | Dioramen | Sonnet | Medium | offen |
+| P11 | Marktwerte und Wertentwicklung (BrickLink) | Opus | High | offen |
+| P12 | Wunschliste und Reihen | Sonnet | Medium | offen |
+| P13 | Dashboard | Sonnet | Medium | offen |
+| P14 | Einstellungen und Datensicherung | Sonnet | Medium | offen |
+| P15 | PWA, PC-Feinschliff, Gerätetest, Version 1.0 | Opus | High | offen |
 
 Reihenfolge: strikt von oben nach unten. P2 darf vor P1 fertig werden, braucht aber dessen Gerüst. Fällt in P2 BrickLink weg, schrumpft P11 auf „Wert von Hand“ (siehe P11).
 

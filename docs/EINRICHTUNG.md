@@ -143,7 +143,7 @@ Die Pakete stehen in `docs/UMSETZUNG.md` (Tabelle in Abschnitt 4). Immer eins na
 
 1. Claude-Desktop-App → **Code** → Ordner `stud-stephan`.
 2. **Neue Sitzung** starten (für jedes Paket eine eigene; das spart Tokens).
-3. Das Modell aus der Spalte „Modell“ wählen (Opus oder Sonnet).
+3. Modell und Effort aus den Spalten „Modell“ und „Effort“ wählen (z. B. Opus mit High für P1). Ein neues Projekt musst du in Claude Code nicht anlegen: Der Ordner ist das Projekt.
 4. Eintippen und Enter:
    ```
    /paket P1
