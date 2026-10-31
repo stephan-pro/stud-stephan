@@ -139,6 +139,7 @@ Tickets are written in English. Every acceptance criterion is at least one test,
 **Goal:** A secure backend that only Stephan can read and write, testable without internet.
 
 **Scope**
+- The project exists since 31.10.2026: name `stud-stephan`, ref `ohuqwiypmoqyuxsgouxw`, URL `https://ohuqwiypmoqyuxsgouxw.supabase.co` (public), region North EU (Stockholm, `eu-north-1`), Free plan, no GitHub connection in Supabase.
 - Project settings chosen by the PO at creation (31.10.2026): Data API on, “Automatically expose new tables” **off**, “Enable automatic RLS” **on**. Migrations therefore grant table/function privileges explicitly (only what the app needs, only to `authenticated`), and RLS is enabled explicitly anyway.
 - `supabase/` with `config.toml`, migrations for all P3 types (one table per object type, plus `price_points`, `studio_files`, `photos`), RLS on every table (`owner = auth.uid()`), private storage buckets `photos` and `studio-files` with owner-only policies, limits per row/file size.
 - `Remote` interface in `src/backend/`, `SupabaseRemote`, `FakeRemote` + HTTP fake server for E2E (pattern from Krümel), one shared contract test suite for both.
