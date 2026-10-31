@@ -127,8 +127,8 @@ Supabase ist die Datenbank mit Anmeldung und Dateispeicher, wie bei Krümel.
 3. **Organization:** deine Organisation (dieselbe wie bei Krümel).
 4. **Project name:** `stud-stephan`
 5. **Database Password:** auf **Generate a password** klicken. Du brauchst es nur einmal in P4a beim Befehl `npx supabase link`. Supabase zeigt es danach nicht wieder an; geht es verloren, setzt du es im Dashboard neu (Project Settings → Database → **Reset database password**).
-6. **Region:** eine Region in der EU wählen, z. B. Frankfurt.
-7. **Plan:** Free.
+6. **Region:** `Europe` (oder, falls die Liste es anbietet, Frankfurt).
+7. **Security:** **Enable Data API** an lassen · **Automatically expose new tables** ausschalten · **Enable automatic RLS** einschalten. (Einen Plan wählst du hier nicht; das Projekt übernimmt den kostenlosen Tarif deiner Organisation.)
 8. **Create new project** klicken und warten, bis das Projekt bereit ist (ein paar Minuten).
 
 Gut zu wissen: Krümel und Stud Stephan belegen damit deine zwei kostenlosen Projekte. Ein drittes kostenloses Projekt ginge erst, wenn eins pausiert ist.
