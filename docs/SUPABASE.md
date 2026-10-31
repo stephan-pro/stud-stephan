@@ -39,7 +39,7 @@ npx supabase db push
 
 | Migration | Inhalt | Im echten Projekt |
 |---|---|---|
-| `20261031120000_collection.sql` (P4a) | Tabellen, Zeilenschutz, Funktionen, Dateiablagen `photos` und `studio-files`, `ping` | spielt der PO ein |
+| `20261031120000_collection.sql` (P4a) | Tabellen, Zeilenschutz, Funktionen, Dateiablagen `photos` und `studio-files`, `ping` | eingespielt (31.10.2026); Security Advisor vom PO geprüft, Zugriff ohne Anmeldung von außen gesperrt (nur `ping`) |
 
 ## Kostenloser Tarif: Grenzen
 
