@@ -17,6 +17,9 @@ Grundlage: `docs/ANFORDERUNGEN.md` (v1.0), `docs/STRUKTUR.md` (v1.0), `docs/desi
 | Repository | https://github.com/stephan-pro/stud-stephan, öffentlich, Lizenz EUPL-1.2 | Entscheidung des PO (31.10.2026) |
 | Sprache | Nur Deutsch (keine Übersetzungs-Schicht) | N3; spart Aufwand gegenüber Krümel |
 | Geld | Immer ganze Cent als Zahl (`1250` = 12,50 €) | Keine Rundungsfehler |
+| Kennung offizieller Figuren | **BrickLink-Nummer** (`sw0194`); Sets über die Setnummer (`75372-1`, bei Rebrickable und BrickLink gleich) | Ergebnis P2: Rebrickable kennt die BrickLink-Nummern nicht, Brickognize und der Preisguide sprechen BrickLink. Eine Nummer für Erkennung, Katalog und Preis |
+| Katalog | **BrickLink-Katalog** (Figur/Set-Details, Figuren eines Sets, Sets einer Figur) über die Edge Function `bricklink`; **Rebrickable** nur für Namenssuche bei Sets und für Themen | BrickLink liefert die passenden Nummern; dieselben Zugangsdaten wie für Preise |
+| Reihen (F13) | Sets eines Themas aus Rebrickable → Figuren je Set aus dem BrickLink-Katalog → alle Figuren der Reihe mit BrickLink-Nummer, zwischengespeichert | Verbindet beide Kataloge über die gemeinsame Setnummer |
 
 **Konsequenz Free Plan:** Krümel und Stud Stephan belegen zusammen die zwei kostenlosen Supabase-Projekte. Ein Projekt pausiert nach 7 Tagen ohne Nutzung; der Workflow `keepalive.yml` (wie bei Krümel) verhindert das.
 
@@ -29,9 +32,9 @@ Handy / PC (Browser, PWA)
    ├──► Supabase: Dateispeicher (Fotos, Studio-Dateien; privat)
    └──► Supabase Edge Functions ──► Rebrickable (Katalog)
                                  ├─► Brickognize (Fotoerkennung)
-                                 ├─► BrickLink (Marktwerte)
+                                 ├─► BrickLink (Katalog mit BrickLink-Nummern, Marktwerte)
                                  └─► Merlins Steine / andere Seiten (Link-Vorschau)
-pg_cron (wöchentlich) ──► Edge Function „prices“ ──► BrickLink ──► Preisstände in der Datenbank
+pg_cron (wöchentlich) ──► Edge Function „bricklink“ ──► BrickLink ──► Preisstände in der Datenbank
 ```
 
 ## 3. Ablauf pro Arbeitspaket
@@ -54,7 +57,7 @@ pg_cron (wöchentlich) ──► Edge Function „prices“ ──► BrickLink 
 | P4c | Fotos und Studio-Dateien hochladen | Sonnet | Medium | offen |
 | P5 | Vitrine, Filter, Detailseiten | Sonnet | Medium | offen |
 | P6 | Manuell erfassen, bearbeiten, löschen, Mods | Sonnet | Medium | offen |
-| P7 | Katalogsuche (Rebrickable) | Sonnet | Medium | offen |
+| P7 | Katalog (BrickLink-Nummern, Rebrickable-Suche) | Sonnet | Medium | offen |
 | P8 | Fotoerkennung (Brickognize) | Sonnet | Medium | offen |
 | P9 | Erfassen per Link (Merlins Steine, Rebrickable, andere) | Sonnet | Medium | offen |
 | P10 | Dioramen | Sonnet | Medium | offen |
@@ -117,7 +120,7 @@ Tickets are written in English. Every acceptance criterion is at least one test,
 **Goal:** All business rules as pure, fully tested functions.
 
 **Scope** (`src/domain/`, no DOM, no storage, “today” as parameter)
-- Types: `Minifig`, `ModPart`, `LegoSet` (status `complete | figuresRemoved | disassembled`), `Diorama`, `StudioFile`, `SpecialPart`, `WishItem` (priority `high | medium | low`, `targetPrice`), `PricePoint` (new/used, date, source), `Manufacturer`, `Condition` (`new | used`); money as integer cents; `schemaVersion`.
+- Types: `Minifig`, `ModPart`, `LegoSet` (status `complete | figuresRemoved | disassembled`), `Diorama`, `StudioFile`, `SpecialPart`, `WishItem` (priority `high | medium | low`, `targetPrice`), `PricePoint` (new/used, date, source), `Manufacturer`, `Condition` (`new | used`); money as integer cents; `schemaVersion`. Official minifigs, wish items and price points are keyed by the **BrickLink number** (`bricklinkId`, e.g. `sw0194`), sets by set number (`75372-1`); customs and other manufacturers have no catalog id (see section 1 and `docs/DATENQUELLEN.md`).
 - `valueOf(item, prices)`: F10 rules incl. modified figures (= original market value in its condition) and manual values; `ownValueMissing` flag.
 - `totals(collection)`: total value, purchase sum, difference, mod spend, items without value, counts per type and theme.
 - `groupCopies(minifigs)`: F5 grouping for the showcase (`×3`).
@@ -200,17 +203,17 @@ Tickets are written in English. Every acceptance criterion is at least one test,
 
 **Goal:** Official LEGO items fill themselves in.
 
-**Scope:** Edge Function `catalog` (Rebrickable key as secret; search by number and name; minifig details incl. sets it appears in; set details incl. minifigs); caching in the database for 30 days; S7b search with live results; prefill S8; set → contained figures (F7).
+**Scope:** Edge Function `bricklink` (BrickLink OAuth keys as secrets; catalog item by number for minifigs and sets incl. image, year, category; set → contained minifigs via subsets; minifig → sets via supersets; later reused by P11 for prices) and Edge Function `catalog` (Rebrickable key as secret; name search for sets; themes for P12; name search for minifigs returns Rebrickable figures, which are resolved to a BrickLink number through one of their sets’ subsets and confirmed by the PO). Caching in the database for 30 days; S7b search with live results; prefill S8; set → contained figures (F7). Optional: German retail price (UVP) of a set if a source offers it.
 
 **Done when:** F2 works for minifigs and sets; function tests with recorded responses; E2E against the fake; rate limit respected.
 
-**PO steps:** `npx supabase secrets set REBRICKABLE_API_KEY=…` in his own terminal, `npx supabase functions deploy catalog`.
+**PO steps:** set the Rebrickable key and the four BrickLink values as Supabase secrets in his own terminal and deploy both functions (exact commands in the report).
 
 ### P8 – Photo recognition (Brickognize)
 
 **Goal:** Photo in, suggestions out.
 
-**Scope:** Edge Function `recognize` (forwards the resized photo, returns top 5 with confidence, maps BrickLink ids to Rebrickable via P7), S7a with camera/file picker, suggestions, “Keiner passt”, error state; own photo is kept for the new item.
+**Scope:** Edge Function `recognize` (forwards the resized photo, returns up to 5 suggestions with confidence – P2 saw only one, so 1–5 must work; the BrickLink id is used directly with the `bricklink` catalog from P7), S7a with camera/file picker, suggestions, “Keiner passt”, error state; own photo is kept for the new item.
 
 **Done when:** both F1 acceptance criteria are tests (with recorded responses); PO confirms with three real figures on the Redmi.
 
@@ -234,19 +237,19 @@ Tickets are written in English. Every acceptance criterion is at least one test,
 
 **Goal:** Up-to-date values without manual work.
 
-**Scope:** Edge Function `prices` (BrickLink OAuth 1.0 keys as secrets; price guide sold/6 months, new and used, EUR; respects 5,000 calls/day), table `price_points`, weekly `pg_cron` job (Monday 03:00), failure handling (never overwrite, “Stand vom …”), value card with sparkline on S2/S3/S4, run status in S12 (last run, result, next run).
+**Scope:** Prices via the Edge Function `bricklink` from P7 (BrickLink OAuth 1.0 keys as secrets; price guide sold/6 months, new and used, EUR; respects 5,000 calls/day), table `price_points`, weekly `pg_cron` job (Monday 03:00), failure handling (never overwrite, “Stand vom …”), value card with sparkline on S2/S3/S4, run status in S12 (last run, result, next run).
 
 **Fallback if P2 said no-go:** no BrickLink function; value = purchase price or manual estimate everywhere; settings say “Marktwerte nicht verbunden”.
 
 **Done when:** all F10 acceptance criteria are tests; one real weekly run has written prices (PO checks in S12).
 
-**PO steps:** set BrickLink secrets, deploy function, enable the cron job (exact SQL in the report).
+**PO steps:** redeploy the `bricklink` function, enable the cron job (exact SQL in the report). Secrets are already set since P7.
 
 ### P12 – Wishlist and series
 
 **Goal:** Know what is missing and what to buy next.
 
-**Scope:** S9 (target reached section on top, priority, sorting), S9a edit sheet incl. “Erhalten” → prefilled S8, S10 series search (Rebrickable themes) and “Meine Reihen”, S10a series detail with present/missing/wished.
+**Scope:** S9 (target reached section on top, priority, sorting), S9a edit sheet incl. “Erhalten” → prefilled S8, S10 series search (Rebrickable themes) and “Meine Reihen”, series figures built as described in section 1 (sets of the theme → BrickLink subsets, cached; one BrickLink call per set, within the daily limit), S10a series detail with present/missing/wished.
 
 **Done when:** F13 and both F14 acceptance criteria are tests; E2E with axe.
 
