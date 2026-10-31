@@ -1,0 +1,65 @@
+/* Design tokens from docs/design/DESIGN.md (style F "Steinkasten-Mix"). Components use only these
+   variables; tokens.test.ts checks the colours against DESIGN.md and every colour pair in use for
+   contrast. Light only: DESIGN.md has no dark scheme. */
+:root {
+  /* Colours (DESIGN.md section 2) */
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --ink: #14213d;
+  --ink-muted: #4a5470;
+  --nav: #111111;
+  --accent: #ffc93c;
+  --pop: #f59ad6;
+  --tint-blue: #9dc3f0;
+  --tint-pink: #f59ad6;
+  --tint-mint: #b5e5cc;
+  --tint-sand: #f2ddb8;
+  --tint-lilac: #d9ccf7;
+  --positive: #11552b;
+  --danger: #a3261c;
+  --scrim: rgba(20, 33, 61, 0.45);
+  /* Text and symbols on dark areas (DESIGN.md: "Text auf --nav ist Weiß"), the scribbles. */
+  --on-nav: #ffffff;
+  --on-ink: #ffffff;
+  --scribble: #ffffff;
+  /* Focus ring: ink on light areas, white on the navigation. */
+  --focus: #14213d;
+  --focus-on-nav: #ffffff;
+
+  /* Fonts (section 3), self-hosted via @fontsource */
+  --font-body: "Rubik Variable", system-ui, sans-serif;
+  --font-hand: "Mali", cursive;
+
+  /* Shape (section 4) */
+  --border: 2px;
+  --radius-card: 22px;
+  --radius-sheet: 28px;
+  --radius-input: 14px;
+  --radius-pill: 999px;
+  --radius-sidebar: 28px;
+
+  /* Spacing (section 4) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --page-gutter: 18px;
+  --card-gap: 12px;
+  --touch: 44px;
+  --icon-button: 50px;
+  --button-height: 52px;
+
+  /* Navigation (section 7) */
+  --nav-inset: 16px;
+  --nav-height: 68px;
+  --nav-item-height: 48px;
+  --nav-clearance: 110px;
+  --sidebar-width: 240px;
+  --stud: 8px;
+
+  /* Motion (section 8) */
+  --press-scale: 0.97;
+  --press-duration: 120ms;
+}

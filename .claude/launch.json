@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "demo",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "--mode", "demo", "--port", "5190", "--strictPort"],
+      "port": 5190,
+      "url": "http://localhost:5190"
+    }
+  ]
+}

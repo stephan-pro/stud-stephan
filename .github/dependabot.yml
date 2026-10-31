@@ -1,0 +1,30 @@
+# Weekly update proposals. Dependabot only opens pull requests; nothing is merged by itself
+# (no auto-merge). Patch and minor updates arrive in one pull request per area, every major update
+# in its own, so a risky jump is looked at alone.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "Abhängigkeiten (npm)"
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
+  # The GitHub Actions in .github/workflows are pinned by commit hash with the version as a plain
+  # comment (`# v7`); Dependabot updates the hash and rewrites that comment. Keep the comment as
+  # nothing but the version.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "Abhängigkeiten (Actions)"
+    groups:
+      actions-minor-patch:
+        update-types: [minor, patch]

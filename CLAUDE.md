@@ -6,9 +6,9 @@ Doku: Anforderungen `docs/ANFORDERUNGEN.md` · Screens und Abläufe `docs/STRUKT
 
 ## Stand
 
-Noch kein Code. Paket P1 legt das Gerüst an und ergänzt danach die Abschnitte „Befehle“ und „Aufbau“ hier.
+P1: Gerüst mit Navigation und leeren Seiten. Fortschritt: Tabelle in `docs/UMSETZUNG.md`, Abschnitt 4.
 
-## Befehle (Soll, ab P1)
+## Befehle
 
 - **Nach Änderungen `npm run check` ausführen und nur die Kurzausgabe lesen** (Erfolg = eine Zeile; Fehler = nur Datei, Zeile, Meldung). Berichte und Traces bleiben auf der Platte.
 - `npm run check` – Biome → tsc → Vitest mit Abdeckung → Build → Playwright (chromium-desktop). Schreibt nichts um. Muss grün sein; läuft bei jedem Push in CI.
@@ -17,6 +17,16 @@ Noch kein Code. Paket P1 legt das Gerüst an und ergänzt danach die Abschnitte 
 - `npm run dev` · `npm run demo` (Beispieldaten aus `src/demo/`) · `npm run setup` (Pakete + Playwright-Browser).
 - `npm run check:db` – ab P4a, nur in CI (der PO hat kein Docker).
 - `/paket <Kennung> [Hinweise]` – setzt ein Arbeitspaket aus `docs/UMSETZUNG.md` um (Skill `.claude/skills/paket/SKILL.md`).
+- Vorschau im Browser-Fenster: `.claude/launch.json` → `demo` (Port 5190), dann `http://localhost:5190/stud-stephan/` öffnen.
+
+## Aufbau
+
+- `src/main.tsx` lädt Schriften, `src/ui/tokens.css` (alle Design-Werte) und `src/ui/app.css`, zeichnet `src/ui/App.tsx`.
+- `src/ui/route.ts` – Hash-Router (`#/vitrine` …), reine Funktionen. `src/ui/texts.ts` – alle Texte.
+- `src/ui/components/` – `Navigation` (Handy-Leiste und PC-Seitenleiste), `PageHeader` (die eine `h1`, bekommt nach Seitenwechsel den Fokus), `Icon` (SVG-Pfade aus dem Dummy).
+- Tests: `*.test.ts` neben dem Code; `tokens.test.ts` prüft Tokens gegen DESIGN.md und Kontraste, `designRules.test.ts` verbietet feste Farben, Radien und Abstände außerhalb von `tokens.css`. E2E in `tests/e2e/` (`helpers.ts`: Größen `PHONE`/`PC`, `expectNoAccessibilityViolations`).
+- `scripts/check.mjs` (Kurzausgabe), `scripts/short-reporter.mjs`, `scripts/scan-secrets.mjs` (Pre-Commit-Hook `.githooks/`).
+- Workflows: `check` (jeder Push), `pages` (nach grünem `check` auf `main`), `check-full` (nachts, von Hand).
 
 ## Regeln
 

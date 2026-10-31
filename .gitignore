@@ -1,4 +1,15 @@
 node_modules/
 dist/
-.env.local
-.env.*.local
+coverage/
+playwright-report/
+test-results/
+*.log
+# Local keys and settings; never in the repository (see .env.example).
+.env
+.env.*
+!.env.example
+# Working files of the Supabase CLI (from P4a).
+supabase/.temp/
+supabase/.branches/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,373 @@
+/* Layout and components of the shell. Colours, radii and spacing only via tokens.css (checked by
+   designRules.test.ts); sizes of fonts and symbols as in docs/design/DESIGN.md. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+a {
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Headings get the focus from the app after a page change; they are no controls, so no ring. */
+[tabindex="-1"]:focus {
+  outline: none;
+}
+
+/* Taps press in briefly (DESIGN.md section 8). */
+.pressable {
+  transition: transform var(--press-duration) ease-out;
+}
+
+.pressable:active {
+  transform: scale(var(--press-scale));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pressable {
+    transition: none;
+  }
+
+  .pressable:active {
+    transform: none;
+  }
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--space-4);
+  top: calc(-1 * var(--nav-clearance));
+  z-index: 10;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: var(--border) solid var(--ink);
+  border-radius: var(--radius-pill);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+}
+
+.skip-link:focus {
+  top: var(--space-4);
+}
+
+/* Page */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--page-gutter) var(--nav-clearance);
+}
+
+/* The settings have no bottom bar on the phone. */
+.page--settings {
+  padding-bottom: var(--space-6);
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: var(--icon-button);
+}
+
+.page-title {
+  margin: 0;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 1.1;
+}
+
+.page-title--small {
+  font-size: 20px;
+  text-align: center;
+}
+
+.greeting {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.greeting__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.greeting__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.studs {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.stud {
+  width: var(--stud);
+  height: var(--stud);
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+}
+
+.avatar {
+  width: var(--icon-button);
+  height: var(--icon-button);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--border) solid var(--ink);
+  border-radius: var(--radius-pill);
+  background: var(--pop);
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.icon-button {
+  width: var(--icon-button);
+  height: var(--icon-button);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--border) solid var(--ink);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.header-spacer {
+  width: var(--icon-button);
+  flex-shrink: 0;
+}
+
+/* Card */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background: var(--surface);
+  border: var(--border) solid var(--ink);
+  border-radius: var(--radius-card);
+}
+
+.card__title {
+  margin: 0;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 22px;
+}
+
+.card__text {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+/* Phone: floating bar at the bottom (DESIGN.md section 7) */
+
+.tabbar {
+  position: fixed;
+  left: var(--nav-inset);
+  right: var(--nav-inset);
+  bottom: calc(var(--nav-inset) + env(safe-area-inset-bottom));
+  z-index: 5;
+  height: var(--nav-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 var(--space-2);
+  background: var(--nav);
+  border-radius: var(--radius-pill);
+}
+
+.tabbar :focus-visible {
+  outline-color: var(--focus-on-nav);
+}
+
+.tabbar__item {
+  width: var(--touch);
+  height: var(--touch);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-pill);
+  color: var(--on-nav);
+  text-decoration: none;
+}
+
+.tabbar__item--active {
+  width: auto;
+  height: var(--nav-item-height);
+  padding: 0 var(--space-3);
+  background: var(--on-nav);
+  color: var(--nav);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.tabbar__plus {
+  width: var(--icon-button);
+  height: var(--icon-button);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  background: var(--pop);
+  color: var(--nav);
+}
+
+/* PC: sidebar on the left (DESIGN.md section 7), hidden on the phone */
+
+.sidebar {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .shell {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-6);
+    padding: var(--nav-inset);
+  }
+
+  .sidebar {
+    position: sticky;
+    top: var(--nav-inset);
+    width: var(--sidebar-width);
+    flex-shrink: 0;
+    min-height: calc(100vh - 2 * var(--nav-inset));
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-5) var(--space-3);
+    background: var(--nav);
+    border-radius: var(--radius-sidebar);
+  }
+
+  .sidebar :focus-visible {
+    outline-color: var(--focus-on-nav);
+  }
+
+  .tabbar,
+  .avatar--header,
+  .back-button,
+  .header-spacer {
+    display: none;
+  }
+
+  .page,
+  .page--settings {
+    flex: 1;
+    min-width: 0;
+    padding: var(--space-2) var(--space-2) var(--space-6) 0;
+  }
+
+  .page-title--small {
+    font-size: 30px;
+    text-align: left;
+  }
+
+  .greeting__title {
+    font-size: 18px;
+  }
+}
+
+.sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-2) var(--space-3);
+}
+
+.sidebar__avatar {
+  width: var(--touch);
+  height: var(--touch);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  background: var(--pop);
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.sidebar__name {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--on-nav);
+}
+
+.sidebar__capture {
+  height: var(--button-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--pop);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.sidebar__item {
+  height: var(--nav-item-height);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  color: var(--on-nav);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.sidebar__item--active {
+  background: var(--on-nav);
+  color: var(--nav);
+  font-weight: 800;
+}
+
+.sidebar__item--bottom {
+  margin-top: auto;
+}

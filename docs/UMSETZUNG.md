@@ -289,3 +289,16 @@ Tickets are written in English. Every acceptance criterion is at least one test,
 - 31.10.2026: Repository öffentlich, Lizenz EUPL-1.2.
 - 31.10.2026: Keine Serienerfassung in Version 1.
 - 31.10.2026: Stil F „Steinkasten-Mix“, Klick-Dummy abgenommen.
+
+## 8. Abhängigkeiten
+
+| Paket | Art | Wofür / warum |
+|---|---|---|
+| `preact` | App | Oberfläche (Leitentscheidung, wie Krümel) |
+| `@fontsource-variable/rubik`, `@fontsource/mali` | App | Schriften selbst gehostet, keine Anfrage an Google Fonts (DESIGN.md 3) |
+| `vite`, `typescript` | Entwicklung | Build und Typprüfung (Leitentscheidung) |
+| `@biomejs/biome` | Entwicklung | Formatierung und Linting in einem Werkzeug |
+| `vitest`, `@vitest/coverage-v8` | Entwicklung | Unit-Tests mit Abdeckung |
+| `@playwright/test`, `@axe-core/playwright` | Entwicklung | Abläufe im Browser, Barrierefreiheit |
+
+Symbole sind eigene SVG-Pfade aus dem Klick-Dummy (keine Symbol-Bibliothek).
