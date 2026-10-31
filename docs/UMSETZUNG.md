@@ -189,7 +189,7 @@ Tickets are written in English. Every acceptance criterion is at least one test,
 
 **Goal:** Browse the collection exactly as in the dummy.
 
-**Scope:** S1 (collection card, chips, sort, filter button, grid with markers `×3`, `Mod`, `Kein Diorama`, grouped copies), S1a filter sheet, S2 minifig detail, S3 set detail (contained figures with owned/missing), S4 special part detail, loading placeholders, empty state, offline banner. PC layout with 5–6 columns.
+**Scope:** S1 (collection card, chips, sort, filter button, grid with markers `×3`, `Mod`, `Kein Diorama`, grouped copies), S1a filter sheet (themes in two levels: main theme with its subthemes, both selectable – PO decision 31.10.2026), S2 minifig detail, S3 set detail (contained figures with owned/missing), S4 special part detail, loading placeholders, empty state, offline banner. PC layout with 5–6 columns.
 
 **Done when:** F5 (grouping), F11 and the detail content of F5/F7/F9 work against fake and real data; E2E with axe on every page and the filter sheet; phone (390 × 844) and PC screenshots match the dummy closely.
 
@@ -259,7 +259,7 @@ Tickets are written in English. Every acceptance criterion is at least one test,
 
 **Goal:** All numbers in one place.
 
-**Scope:** S11 with period switch, total value chart (SVG, `role="img"` with full text description), tiles, counts per type, themes, top 10, “ohne Diorama” link, price date footer.
+**Scope:** S11 with period switch, total value chart (SVG, `role="img"` with full text description), tiles, counts per type, distribution by **subtheme** (PO decision 31.10.2026), top 10, “ohne Diorama” link, price date footer.
 
 **Done when:** F12 complete; chart description matches the data (unit test); E2E with axe.
 
@@ -302,6 +302,7 @@ Tickets are written in English. Every acceptance criterion is at least one test,
   - Gleiche Figur (Kachel „×3“) = gleicher Hersteller und gleiche Nummer, ohne Nummer gleicher Name. Zustand und Mods trennen die Kachel nicht.
   - Die Filter „Modifiziert ja/nein“ und „ohne Diorama“ zeigen nur Figuren. Thema-Filter und Dashboard nutzen das Hauptthema („Star Wars“ statt „Star Wars – The Clone Wars“).
   - Reihen: Eine vorhandene Figur bleibt „vorhanden“, auch wenn ein weiteres Exemplar auf der Wunschliste steht.
+- 31.10.2026 (PO, ersetzt den Punkt „Thema-Filter und Dashboard nutzen das Hauptthema“ aus P3): **Themen zweistufig.** Der Filter der Vitrine zeigt Hauptthemen mit ihren Unterthemen darunter (z. B. Star Wars → The Clone Wars, The Mandalorian); wählbar ist beides. Das Dashboard „Nach Thema“ zeigt die Verteilung nach **Unterthema**. Umsetzung: Fachlogik bei Bedarf in P5 anpassen (Filter) bzw. in P13 (Dashboard).
 
 ## 8. Abhängigkeiten
 
