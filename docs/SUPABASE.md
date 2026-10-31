@@ -47,6 +47,8 @@ Soll-Einstellungen im Dashboard (Adressen beginnen mit `https://supabase.com/das
 | `…/auth/templates` | „Magic Link“ und „Confirm signup“: Betreff „Dein Anmeldecode für Stud Stephan“, Text aus `supabase/templates/code.html` (mit `{{ .Token }}`, ohne Link) |
 | `…/auth/users` | genau ein Konto: Stephans Adresse |
 
+Eingerichtet und vom PO geprüft am 01.11.2026: Anmeldung am PC und am Handy, eine unbekannte Adresse bekommt keine Mail und kein Konto, Security Advisor ohne Fehler.
+
 ## Datenbank ändern
 
 Jede Änderung ist eine neue Datei in `supabase/migrations/` (nie eine eingespielte ändern). In CI prüft `npm run check:db` sie gegen eine frische lokale Instanz. Ins echte Projekt spielt sie der PO im eigenen Terminal ein (PowerShell im Ordner `stud-stephan`):

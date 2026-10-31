@@ -53,7 +53,7 @@ pg_cron (wöchentlich) ──► Edge Function „bricklink“ ──► BrickLi
 | P2 | Datenquellen prüfen (Spike) | Sonnet | Medium | ✅ 31.10.2026 |
 | P3 | Datenmodell und Fachlogik | Opus | High | ✅ 31.10.2026 |
 | P4a | Supabase: Tabellen, Regeln, Dateispeicher, Fake-Server | Opus | High | ✅ 31.10.2026 |
-| P4b | Anmeldung per Code (nur Stephan) | Opus | High | umgesetzt 31.10.2026, PO-Schritte offen |
+| P4b | Anmeldung per Code (nur Stephan) | Opus | High | ✅ 01.11.2026 |
 | P4c | Fotos und Studio-Dateien hochladen | Sonnet | Medium | offen |
 | P5 | Vitrine, Filter, Detailseiten | Sonnet | Medium | offen |
 | P6 | Manuell erfassen, bearbeiten, löschen, Mods | Sonnet | Medium | offen |
