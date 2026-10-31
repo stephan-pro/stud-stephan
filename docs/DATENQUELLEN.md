@@ -26,7 +26,7 @@ Browser-Zugriff (CORS): erlaubt bei Rebrickable und Brickognize, **nicht** erlau
 
 - Adresse: `POST https://api.brickognize.com/predict/figs/`, Foto als Formularfeld `query_image`, kein Schlüssel.
 - Antwort: `items[]` mit `id` (BrickLink-Nummer, hier `coltlbm28`), `name`, `img_url`, `score` (0–1), `external_sites` (`bricklink`).
-- Lauf mit einem Foto von 2,2 MB: **ein** Vorschlag mit 78 %, nicht drei. P8 darf also nicht von drei Vorschlägen ausgehen und muss mit weniger umgehen. Wie gut der Treffer zum Foto passte, ist nicht bewertet; mehrere Fotos wurden nicht getestet.
+- Lauf mit einem Foto von 2,2 MB: **ein** Vorschlag mit 78 %, nicht drei. P8 darf also nicht von drei Vorschlägen ausgehen und muss mit weniger umgehen. Der PO hat bestätigt: Der Treffer war richtig (Hugo Strange, Sammelserie „The LEGO Batman Movie“). Mehrere Fotos wurden nicht getestet.
 - Das Foto wurde unverkleinert angenommen. P8 verkleinert es trotzdem vor dem Hochladen (Datenmenge, Speicher).
 - CORS: erlaubt (`*`).
 
