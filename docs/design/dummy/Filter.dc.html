@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Filter</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&amp;family=Mali:wght@700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#14213D}a:hover{color:#2B3F6E}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #F4F5F7; color: #14213D; font-family: 'Rubik', system-ui, sans-serif">
+<div style="padding: 24px 18px; display: flex; flex-direction: column; gap: 14px" aria-hidden="true">
+<span style="font-family: 'Mali', cursive; font-weight: 700; font-size: 30px">Vitrine</span>
+<div style="height: 180px; border-radius: 22px; background: #FFC93C; border: 2px solid #14213D"></div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px"><div style="height: 220px; border-radius: 22px; background: #FFFFFF; border: 2px solid #14213D"></div><div style="height: 220px; border-radius: 22px; background: #FFFFFF; border: 2px solid #14213D"></div></div>
+</div>
+<div style="position: absolute; inset: 0; background: rgba(20,33,61,0.45)"></div>
+<div role="dialog" aria-label="Filter" style="position: absolute; left: 0; right: 0; bottom: 0; background: #FFFFFF; border-top: 2px solid #14213D; border-radius: 28px 28px 0 0; padding: 12px 18px 28px 18px; display: flex; flex-direction: column; gap: 16px">
+<span style="width: 44px; height: 5px; border-radius: 999px; background: #C9CED8; align-self: center" aria-hidden="true"></span>
+
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="font-family: 'Mali', cursive; font-weight: 700; font-size: 24px">Filter</span><a href="Main.dc.html" aria-label="Schließen" style="width: 44px; height: 44px; border-radius: 999px; border: 2px solid #14213D; box-sizing: border-box; background: #FFFFFF; color: #14213D; display: flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></a></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 13px; font-weight: 700">Thema / Reihe</span><div style="display: flex; gap: 6px; flex-wrap: wrap"><button style="height: 40px; padding: 0 14px; border-radius: 999px; border: 2px solid #14213D; box-sizing: border-box; background: #14213D; color: #FFFFFF; font-family: inherit; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; text-decoration: none; white-space: nowrap">Star Wars</button><button style="height: 40px; padding: 0 14px; border-radius: 999px; border: 2px solid #14213D; box-sizing: border-box; background: #FFFFFF; color: #14213D; font-family: inherit; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; text-decoration: none; white-space: nowrap">Ritter</button><button style="height: 40px; padding: 0 14px; border-radius: 999px; border: 2px solid #14213D; box-sizing: border-box; background: #FFFFFF; color: #14213D; font-family: inherit; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; text-decoration: none; white-space: nowrap">Ninjago</button><button style="height: 40px; padding: 0 14px; border-radius: 999px; border: 2px solid #14213D; box-sizing: border-box; background: #FFFFFF; color: #14213D; font-family: inherit; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; text-decoration: none; white-space: nowrap">City</button></div></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 13px; font-weight: 700">Hersteller</span><div style="display: flex; gap: 6px; flex-wrap: wrap"><button style="height: 40px; padding: 0 14px; border-radius: 999px; border: 2px solid #14213D; box-sizing: border-box; background: #14213D; color: #FFFFFF; font-family: inherit; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; text-decoration: none; white-space: nowrap">LEGO</button><button style="height: 40px; padding: 0 14px; border-radius: 999px; border: 2px solid #14213D; box-sizing: border-box; background: #FFFFFF; color: #14213D; font-family: inherit; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; text-decoration: none; white-space: nowrap">Bluebrixx</button><button style="height: 40px; padding: 0 14px; border-radius: 999px; border: 2px solid #14213D; box-sizing: border-box; background: #FFFFFF; color: #14213D; font-family: inherit; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; text-decoration: none; white-space: nowrap">Custom</button></div></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 13px; font-weight: 700">Zustand</span><div style="display: flex; gap: 6px; flex-wrap: wrap"><button style="height: 40px; padding: 0 14px; border-radius: 999px; border: 2px solid #14213D; box-sizing: border-box; background: #FFFFFF; color: #14213D; font-family: inherit; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; text-decoration: none; white-space: nowrap">Neu</button><button style="height: 40px; padding: 0 14px; border-radius: 999px; border: 2px solid #14213D; box-sizing: border-box; background: #FFFFFF; color: #14213D; font-family: inherit; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; text-decoration: none; white-space: nowrap">Gebraucht</button></div></div>
+<div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 13px; font-weight: 700">Modifiziert</span><div style="display: flex; gap: 6px; flex-wrap: wrap"><button style="height: 40px; padding: 0 14px; border-radius: 999px; border: 2px solid #14213D; box-sizing: border-box; background: #14213D; color: #FFFFFF; font-family: inherit; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; text-decoration: none; white-space: nowrap">Egal</button><button style="height: 40px; padding: 0 14px; border-radius: 999px; border: 2px solid #14213D; box-sizing: border-box; background: #FFFFFF; color: #14213D; font-family: inherit; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; text-decoration: none; white-space: nowrap">Ja</button><button style="height: 40px; padding: 0 14px; border-radius: 999px; border: 2px solid #14213D; box-sizing: border-box; background: #FFFFFF; color: #14213D; font-family: inherit; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; text-decoration: none; white-space: nowrap">Nein</button></div></div>
+<label for="nodio" style="display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 700; padding: 6px 0">Nur Figuren ohne Diorama<input id="nodio" type="checkbox" style="width: 24px; height: 24px; accent-color: #14213D"></label>
+<div style="display: flex; gap: 10px"><a href="Main.dc.html" style="width: 100%; height: 52px; padding: 0 20px; box-sizing: border-box; border-radius: 999px; background: #FFFFFF; color: #14213D; border: 2px solid #14213D; font-family: inherit; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none">Zurücksetzen</a><a href="Main.dc.html" style="width: 100%; height: 52px; padding: 0 20px; box-sizing: border-box; border-radius: 999px; background: #14213D; color: #FFFFFF; border: 2px solid #14213D; font-family: inherit; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none">38 anzeigen</a></div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

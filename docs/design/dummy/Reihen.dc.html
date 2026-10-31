@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Reihen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&amp;family=Mali:wght@700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#14213D}a:hover{color:#2B3F6E}
+</style>
+</helmet>
+<div style="width: 390px; height: 1000px; box-sizing: border-box; position: relative; overflow: hidden; background: #F4F5F7; color: #14213D; font-family: 'Rubik', system-ui, sans-serif">
+<div style="padding: 20px 18px 110px 18px; display: flex; flex-direction: column; gap: 16px">
+
+<div style="display: flex; justify-content: space-between; align-items: center"><h1 style="margin: 0; font-family: 'Mali', cursive; font-weight: 700; font-size: 30px; line-height: 1.1">Wunschliste</h1><button aria-label="Suchen" style="width: 50px; height: 50px; border-radius: 999px; border: 0; box-sizing: border-box; background: #FFFFFF; color: #14213D; display: flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></button></div>
+<div style="display: flex; gap: 4px; padding: 4px; border: 2px solid #14213D; border-radius: 999px; background: #FFFFFF"><a href="Wunschliste.dc.html" style="flex: 1; height: 40px; border-radius: 999px; border: 0; background: transparent; color: #14213D; font-family: inherit; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; text-decoration: none">Wunschliste</a><button style="flex: 1; height: 40px; border-radius: 999px; border: 0; background: #14213D; color: #FFFFFF; font-family: inherit; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; text-decoration: none">Reihen</button></div>
+<div style="position: relative"><label for="rs" style="position: absolute; left: -9999px">Reihe oder Thema suchen</label><input id="rs" placeholder="Reihe oder Thema suchen" style="height: 48px; width: 100%; box-sizing: border-box; border: 2px solid #14213D; border-radius: 999px; padding: 0 16px 0 44px; font-family: inherit; font-size: 15px; background: #FFFFFF; color: #14213D"><span style="position: absolute; left: 14px; top: 13px; display: flex"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></span></div>
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 8px"><h2 style="margin: 0; font-family: 'Mali', cursive; font-weight: 700; font-size: 22px">Meine Reihen</h2></div>
+<a href="Reihe.dc.html" style="border: 2px solid #14213D; border-radius: 22px; background: #FFFFFF; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; text-decoration: none; color: #14213D"><div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 15px; font-weight: 700">Star Wars – The Clone Wars</span><span style="font-family: 'Mali', cursive; font-weight: 700; font-size: 18px">34 / 52</span></div><div style="height: 12px; border: 2px solid #14213D; border-radius: 999px; background: #FFFFFF; overflow: hidden" role="img" aria-label="34 von 52 Figuren"><div style="width: 65%; height: 100%; background: #F59AD6"></div></div></a>
+<a href="Reihe.dc.html" style="border: 2px solid #14213D; border-radius: 22px; background: #FFFFFF; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; text-decoration: none; color: #14213D"><div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 15px; font-weight: 700">Star Wars – The Mandalorian</span><span style="font-family: 'Mali', cursive; font-weight: 700; font-size: 18px">12 / 40</span></div><div style="height: 12px; border: 2px solid #14213D; border-radius: 999px; background: #FFFFFF; overflow: hidden" role="img" aria-label="12 von 40 Figuren"><div style="width: 30%; height: 100%; background: #F59AD6"></div></div></a>
+<a href="Reihe.dc.html" style="border: 2px solid #14213D; border-radius: 22px; background: #FFFFFF; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; text-decoration: none; color: #14213D"><div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 15px; font-weight: 700">Ninjago – Staffel 1</span><span style="font-family: 'Mali', cursive; font-weight: 700; font-size: 18px">5 / 18</span></div><div style="height: 12px; border: 2px solid #14213D; border-radius: 999px; background: #FFFFFF; overflow: hidden" role="img" aria-label="5 von 18 Figuren"><div style="width: 28%; height: 100%; background: #F59AD6"></div></div></a>
+
+</div>
+<nav aria-label="Hauptnavigation" style="position: absolute; left: 16px; right: 16px; bottom: 16px; height: 68px; background: #111111; border-radius: 999px; display: flex; align-items: center; justify-content: space-around; padding: 0 8px"><a href="Main.dc.html" aria-label="Vitrine" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #FFFFFF"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"></rect><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"></rect><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"></rect><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"></rect></svg></a><a href="Dioramen.dc.html" aria-label="Dioramen" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #FFFFFF"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5 9-5z"></path><path d="M3 13l9 5 9-5"></path></svg></a><a href="Erfassen.dc.html" aria-label="Erfassen" style="width: 50px; height: 50px; border-radius: 999px; background: #F59AD6; color: #111111; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></a><a href="Wunschliste.dc.html" style="display: flex; align-items: center; gap: 6px; height: 48px; padding: 0 14px; border-radius: 999px; background: #FFFFFF; text-decoration: none; color: #111111; font-size: 13px; font-weight: 800"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path></svg>Wunschliste</a><a href="Dashboard.dc.html" aria-label="Dashboard" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #FFFFFF"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V11M12 20V5M19 20v-6"></path></svg></a></nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

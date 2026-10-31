@@ -1,0 +1,59 @@
+# Stud Stephan – Hinweise für Claude
+
+Persönliche App von Stephan (einziger Nutzer) für seine Klemmbaustein-Sammlung: Minifiguren (offiziell, modifiziert, custom), Sets, Sonderteile, MOC-Dioramen, Wunschliste, Marktwerte. Anzeigename „Stud Stephan“, im Code `stud-stephan`. Online: https://stephan-pro.github.io/stud-stephan/
+
+Doku: Anforderungen `docs/ANFORDERUNGEN.md` · Screens und Abläufe `docs/STRUKTUR.md` · Design `docs/design/DESIGN.md` · Plan und Arbeitspakete `docs/UMSETZUNG.md` · Einrichtung für den PO `docs/EINRICHTUNG.md`. `docs/design/dummy/*.dc.html` ist der abgenommene Klick-Dummy: nur als Referenz für Aufbau, Farben, Größen und Texte lesen, nicht lauffähig, nie in die App kopieren.
+
+## Stand
+
+Noch kein Code. Paket P1 legt das Gerüst an und ergänzt danach die Abschnitte „Befehle“ und „Aufbau“ hier.
+
+## Befehle (Soll, ab P1)
+
+- **Nach Änderungen `npm run check` ausführen und nur die Kurzausgabe lesen** (Erfolg = eine Zeile; Fehler = nur Datei, Zeile, Meldung). Berichte und Traces bleiben auf der Platte.
+- `npm run check` – Biome → tsc → Vitest mit Abdeckung → Build → Playwright (chromium-desktop). Schreibt nichts um. Muss grün sein; läuft bei jedem Push in CI.
+- `npm run check:full` – wie `check`, Playwright in allen vier Projekten. Vor einem Release.
+- `npm run fix` – einzige Stelle, die formatiert (`biome check --write .`).
+- `npm run dev` · `npm run demo` (Beispieldaten aus `src/demo/`) · `npm run setup` (Pakete + Playwright-Browser).
+- `npm run check:db` – ab P4a, nur in CI (der PO hat kein Docker).
+- `/paket <Kennung> [Hinweise]` – setzt ein Arbeitspaket aus `docs/UMSETZUNG.md` um (Skill `.claude/skills/paket/SKILL.md`).
+
+## Regeln
+
+- Stack wie Krümel: Preact, TypeScript strict, Vite, Biome, Vitest, Playwright + axe, Supabase, GitHub Pages. Neue Abhängigkeiten nur mit Begründung in `docs/UMSETZUNG.md` (Abschnitt „Abhängigkeiten“, beim ersten Eintrag anlegen).
+- Code-Namen englisch, Oberfläche nur Deutsch. Texte der Oberfläche zentral in `src/ui/texts.ts`, nie verstreut in Komponenten.
+- Fachlogik in `src/domain/`: reine Funktionen, kein DOM, kein Speicher, „heute“ als Parameter (`"YYYY-MM-DD"`), Abdeckung ≥ 90 %.
+- Geld immer als ganze Cent (`number`), Anzeige über eine Formatierfunktion (`12,50 €`).
+- Jedes Akzeptanzkriterium ist mindestens ein Test, benannt nach dem Kriterium. Jede neue Seite und jeder Dialog bekommt einen E2E-Test mit axe.
+- Farben, Radien, Abstände nur über die Tokens aus `DESIGN.md` (`src/ui/tokens.css`); keine festen Werte in Komponenten.
+- Keine Markenzeichen von LEGO (Logo, Minifigur-Silhouette) in Symbolen oder Bildern.
+- **Geheimnisse:** API-Schlüssel (Rebrickable, BrickLink), Datenbank-Passwort, Service-Role-Key und SMTP-Passwort kommen nie ins Repo, in Tests, Logs, Chat oder Bildschirmfotos. Lokal nur in `.env.local`, auf dem Server nur als Supabase-Secrets. Öffentlich sind nur `VITE_SUPABASE_URL` und `VITE_SUPABASE_PUBLISHABLE_KEY`. Claude erzeugt und sieht keine Schlüssel; die Befehle dazu führt der PO selbst aus.
+- Externe Dienste ruft nur eine Edge Function auf, nie die App direkt. `npm run check` braucht weder Internet noch Docker noch Schlüssel (Fake-Server und aufgezeichnete Antworten).
+- Dateien immer mit dem Write- oder Edit-Werkzeug anlegen und ändern, nie per Shell (kein `echo >`, Heredoc, `sed -i`, `node -e`).
+- Entwicklungsumgebung: Windows mit PowerShell; Shell-Befehle nur zum Ausführen (npm, git, gh, npx supabase), in PowerShell-Syntax.
+- Der PO ist Einsteiger: Schritte für ihn immer nummeriert, mit genauen Klicks, vollständigen Adressen und kompletten Befehlen; nichts abkürzen.
+
+## Wortliste
+
+| Oberfläche | Code |
+|---|---|
+| Vitrine | showcase |
+| Minifigur / Exemplar | minifig / copy |
+| Modifikation / Mod-Teil | mod / modPart |
+| Ausgaben für Mods | modSpend |
+| Set / Status (vollständig · Figuren entnommen · zerlegt) | legoSet / setStatus (`complete`, `figuresRemoved`, `disassembled`) |
+| Sonderteil (GWP, Sammelmünze) | specialPart (`gwp`, `coin`, `other`) |
+| Diorama / Studio-Datei | diorama / studioFile |
+| Hersteller | manufacturer |
+| Zustand (neu · gebraucht) | condition (`new`, `used`) |
+| Herkunft / Quelle | source |
+| Kaufpreis | purchasePrice |
+| Marktwert / Preisstand | marketValue / pricePoint |
+| Wert (selbst geschätzt) | manualValue |
+| Wunschliste / Priorität / Zielpreis | wishlist / priority (`high`, `medium`, `low`) / targetPrice |
+| Zielpreis erreicht | targetReached |
+| Reihe (Thema) / Fortschritt | series / seriesProgress |
+| Erfassen | capture |
+| Fotoerkennung | recognition |
+| Katalog | catalog |
+| Datensicherung (Export/Import) | backup (exportData/importData) |
