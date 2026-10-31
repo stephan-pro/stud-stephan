@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { COLOURS, heading, mainNavigation, PC, PHONE, style } from "./helpers";
+import { COLOURS, heading, mainNavigation, PC, PHONE, signInDirectly, style } from "./helpers";
+
+// Signed in from the start (P4b; the sign-in page: `signIn.spec.ts`).
+test.beforeEach(async ({ page }) => {
+  await signInDirectly(page);
+});
 
 // P1 "Nav matches the dummy": black pill, current entry white with its name, plus button `--pop`
 // (Main.dc.html); on the PC the sidebar of PC-Vitrine.dc.html.

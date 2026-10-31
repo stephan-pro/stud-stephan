@@ -7,6 +7,20 @@
       "runtimeArgs": ["vite", "--mode", "demo", "--port", "5190", "--strictPort"],
       "port": 5190,
       "url": "http://localhost:5190"
+    },
+    {
+      "name": "fake-server",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["dist-fake/fake-server.js"],
+      "port": 4180,
+      "url": "http://localhost:4180"
+    },
+    {
+      "name": "e2e",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "--mode", "e2e", "--port", "5191", "--strictPort"],
+      "port": 5191,
+      "url": "http://localhost:5191"
     }
   ]
 }

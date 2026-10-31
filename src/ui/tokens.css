@@ -50,6 +50,8 @@
   --touch: 44px;
   --icon-button: 50px;
   --button-height: 52px;
+  --input-height: 48px;
+  --avatar-large: 56px;
 
   /* Navigation (section 7) */
   --nav-inset: 16px;
@@ -58,6 +60,11 @@
   --nav-clearance: 110px;
   --sidebar-width: 240px;
   --stud: 8px;
+  /* The studs on the sign-in page are bigger (click dummy, Anmeldung.dc.html). */
+  --stud-large: 14px;
+  /* Scribble lines: white, faint (DESIGN.md section 5; sign-in page as in the click dummy). */
+  --scribble-opacity: 0.4;
+  --sign-in-width: 440px;
 
   /* Motion (section 8) */
   --press-scale: 0.97;

@@ -91,8 +91,10 @@ if (!unit.ok) {
 }
 const unitCount = JSON.parse(readFileSync(unitReport, "utf8")).numPassedTests;
 
-// 4. Build (the app, and the fake server the end-to-end tests talk to)
-const build = run("vite build");
+// 4. Build (the app in the mode `e2e`, which signs in at the fake server instead of Supabase, and
+// the fake server itself). The build for GitHub Pages (`npm run build`) needs the project's public
+// values, which only the workflow `pages` has; it differs only in the server (`src/backend/mode.ts`).
+const build = run("vite build --mode e2e");
 if (!build.ok) fail("Build (Vite)", tail(build.output));
 const fakeServer = run("vite build --ssr scripts/fake-server.ts --outDir dist-fake");
 if (!fakeServer.ok) fail("Build des Fake-Servers (Vite)", tail(fakeServer.output));

@@ -6,7 +6,7 @@ Doku: Anforderungen `docs/ANFORDERUNGEN.md` · Screens und Abläufe `docs/STRUKT
 
 ## Stand
 
-P4a: Gerüst mit Navigation und leeren Seiten; Datenmodell und Fachlogik in `src/domain/`, Demo-Daten in `src/demo/` (noch nicht in der Oberfläche); Supabase-Tabellen, Regeln, Dateiablagen und `Remote` in `src/backend/` (App nutzt es ab P4b). Fortschritt: Tabelle in `docs/UMSETZUNG.md`, Abschnitt 4. Supabase: `docs/SUPABASE.md`.
+P4b: Anmeldung per Code (S0), danach Gerüst mit Navigation und leeren Seiten, Konto mit Abmelden in den Einstellungen; Datenmodell und Fachlogik in `src/domain/`, Demo-Daten in `src/demo/` (noch nicht in der Oberfläche); Supabase-Tabellen, Regeln, Dateiablagen und `Remote` in `src/backend/` (App lädt Daten ab P5). Fortschritt: Tabelle in `docs/UMSETZUNG.md`, Abschnitt 4. Supabase: `docs/SUPABASE.md`.
 
 ## Befehle
 
@@ -14,23 +14,25 @@ P4a: Gerüst mit Navigation und leeren Seiten; Datenmodell und Fachlogik in `src
 - `npm run check` – Biome → tsc → Vitest mit Abdeckung → Build → Playwright (chromium-desktop). Schreibt nichts um. Muss grün sein; läuft bei jedem Push in CI.
 - `npm run check:full` – wie `check`, Playwright in allen vier Projekten. Vor einem Release.
 - `npm run fix` – einzige Stelle, die formatiert (`biome check --write .`).
-- `npm run dev` · `npm run demo` (Beispieldaten aus `src/demo/`) · `npm run setup` (Pakete + Playwright-Browser).
+- `npm run dev` (echtes Supabase-Projekt, braucht `VITE_SUPABASE_*` in `.env.local`) · `npm run demo` (ohne Anmeldung, Beispieldaten aus `src/demo/`) · `npm run setup` (Pakete + Playwright-Browser).
+- Build-Modi (`src/backend/mode.ts`, Konstante `__BACKEND__`): `production`/`development` → Supabase (Build bricht ohne URL/Publishable Key ab), `e2e` → Fake-Server (`check` baut so), `demo` → ohne Anmeldung.
 - `npm run try:sources` – P2, nur der PO in seinem Terminal (liest `.env.local`, ruft echte Dienste auf, gibt keine Schlüssel aus). Code in `src/sources/` (Tests mit Fake-Fetch), Ergebnis in `docs/DATENQUELLEN.md`.
 - `npm run check:db` – nur in CI (Job `db`; der PO hat kein Docker): lokale Supabase, Migrationen, `supabase/tests/` (Sicherheit, Vertrag).
 - `npm run build:fake` – Fake-Server nach `dist-fake/` (macht `check` selbst; Playwright startet ihn auf Port 4180).
 - `/paket <Kennung> [Hinweise]` – setzt ein Arbeitspaket aus `docs/UMSETZUNG.md` um (Skill `.claude/skills/paket/SKILL.md`).
-- Vorschau im Browser-Fenster: `.claude/launch.json` → `demo` (Port 5190), dann `http://localhost:5190/stud-stephan/` öffnen.
+- Vorschau im Browser-Fenster: `.claude/launch.json` → `demo` (Port 5190), dann `http://localhost:5190/stud-stephan/` öffnen. Mit Anmeldung: `fake-server` (Port 4180, braucht `dist-fake/` aus `check`) und `e2e` (Port 5191); Code über `http://localhost:4180/test/code?email=…`, Konto per `POST /test/user {email}`.
 
 ## Aufbau
 
 - `src/main.tsx` lädt Schriften, `src/ui/tokens.css` (alle Design-Werte) und `src/ui/app.css`, zeichnet `src/ui/App.tsx`.
 - `src/ui/route.ts` – Hash-Router (`#/vitrine` …), reine Funktionen. `src/ui/texts.ts` – alle Texte.
-- `src/ui/components/` – `Navigation` (Handy-Leiste und PC-Seitenleiste), `PageHeader` (die eine `h1`, bekommt nach Seitenwechsel den Fokus), `Icon` (SVG-Pfade aus dem Dummy).
+- `src/ui/App.tsx` – erst Anmeldung (`pages/SignInPage.tsx`), dann `Shell`. `src/ui/components/` – `Navigation` (Handy-Leiste und PC-Seitenleiste), `PageHeader` (die eine `h1`, bekommt nach Seitenwechsel den Fokus), `AccountCard` (S12), `Studs`, `Scribbles`, `Icon` (SVG-Pfade aus dem Dummy).
+- `src/auth/` (P4b, wie Krümel ohne Einladungen) – `auth.ts` (Schnittstelle `Auth`, `AuthFailure`, `CODE_MINUTES`/`CODE_DIGITS`), `supabaseClient.ts` + `supabaseAuth.ts` (`signInWithOtp` ohne neue Konten, unbekannte Adresse = still wie gesendet), `fakeAuth.ts` (im Fake-Server) + `fakeHttpAuth.ts` (Client, Sitzung unter `stud-stephan-fake:auth`), `codeStep.ts` (Schritt über Neuladen gemerkt). `auth.contract.ts` läuft gegen Fake, Nachbau (`auth.fixtures.ts`: `fakeGoTrue`, `MemoryStore`) und lokale Instanz (`supabase/tests/auth.test.ts`, Code aus Mailpit). Mailvorlage `supabase/templates/code.html`.
 - `src/domain/` – `types.ts` (alle Objekte, `SCHEMA_VERSION`), `money.ts` (`formatMoney` …), `prices.ts` (Marktpreis, Preisabruf `recordPriceRun`), `value.ts` (`valueOfItem`, `modSpend`), `totals.ts`, `showcase.ts` (Gruppen ×3, Filter, Sortierung), `dioramas.ts`, `wishlist.ts`, `series.ts`. Testbausteine `fixtures.ts` (`aMinifig`, `aPrice`, `aCollection` …).
 - `src/demo/collection.ts` – `DEMO_COLLECTION`, `DEMO_SERIES`, `DEMO_TODAY` nach dem Klick-Dummy.
-- `src/backend/` – `remote.ts` (Schnittstelle `Remote`: `load`, `save(kind, …)`, `remove`, `savePrice`, `putFile`/`getFile`/`removeFile`; `RemoteError` mit `permanent`, `reason`), `rules.ts` (Arten, Grenzen, Prüfungen wie in SQL), `supabaseRemote.ts`, `fakeStore.ts` + `fakeRemote.ts` (im Speicher), `fakeServer.ts` + `fakeHttpServer.ts` + `fakeHttpRemote.ts` (Fake-Server). `remote.contract.ts` – dieselben Tests für Fake und echte Datenbank.
+- `src/backend/` – `remote.ts` (Schnittstelle `Remote`: `load`, `save(kind, …)`, `remove`, `savePrice`, `putFile`/`getFile`/`removeFile`; `RemoteError` mit `permanent`, `reason`), `rules.ts` (Arten, Grenzen, Prüfungen wie in SQL), `supabaseRemote.ts`, `fakeStore.ts` + `fakeRemote.ts` (im Speicher), `fakeServer.ts` (mit Anmeldung `/auth/*`, `/test/code`, `/test/user`) + `fakeHttpServer.ts` + `fakeHttpRemote.ts` (Fake-Server), `fakeServer.fixtures.ts` (`fetchFrom`: Fake-Server ohne HTTP), `mode.ts` (Build-Modi). `remote.contract.ts` – dieselben Tests für Fake und echte Datenbank.
 - `supabase/` – `config.toml` (lokale Instanz), `migrations/` (Regeln dort und in `rules.ts`/`fakeStore.ts` immer gleich halten), `tests/` (nur `check:db`).
-- Tests: `*.test.ts` neben dem Code; `tokens.test.ts` prüft Tokens gegen DESIGN.md und Kontraste, `designRules.test.ts` verbietet feste Farben, Radien und Abstände außerhalb von `tokens.css`. E2E in `tests/e2e/` (`helpers.ts`: Größen `PHONE`/`PC`, `expectNoAccessibilityViolations`).
+- Tests: `*.test.ts` neben dem Code; `tokens.test.ts` prüft Tokens gegen DESIGN.md und Kontraste, `designRules.test.ts` verbietet feste Farben, Radien und Abstände außerhalb von `tokens.css`. E2E in `tests/e2e/` (`helpers.ts`: Größen `PHONE`/`PC`, `expectNoAccessibilityViolations`, `signInDirectly` = angemeldet starten, `newAddress`; Anmeldeseite in `signIn.spec.ts`).
 - `scripts/check.mjs` (Kurzausgabe), `scripts/short-reporter.mjs`, `scripts/scan-secrets.mjs` (Pre-Commit-Hook `.githooks/`).
 - Workflows: `check` (jeder Push; Jobs `check` und `db`), `pages` (nach grünem `check` auf `main`), `check-full` (nachts, von Hand), `keepalive` (täglich `ping`, braucht die Repo-Variablen `VITE_SUPABASE_*`).
 
@@ -53,6 +55,7 @@ P4a: Gerüst mit Navigation und leeren Seiten; Datenmodell und Fachlogik in `src
 
 | Oberfläche | Code |
 |---|---|
+| Anmeldung / Abmelden / Code (per Mail) | signIn / signOut / code (`otp` nur in Namen von supabase-js) |
 | Vitrine | showcase |
 | Minifigur / Exemplar | minifig / copy |
 | Modifikation / Mod-Teil | mod / modPart |

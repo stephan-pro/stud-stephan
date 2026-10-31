@@ -69,6 +69,10 @@ const NON_TEXT_PAIRS: readonly (readonly [string, string])[] = [
   ["--pop", "--nav"],
   ["--nav", "--pop"],
   ["--on-nav", "--nav"],
+  // Sign-in page (P4b): the card's border and the focus ring on yellow, a refused field's border.
+  ["--ink", "--accent"],
+  ["--focus", "--accent"],
+  ["--danger", "--surface"],
 ];
 
 describe("P1 Design-Tokens aus DESIGN.md", () => {

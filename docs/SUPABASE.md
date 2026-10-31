@@ -1,6 +1,6 @@
 # Stud Stephan – Supabase
 
-Stand: 31.10.2026 (Paket P4a). Für den Product Owner und spätere Sitzungen. Die App nutzt die Datenbank erst ab P4b/P5; bis dahin liegen dort nur Tabellen, Regeln und die beiden Dateiablagen.
+Stand: 31.10.2026 (Paket P4b). Für den Product Owner und spätere Sitzungen. Die App meldet sich seit P4b an; Daten liest und schreibt sie ab P5.
 
 ## Was wo liegt
 
@@ -13,6 +13,10 @@ Stand: 31.10.2026 (Paket P4a). Für den Product Owner und spätere Sitzungen. Di
 | Rebrickable- und BrickLink-Schlüssel | ab P7 nur als Supabase-Secrets (`npx supabase secrets set …`, PO im eigenen Terminal) | **nein** |
 | Tabellen, Regeln, Funktionen, Dateiablagen | `supabase/migrations/` im Repo, eingespielt mit `npx supabase db push` | ja |
 
+| Absender der Anmeldecodes | Gmail-Konto von Krümel (`kruemel.haushaltsapp@gmail.com`) per SMTP, eigenes App-Passwort „Stud Stephan“ | Adresse ja |
+| App-Passwort des Gmail-Kontos | nur im Dashboard (Authentication → Emails → SMTP Settings) | **nein** |
+| Mailvorlage mit dem Code | `supabase/templates/code.html` (in „Magic Link“ und „Confirm signup“ kopiert) | ja |
+
 Kein Geheimnis gehört ins Repository, in den Chat oder in GitHub Actions. Der Hook `.githooks/pre-commit` bricht Commits mit erkennbaren Schlüsseln ab.
 
 ## Aufbau der Datenbank (P4a)
@@ -24,6 +28,24 @@ Kein Geheimnis gehört ins Repository, in den Chat oder in GitHub Actions. Der H
 - **Dateiablagen** (privat): `photos` (WebP, JPEG, PNG; höchstens 2 MB je Datei) und `studio-files` (höchstens 25 MB). Jede Datei liegt unter `<Nutzer-ID>/…`; nur der Besitzer liest, schreibt oder löscht sie.
 
 Im Code: `src/backend/` (`Remote` = Schnittstelle, `SupabaseRemote`, `FakeRemote`, Fake-Server). Dieselben Vertragstests laufen gegen den Fake (`npm run check`) und gegen eine echte lokale Datenbank (`npm run check:db`, nur in CI, Job `db`).
+
+## Anmeldung (P4b)
+
+- Nur per **6-stelligem Code** aus der E-Mail, kein Link, kein Passwort. Die App fragt den Code mit `shouldCreateUser: false` an; eine unbekannte Adresse bekommt keine Mail, die App zeigt trotzdem dieselbe Meldung wie bei Stephans Adresse.
+- **Neue Konten sind abgeschaltet** („Allow new users to sign up“ aus). Stephans Konto legt der PO einmal von Hand an.
+- Die Sitzung bleibt je Gerät im Browser-Speicher (`stud-stephan:auth`); Abmelden in den Einstellungen.
+- Online-Version: Der Workflow `pages` baut mit den Repository-Variablen `VITE_SUPABASE_URL` und `VITE_SUPABASE_PUBLISHABLE_KEY`; fehlt eine, bricht der Build ab. `npm run dev` braucht dieselben Werte in `.env.local`.
+- Lokale Instanz (`check:db`): dieselben Regeln in `supabase/config.toml`, Codes aus dem Mail-Fänger Mailpit (`supabase/tests/auth.test.ts`).
+
+Soll-Einstellungen im Dashboard (Adressen beginnen mit `https://supabase.com/dashboard/project/ohuqwiypmoqyuxsgouxw`):
+
+| Wo | Soll |
+|---|---|
+| `…/auth/providers` → „Email“ | Email an, „Confirm email“ an, „Email OTP Length“ 6, „Email OTP Expiration“ 600 |
+| `…/auth/providers` (oben, „User Signups“) | „Allow new users to sign up“ **aus** |
+| `…/auth/smtp` | „Enable custom SMTP“ an, Host `smtp.gmail.com`, Port `465`, Benutzer und Absender `kruemel.haushaltsapp@gmail.com`, Absendername „Stud Stephan“ |
+| `…/auth/templates` | „Magic Link“ und „Confirm signup“: Betreff „Dein Anmeldecode für Stud Stephan“, Text aus `supabase/templates/code.html` (mit `{{ .Token }}`, ohne Link) |
+| `…/auth/users` | genau ein Konto: Stephans Adresse |
 
 ## Datenbank ändern
 

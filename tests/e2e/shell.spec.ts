@@ -1,9 +1,20 @@
 import { expect, test } from "@playwright/test";
 import { TEXTS } from "../../src/ui/texts";
-import { expectNoAccessibilityViolations, heading, mainNavigation, PC, PHONE } from "./helpers";
+import {
+  expectNoAccessibilityViolations,
+  heading,
+  mainNavigation,
+  PC,
+  PHONE,
+  signInDirectly,
+} from "./helpers";
 
 // P1: every route has an h1 and says what will come; axe finds nothing in the light scheme, on the
-// phone and on the PC.
+// phone and on the PC. Signed in from the start (P4b; the sign-in page: `signIn.spec.ts`).
+
+test.beforeEach(async ({ page }) => {
+  await signInDirectly(page);
+});
 
 const PAGES = [
   { hash: "#/vitrine", heading: "Hey Stephan", tab: "Vitrine", text: TEXTS.routes.showcase },

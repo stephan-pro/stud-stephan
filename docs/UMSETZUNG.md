@@ -53,7 +53,7 @@ pg_cron (wöchentlich) ──► Edge Function „bricklink“ ──► BrickLi
 | P2 | Datenquellen prüfen (Spike) | Sonnet | Medium | ✅ 31.10.2026 |
 | P3 | Datenmodell und Fachlogik | Opus | High | ✅ 31.10.2026 |
 | P4a | Supabase: Tabellen, Regeln, Dateispeicher, Fake-Server | Opus | High | ✅ 31.10.2026 |
-| P4b | Anmeldung per Code (nur Stephan) | Opus | High | offen |
+| P4b | Anmeldung per Code (nur Stephan) | Opus | High | umgesetzt 31.10.2026, PO-Schritte offen |
 | P4c | Fotos und Studio-Dateien hochladen | Sonnet | Medium | offen |
 | P5 | Vitrine, Filter, Detailseiten | Sonnet | Medium | offen |
 | P6 | Manuell erfassen, bearbeiten, löschen, Mods | Sonnet | Medium | offen |
@@ -306,6 +306,12 @@ Tickets are written in English. Every acceptance criterion is at least one test,
   - Set löschen → seine Figuren bleiben; „Stammt aus Set“ behält die Katalogangabe (z. B. „75372-1“), nur die Verknüpfung mit dem eigenen Set entfällt. Diorama löschen → seine Fotos und Studio-Dateien werden mitgelöscht, die Figuren bleiben (F8).
   - Grenzen: höchstens 20 Fotos je Objekt, Foto höchstens 2 MB (WebP, JPEG oder PNG), höchstens 20 Studio-Dateien je Diorama, Studio-Datei höchstens 25 MB, Objekt ohne Dateien höchstens 32 KB Text.
 - 31.10.2026 (PO, ersetzt den Punkt „Thema-Filter und Dashboard nutzen das Hauptthema“ aus P3): **Themen zweistufig.** Der Filter der Vitrine zeigt Hauptthemen mit ihren Unterthemen darunter (z. B. Star Wars → The Clone Wars, The Mandalorian); wählbar ist beides. Das Dashboard „Nach Thema“ zeigt die Verteilung nach **Unterthema**. Umsetzung: Fachlogik bei Bedarf in P5 anpassen (Filter) bzw. in P13 (Dashboard).
+
+- 31.10.2026 (P4b, von Claude entschieden, vom PO änderbar):
+  - Der Knopf auf der Anmeldeseite heißt „Code senden“ statt „Anmeldelink senden“ (Dummy), der Hinweis darunter spricht vom Code: Es kommt kein Link, sondern ein 6-stelliger Code.
+  - Eine unbekannte Adresse bekommt keine Mail, aber dieselbe Seite „Code eingeben“ mit „Wenn … zu Stud Stephan gehört, ist jetzt eine Mail … unterwegs“; jeder Code ist dort „falsch“. So verrät die App nicht, welche Adresse ein Konto hat.
+  - Nach dem Abmelden startet die nächste Anmeldung in der Vitrine. Öffnet man einen Link auf eine Seite (z. B. `#/dioramen`) abgemeldet, führt die Anmeldung genau dorthin.
+  - `npm run demo` zeigt die App ohne Anmeldung (Konto-Karte: „Beispieldaten, ohne Anmeldung“). `npm run dev` und die Online-Version melden sich bei Supabase an, `npm run check` beim Fake-Server (Build-Modus `e2e`).
 
 ## 8. Abhängigkeiten
 

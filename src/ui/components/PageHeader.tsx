@@ -1,21 +1,10 @@
 import { type Route, routeHash, routeLabel } from "../route";
 import { TEXTS } from "../texts";
 import { Icon } from "./Icon";
+import { Studs } from "./Studs";
 
 interface PageHeaderProps {
   readonly route: Route;
-}
-
-/** The four studs above "Hey Stephan" (DESIGN.md section 5: only there and on the sign-in page). */
-function Studs() {
-  return (
-    <div class="studs" aria-hidden="true">
-      <span class="stud" />
-      <span class="stud" />
-      <span class="stud" />
-      <span class="stud" />
-    </div>
-  );
 }
 
 /**

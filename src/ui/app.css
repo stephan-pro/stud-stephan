@@ -137,6 +137,11 @@ a {
   background: var(--ink);
 }
 
+.stud--large {
+  width: var(--stud-large);
+  height: var(--stud-large);
+}
+
 .avatar {
   width: var(--icon-button);
   height: var(--icon-button);
@@ -193,6 +198,211 @@ a {
 .card__text {
   margin: 0;
   color: var(--ink-muted);
+}
+
+/* Buttons (DESIGN.md section 6): main ink, second white with border, quiet without border */
+
+.button {
+  width: 100%;
+  min-height: var(--button-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-5);
+  border: var(--border) solid var(--ink);
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.button--primary {
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+.button--secondary {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.button--quiet {
+  min-height: var(--touch);
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+/* Input with label and message (DESIGN.md section 4: inputs 14 px radius, 2 px border) */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.field__label {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.field__input {
+  width: 100%;
+  height: var(--input-height);
+  padding: 0 var(--space-3);
+  border: var(--border) solid var(--ink);
+  border-radius: var(--radius-input);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+}
+
+.field__input::placeholder {
+  color: var(--ink-muted);
+}
+
+.field__input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.field__error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* S0 sign-in: yellow page with studs and scribbles, white card (Anmeldung.dc.html) */
+
+.sign-in {
+  position: relative;
+  overflow: hidden;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  padding: calc(4 * var(--space-5)) var(--space-6) calc(2 * var(--space-5));
+  background: var(--accent);
+  color: var(--ink);
+}
+
+.scribbles {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--scribble);
+  opacity: var(--scribble-opacity);
+  pointer-events: none;
+}
+
+.sign-in__brand,
+.sign-in__card {
+  position: relative;
+  width: 100%;
+  max-width: var(--sign-in-width);
+}
+
+.sign-in__brand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sign-in__title {
+  width: min-content;
+  margin: 0;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 52px;
+  line-height: 1;
+}
+
+.sign-in__tagline {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.sign-in__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  background: var(--surface);
+  border: var(--border) solid var(--ink);
+  border-radius: var(--radius-sheet);
+}
+
+.sign-in__card-title {
+  margin: 0;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 22px;
+}
+
+.sign-in__text {
+  margin: 0;
+}
+
+.sign-in__note {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
+.sign-in__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+@media (min-width: 900px) {
+  .sign-in {
+    justify-content: center;
+    gap: calc(2 * var(--space-5));
+  }
+}
+
+/* S12 account card (Einstellungen.dc.html) */
+
+.account {
+  gap: var(--space-3);
+}
+
+.account__person {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.avatar--large {
+  width: var(--avatar-large);
+  height: var(--avatar-large);
+  font-size: 22px;
+}
+
+.account__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.account__name {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.account__email {
+  color: var(--ink-muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 /* Phone: floating bar at the bottom (DESIGN.md section 7) */
