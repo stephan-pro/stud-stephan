@@ -1,5 +1,5 @@
 // `npm run deploy:functions` – sets the secrets of the catalog functions in the Supabase project and
-// deploys all functions (P7 catalog, bricklink; P8 recognize). Only for the PO, in his own
+// deploys all functions (P7 catalog, bricklink; P8 recognize; P9 link-preview). Only for the PO, in his own
 // terminal; a missing `npx supabase login` is done on the way.
 // The keys are read from .env.local and handed to the Supabase CLI through a temporary file that is
 // deleted afterwards; they are never printed. No database password and no Docker are needed.
@@ -85,10 +85,11 @@ try {
   rmSync(folder, { recursive: true, force: true });
 }
 
-// No function name: every folder in supabase/functions is deployed (catalog, bricklink, recognize).
-console.log("\n2/2 Funktionen catalog, bricklink und recognize bereitstellen …");
+// No function name: every folder in supabase/functions is deployed (catalog, bricklink, recognize,
+// link-preview).
+console.log("\n2/2 Funktionen catalog, bricklink, recognize und link-preview bereitstellen …");
 supabase(["functions", "deploy", "--project-ref", project, "--use-api", "--no-verify-jwt"]);
 
 console.log(
-  "\n✅ Fertig. Prüfung in der App: Erfassen → Figur → Foto (Foto-Erkennung) oder Nummer oder Suche.",
+  "\n✅ Fertig. Prüfung in der App: Erfassen → Figur → Foto (Foto-Erkennung), Nummer oder Suche, oder Set → Link einfügen.",
 );

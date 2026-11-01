@@ -4,6 +4,7 @@ import {
   detailHash,
   documentTitle,
   formHash,
+  linkHash,
   locationHash,
   PHONE_NAVIGATION,
   parseLocation,
@@ -194,6 +195,51 @@ describe("P8 Adresse der Foto-Erkennung", () => {
   it("P8 Mit weiteren Teilen ist es keine Foto-Erkennung", () => {
     expect(parseLocation("#/erfassen/foto/x")).toEqual({ route: "showcase" });
     expect(parseLocation("#/vitrine/foto")).toEqual({ route: "showcase" });
+  });
+});
+
+describe("P9 Adressen des Erfassens per Link", () => {
+  const LINK = "https://www.merlinssteine.de/sets/bluebrixx-110374/?a=1&b=2#x";
+
+  it("P9 Die Seite zum Einfügen liegt unter Erfassen: #/erfassen/link/<art>", () => {
+    expect(linkHash("legoSet")).toBe("#/erfassen/link/set");
+    expect(parseLocation("#/erfassen/link/set")).toEqual({ route: "capture", link: "legoSet" });
+    expect(parseLocation("#/erfassen/link/figur/")).toEqual({ route: "capture", link: "minifig" });
+    expect(locationHash({ route: "capture", link: "specialPart" })).toBe(
+      "#/erfassen/link/sonderteil",
+    );
+    expect(parseLocation("#/erfassen/link/xyz")).toEqual({ route: "showcase" });
+    expect(parseLocation("#/erfassen/link")).toEqual({ route: "showcase" });
+  });
+
+  it("P9 Das Formular aus einem Link trägt die Adresse verschlüsselt in der Adresse", () => {
+    const form = { type: "legoSet", mode: "link", link: LINK } as const;
+    const hash = formHash(form);
+    expect(hash.startsWith("#/erfassen/set/link/https%3A%2F%2F")).toBe(true);
+    expect(hash).not.toContain("?");
+    expect(parseLocation(hash)).toEqual({ route: "capture", form });
+    expect(locationHash({ route: "capture", form })).toBe(hash);
+    expect(parseLocation("#/erfassen/sonderteil/link/https%3A%2F%2Fa.de")).toEqual({
+      route: "capture",
+      form: { type: "specialPart", mode: "link", link: "https://a.de" },
+    });
+  });
+
+  it("P9 Das Katalogformular kann den Link mitführen", () => {
+    const form = { type: "legoSet", mode: "catalog", ref: "75372-1", link: LINK } as const;
+    expect(parseLocation(formHash(form))).toEqual({ route: "capture", form });
+    expect(formHash({ type: "legoSet", mode: "catalog", ref: "75372-1" })).toBe(
+      "#/erfassen/set/katalog/75372-1",
+    );
+  });
+
+  it("P9 Kaputte Adressen öffnen die Vitrine", () => {
+    expect(parseLocation("#/erfassen/set/link/")).toEqual({ route: "showcase" });
+    expect(parseLocation("#/erfassen/set/link/%E0%A4%A")).toEqual({ route: "showcase" });
+    expect(parseLocation("#/erfassen/set/katalog/75372-1/link/")).toEqual({ route: "showcase" });
+    expect(parseLocation("#/erfassen/set/katalog/75372-1/x/y")).toEqual({ route: "showcase" });
+    expect(parseLocation("#/erfassen/sonderteil/katalog/x/link/y")).toEqual({ route: "showcase" });
+    expect(parseLocation("#/vitrine/link/set")).toEqual({ route: "showcase" });
   });
 });
 

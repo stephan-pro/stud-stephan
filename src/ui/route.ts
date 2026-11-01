@@ -65,7 +65,15 @@ const COPY_PATH = "kopie";
  */
 export type FormRef =
   | { readonly type: DetailType; readonly mode: "new" }
-  | { readonly type: "minifig" | "legoSet"; readonly mode: "catalog"; readonly ref: string }
+  | {
+      readonly type: "minifig" | "legoSet";
+      readonly mode: "catalog";
+      readonly ref: string;
+      /** The pasted address the entry was reached from (F3); kept with the object. */
+      readonly link?: string;
+    }
+  /** A form started from a pasted address (F3): filled from the page again, or empty but for the link. */
+  | { readonly type: DetailType; readonly mode: "link"; readonly link: string }
   | { readonly type: DetailType; readonly mode: "copy"; readonly id: string }
   | { readonly type: DetailType; readonly mode: "edit"; readonly id: string };
 
@@ -91,9 +99,12 @@ export interface PageLocation {
   readonly search?: SearchType;
   /** The photo recognition (S7a, "#/erfassen/foto"), also below "Erfassen". */
   readonly photo?: true;
+  /** Capture by link (S7c, "#/erfassen/link/set"), also below "Erfassen". */
+  readonly link?: DetailType;
 }
 
 const PHOTO_PATH = "foto";
+const LINK_PATH = "link";
 
 function decode(segment: string): string | undefined {
   try {
@@ -112,7 +123,7 @@ function typeOf(path: string | undefined): DetailType | undefined {
 /** Reads `location.hash` (e.g. "#/dioramen"); anything unknown is the start page. */
 export function parseLocation(hash: string): PageLocation {
   const segments = hash.replace(/^#\/?/, "").replace(/\/+$/, "").split("/");
-  const [first, second, third, fourth] = segments;
+  const [first, second, third, fourth, fifth, sixth] = segments;
   const route = ROUTES.find((candidate) => ROUTE_PATHS[candidate] === first);
   const type = typeOf(second);
   if (route === "showcase" && segments.length === 3) {
@@ -136,9 +147,32 @@ export function parseLocation(hash: string): PageLocation {
     if (isSearchType(searchType)) return { route, search: searchType };
     return { route: DEFAULT_ROUTE };
   }
+  if (route === "capture" && segments.length === 3 && second === LINK_PATH) {
+    const linkType = typeOf(third);
+    if (linkType) return { route, link: linkType };
+    return { route: DEFAULT_ROUTE };
+  }
+  if (route === "capture" && segments.length === 4 && type && third === LINK_PATH) {
+    const link = decode(fourth ?? "");
+    if (link) return { route, form: { type, mode: "link", link } };
+    return { route: DEFAULT_ROUTE };
+  }
   if (route === "capture" && segments.length === 4 && third === CATALOG_PATH) {
     const ref = decode(fourth ?? "");
     if (isSearchType(type) && ref) return { route, form: { type, mode: "catalog", ref } };
+    return { route: DEFAULT_ROUTE };
+  }
+  if (
+    route === "capture" &&
+    segments.length === 6 &&
+    third === CATALOG_PATH &&
+    fifth === LINK_PATH
+  ) {
+    const ref = decode(fourth ?? "");
+    const link = decode(sixth ?? "");
+    if (isSearchType(type) && ref && link) {
+      return { route, form: { type, mode: "catalog", ref, link } };
+    }
     return { route: DEFAULT_ROUTE };
   }
   if (route === "capture" && segments.length === 4 && type === "minifig" && third === COPY_PATH) {
@@ -169,7 +203,11 @@ export function formHash(form: FormRef): string {
   const type = FORM_PATHS[form.type];
   if (form.mode === "new") return `${routeHash("capture")}/${type}`;
   if (form.mode === "catalog") {
-    return `${routeHash("capture")}/${type}/${CATALOG_PATH}/${encodeURIComponent(form.ref)}`;
+    const base = `${routeHash("capture")}/${type}/${CATALOG_PATH}/${encodeURIComponent(form.ref)}`;
+    return form.link ? `${base}/${LINK_PATH}/${encodeURIComponent(form.link)}` : base;
+  }
+  if (form.mode === "link") {
+    return `${routeHash("capture")}/${type}/${LINK_PATH}/${encodeURIComponent(form.link)}`;
   }
   const id = encodeURIComponent(form.id);
   return form.mode === "copy"
@@ -187,9 +225,15 @@ export function photoHash(): string {
   return `${routeHash("capture")}/${PHOTO_PATH}`;
 }
 
+/** The link target of capture by link for a kind of thing: "#/erfassen/link/set". */
+export function linkHash(type: DetailType): string {
+  return `${routeHash("capture")}/${LINK_PATH}/${DETAIL_PATHS[type]}`;
+}
+
 /** The normal spelling of an address; differing spellings are rewritten to it. */
 export function locationHash(page: PageLocation): string {
   if (page.form) return formHash(page.form);
+  if (page.link) return linkHash(page.link);
   if (page.search) return searchHash(page.search);
   if (page.photo) return photoHash();
   return page.detail ? detailHash(page.detail) : routeHash(page.route);

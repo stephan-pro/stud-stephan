@@ -22,6 +22,8 @@ export interface CatalogForm {
   readonly sets: readonly CatalogSetInfo[];
   /** A figure the catalog knows by name only: its BrickLink number is for the person to type. */
   readonly numberMissing: boolean;
+  /** Where the entries came from: the catalog (F2) or a pasted link (F3); it words the hints. */
+  readonly origin: "catalog" | "link";
 }
 
 /** The figures of a set as the object keeps them. */
@@ -34,10 +36,14 @@ export function containedFigures(item: CatalogItem): CatalogFigure[] {
   }));
 }
 
-/** The form to start from for a catalog entry; the person adds condition, origin, price, photos. */
-export function formFromCatalog(item: CatalogItem): CatalogForm {
+/**
+ * The form to start from for a catalog entry; the person adds condition, origin, price, photos.
+ * `link` is the address the entry was reached from (F3), kept with the object.
+ */
+export function formFromCatalog(item: CatalogItem, link?: string): CatalogForm {
   const values = emptyForm();
   const prefilled: FieldKey[] = [];
+  if (link) values.links = link;
   const fill = (field: FieldKey & keyof FormValues, value: string | number | undefined) => {
     if (value === undefined || value === "") return;
     (values[field] as string) = String(value);
@@ -69,5 +75,6 @@ export function formFromCatalog(item: CatalogItem): CatalogForm {
     },
     sets: item.kind === "minifig" ? (item.sets ?? []) : [],
     numberMissing: item.kind === "minifig" && item.number === "",
+    origin: "catalog",
   };
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { type Catalog, CatalogCallError } from "../../backend/catalog";
+import type { LinkPreviewer, PageFields } from "../../backend/linkPreview";
 import { type Remote, RemoteError, saveItem } from "../../backend/remote";
 import { type CatalogForm, formFromCatalog } from "../../domain/catalog";
 import { withSavedItem } from "../../domain/collectionEdit";
@@ -17,16 +18,26 @@ import {
   formFromItem,
   validateForm,
 } from "../../domain/forms";
+import { formFromLink, hasFields } from "../../domain/linkForm";
 import { formatMoney } from "../../domain/money";
 import { shortSetNumber } from "../../domain/showcase";
 import type { Collection, ManufacturerKind, ModPart, ShowcaseItem } from "../../domain/types";
 import { modSpend } from "../../domain/value";
+import { CaptureLink } from "../captureLink";
 import { CapturePhoto } from "../capturePhoto";
 import { Choice, FormCard, fieldId, TextField } from "../components/Fields";
 import { Icon } from "../components/Icon";
 import { ModSheet } from "../components/ModSheet";
 import { PhotoField } from "../components/PhotoField";
-import { detailHash, type FormRef, formHash, photoHash, routeHash, searchHash } from "../route";
+import {
+  detailHash,
+  type FormRef,
+  formHash,
+  linkHash,
+  photoHash,
+  routeHash,
+  searchHash,
+} from "../route";
 import { TEXTS } from "../texts";
 import type { LoadedCollection } from "../useCollection";
 
@@ -70,7 +81,7 @@ function startOf(
   collection: Collection,
 ): { values: FormValues; existing: ShowcaseItem | undefined } | undefined {
   // A catalog form starts from the entry, which `CatalogFormLoader` fetches first.
-  if (form.mode === "new" || form.mode === "catalog") {
+  if (form.mode === "new" || form.mode === "catalog" || form.mode === "link") {
     return { values: emptyForm(), existing: undefined };
   }
   const item = findItem(collection, form.type, form.id);
@@ -91,6 +102,8 @@ interface FormBodyProps {
   readonly update: LoadedCollection["update"];
   /** The catalog entry the form starts from (F2). */
   readonly catalogForm?: CatalogForm | undefined;
+  /** A hint above the form, e.g. that a pasted link could not be read. */
+  readonly notice?: string | undefined;
 }
 
 /** Where "Abbrechen" leads: back to the object, to the search, or to the showcase. */
@@ -98,11 +111,13 @@ function cancelHash(form: FormRef): string {
   // With a photo taken for the recognition the person comes back to its suggestions.
   if (CapturePhoto.peek() && form.mode === "catalog" && form.type === "minifig") return photoHash();
   if (form.mode === "new") return routeHash("showcase");
+  // A form reached from a pasted link goes back to where the link was pasted.
+  if (form.mode === "link" || (form.mode === "catalog" && form.link)) return linkHash(form.type);
   if (form.mode === "catalog") return searchHash(form.type);
   return detailHash({ type: form.type, id: form.id });
 }
 
-function FormBody({ form, collection, start, remote, update, catalogForm }: FormBodyProps) {
+function FormBody({ form, collection, start, remote, update, catalogForm, notice }: FormBodyProps) {
   const { type } = form;
   const [values, setValues] = useState<FormValues>(start.values);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -153,7 +168,9 @@ function FormBody({ form, collection, start, remote, update, catalogForm }: Form
       // Green as long as the value is the one the catalog gave.
       prefilled={
         catalogForm?.prefilled.includes(field) && values[field] === start.values[field]
-          ? CT.prefilledNote
+          ? catalogForm.origin === "link"
+            ? CT.linkPrefilledNote
+            : CT.prefilledNote
           : undefined
       }
       {...extra}
@@ -230,7 +247,12 @@ function FormBody({ form, collection, start, remote, update, catalogForm }: Form
         <span class="header-spacer" />
       </header>
 
-      {catalogForm && <p class="banner banner--catalog">{CT.banner}</p>}
+      {catalogForm && catalogForm.prefilled.length > 0 && (
+        <p class="banner banner--catalog">
+          {catalogForm.origin === "link" ? CT.linkBanner : CT.banner}
+        </p>
+      )}
+      {notice && <p class="banner">{notice}</p>}
       {summary > 0 && (
         <p class="banner banner--error" role="alert">
           {T.summary(summary)}
@@ -450,7 +472,7 @@ function CatalogFormLoader({
 }) {
   const [load, setLoad] = useState<CatalogLoad>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
-  const { type, ref } = form;
+  const { type, ref, link } = form;
 
   useEffect(() => {
     let active = true;
@@ -459,7 +481,7 @@ function CatalogFormLoader({
       ? catalog.item(type, ref)
       : Promise.reject(new CatalogCallError("Kein Katalog", "unavailable"));
     fetched.then(
-      (item) => active && setLoad({ status: "ready", catalogForm: formFromCatalog(item) }),
+      (item) => active && setLoad({ status: "ready", catalogForm: formFromCatalog(item, link) }),
       (error: unknown) =>
         active &&
         setLoad({
@@ -470,7 +492,7 @@ function CatalogFormLoader({
     return () => {
       active = false;
     };
-  }, [catalog, type, ref, attempt]);
+  }, [catalog, type, ref, link, attempt]);
 
   if (load.status === "ready") {
     return (
@@ -523,17 +545,96 @@ function CatalogFormLoader({
   );
 }
 
+type LinkLoad =
+  | { readonly status: "loading" }
+  | { readonly status: "ready"; readonly fields: PageFields; readonly unreadable: boolean };
+
+/**
+ * The form of `#/erfassen/<art>/link/<adresse>` (F3): filled from what the page gave (held from the
+ * page before, else read again, e.g. after a reload). Whatever goes wrong, the form opens with the
+ * link saved and the rest empty.
+ */
+function LinkFormLoader({
+  form,
+  collection,
+  remote,
+  update,
+  previewer,
+}: {
+  readonly form: Extract<FormRef, { mode: "link" }>;
+  readonly collection: Collection;
+  readonly remote: Remote | undefined;
+  readonly update: LoadedCollection["update"];
+  readonly previewer: LinkPreviewer | undefined;
+}) {
+  const { type, link } = form;
+  const [load, setLoad] = useState<LinkLoad>(() => {
+    const held = CaptureLink.peek(link);
+    return held?.kind === "page"
+      ? { status: "ready", fields: held.fields, unreadable: !hasFields(held.fields) }
+      : { status: "loading" };
+  });
+
+  useEffect(() => {
+    if (load.status === "ready") return;
+    let active = true;
+    const read = previewer ? previewer.preview(link) : Promise.reject(new Error("Keine Vorschau"));
+    read.then(
+      (answer) =>
+        active &&
+        setLoad(
+          answer.kind === "page"
+            ? { status: "ready", fields: answer.fields, unreadable: !hasFields(answer.fields) }
+            : { status: "ready", fields: {}, unreadable: true },
+        ),
+      () => active && setLoad({ status: "ready", fields: {}, unreadable: true }),
+    );
+    return () => {
+      active = false;
+    };
+  }, [previewer, link, load.status]);
+
+  if (load.status === "loading") {
+    return (
+      <>
+        <header class="page-header">
+          <a class="icon-button back-link pressable" href={cancelHash(form)} aria-label={T.cancel}>
+            <Icon name="close" />
+          </a>
+        </header>
+        <div class="skeleton" role="status" aria-busy="true" aria-label={CT.linkLoading}>
+          <div class="skeleton__card" />
+          <div class="skeleton__card" />
+        </div>
+      </>
+    );
+  }
+  return (
+    <FormBody
+      form={form}
+      collection={collection}
+      start={{ values: formFromLink(type, link, load.fields).values, existing: undefined }}
+      remote={remote}
+      update={update}
+      catalogForm={formFromLink(type, link, load.fields)}
+      notice={load.unreadable ? CT.linkUnreadable : undefined}
+    />
+  );
+}
+
 /** S8: the form to enter a figure, a set or a special part, or to change one (and `mods` of S8a). */
 export function FormPage({
   data,
   form,
   remote,
   catalog,
+  previewer,
 }: {
   readonly data: LoadedCollection;
   readonly form: FormRef;
   readonly remote: Remote | undefined;
   readonly catalog?: Catalog | undefined;
+  readonly previewer?: LinkPreviewer | undefined;
 }) {
   const { state } = data;
   if (state.status !== "ready") {
@@ -571,6 +672,17 @@ export function FormPage({
         remote={remote}
         update={data.update}
         catalog={catalog}
+      />
+    );
+  }
+  if (form.mode === "link") {
+    return (
+      <LinkFormLoader
+        form={form}
+        collection={state.collection}
+        remote={remote}
+        update={data.update}
+        previewer={previewer}
       />
     );
   }

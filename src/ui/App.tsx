@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Auth, Session } from "../auth/auth";
 import type { Catalog } from "../backend/catalog";
+import type { LinkPreviewer } from "../backend/linkPreview";
 import type { Recognizer } from "../backend/recognition";
 import type { Remote } from "../backend/remote";
 import type { Collection, ShowcaseItem } from "../domain/types";
+import { CaptureLink } from "./captureLink";
 import { CapturePhoto } from "./capturePhoto";
 import { AccountCard } from "./components/AccountCard";
 import { CaptureSheet } from "./components/CaptureSheet";
@@ -14,6 +16,7 @@ import { StorageCard } from "./components/StorageCard";
 import { Toast } from "./components/Toast";
 import { DetailPage, detailName } from "./pages/DetailPage";
 import { FormPage } from "./pages/FormPage";
+import { LinkPage } from "./pages/LinkPage";
 import { PhotoPage } from "./pages/PhotoPage";
 import { SearchPage } from "./pages/SearchPage";
 import { INITIAL_VIEW, ShowcasePage, type ShowcaseView } from "./pages/ShowcasePage";
@@ -53,6 +56,8 @@ interface ShellProps {
   readonly catalog?: Catalog | undefined;
   /** The photo recognition (P8): a photo of a figure in, suggestions out. */
   readonly recognizer?: Recognizer | undefined;
+  /** Capture by link (P9): a pasted address in, what the page gives out. */
+  readonly previewer?: LinkPreviewer | undefined;
   /** The example collection of the demo (no server). */
   readonly demo?: Collection | undefined;
   /** Missing in the demo (no sign-in). */
@@ -67,6 +72,7 @@ function Shell({
   remote,
   catalog,
   recognizer,
+  previewer,
   demo,
   onSignOut,
   focusOnMount,
@@ -77,7 +83,7 @@ function Shell({
   const online = useOnline();
   const firstPage = useRef(true);
   const removal = usePendingRemoval(remote, data);
-  const { route, detail, form, search: catalogSearch, photo } = page;
+  const { route, detail, form, search: catalogSearch, photo, link } = page;
   const address = locationHash(page);
   const name = detail ? detailName(data, detail) : undefined;
 
@@ -105,6 +111,11 @@ function Shell({
   useEffect(() => {
     if (!photo && !catalogSearch && !form) CapturePhoto.clear();
   }, [photo, catalogSearch, form]);
+
+  // What was read from a pasted link is kept only for the form that follows it.
+  useEffect(() => {
+    if (!link && form?.mode !== "link") CaptureLink.clear();
+  }, [link, form]);
 
   useEffect(() => {
     // A freshly loaded page starts at the top without moving the focus (the skip link comes
@@ -155,7 +166,18 @@ function Shell({
           )}
           {form ? (
             <div class="detail">
-              <FormPage key={address} data={data} form={form} remote={remote} catalog={catalog} />
+              <FormPage
+                key={address}
+                data={data}
+                form={form}
+                remote={remote}
+                catalog={catalog}
+                previewer={previewer}
+              />
+            </div>
+          ) : link ? (
+            <div class="detail">
+              <LinkPage type={link} previewer={previewer} />
             </div>
           ) : photo ? (
             <div class="detail">
@@ -192,7 +214,7 @@ function Shell({
           />
         )}
         {removal.failed && <Toast message={TEXTS.remove.failed} />}
-        {route !== "settings" && !form && !catalogSearch && !photo && (
+        {route !== "settings" && !form && !catalogSearch && !photo && !link && (
           <PhoneNavigation current={route} />
         )}
       </div>
@@ -213,12 +235,14 @@ export function App({
   remote,
   catalog,
   recognizer,
+  previewer,
   demo,
 }: {
   readonly auth: Auth | null;
   readonly remote?: Remote | undefined;
   readonly catalog?: Catalog | undefined;
   readonly recognizer?: Recognizer | undefined;
+  readonly previewer?: LinkPreviewer | undefined;
   /** The example collection; only the demo has one. */
   readonly demo?: Collection | undefined;
 }) {
@@ -250,6 +274,7 @@ export function App({
         remote={remote}
         catalog={catalog}
         recognizer={recognizer}
+        previewer={previewer}
         demo={demo}
         focusOnMount={false}
       />
@@ -283,6 +308,7 @@ export function App({
       remote={remote}
       catalog={catalog}
       recognizer={recognizer}
+      previewer={previewer}
       onSignOut={() => void signOut()}
       focusOnMount={changed.current}
     />

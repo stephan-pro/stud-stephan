@@ -59,7 +59,7 @@ pg_cron (wöchentlich) ──► Edge Function „bricklink“ ──► BrickLi
 | P6 | Manuell erfassen, bearbeiten, löschen, Mods | Sonnet | Medium | ✅ 01.11.2026 (Hochformat-Foto am Redmi vom PO bestätigt) |
 | P7 | Katalog (BrickLink-Nummern, Rebrickable-Suche) | Sonnet | Medium | ✅ 01.11.2026 (Prüfung mit sw0194 und 75372 vom PO bestätigt; „Stammt aus Set“ bleibt bei mehreren Sets leer, so gewollt) |
 | P8 | Fotoerkennung (Brickognize) | Sonnet | Medium | ✅ 01.11.2026 (Prüfung am Redmi durch den PO bestätigt) |
-| P9 | Erfassen per Link (Merlins Steine, Rebrickable, andere) | Sonnet | Medium | offen |
+| P9 | Erfassen per Link (Merlins Steine, Rebrickable, andere) | Sonnet | Medium | umgesetzt 01.11.2026, Prüfung durch den PO offen (Funktion `link-preview` bereitstellen, drei Links ausprobieren) |
 | P10 | Dioramen | Sonnet | Medium | offen |
 | P11 | Marktwerte und Wertentwicklung (BrickLink) | Opus | High | offen |
 | P12 | Wunschliste und Reihen | Sonnet | Medium | offen |
@@ -358,6 +358,23 @@ Tickets are written in English. Every acceptance criterion is at least one test,
   - **Löschen:** erst eine Rückfrage, dann verschwindet das Objekt sofort und eine Leiste bietet 8 Sekunden lang „Rückgängig“. Der Server wird erst nach diesen 8 Sekunden gefragt (oder wenn die App in den Hintergrund geht oder ein zweites Objekt gelöscht wird); „Rückgängig“ löscht deshalb nichts, auch keine Fotos. Scheitert das endgültige Löschen, kommt das Objekt zurück und die App sagt es. Schließt man den Tab innerhalb der 8 Sekunden, bleibt das Objekt erhalten.
   - **Demo:** `npm run demo` speichert, bearbeitet und löscht jetzt im Speicher (ein Neuladen setzt zurück); Fotos lassen sich dort nicht anzeigen.
   - **Kleiner Fehler behoben:** Wechselte die Adresse zwischen dem ersten Zeichnen und dem Anhängen des Adress-Lauschers, blieb die alte Seite stehen; die App liest die Adresse jetzt nach dem Anhängen noch einmal.
+
+- 01.11.2026 (P9, Sicherheit der Funktion `link-preview`, Vorgabe des PO; die Funktion ruft beliebige Adressen ab, deshalb gelten diese Grenzen, umgesetzt in `supabase/functions/_shared/safeFetch.ts`, getestet in `link.test.ts`):
+  - **Anmeldung:** dieselbe Prüfung wie `catalog`, `bricklink` und `recognize` (`isSignedIn`, `verify_jwt = false`); ohne Anmeldung 401 und **kein** Abruf.
+  - **Adresse:** nur `https` und `http`, nur Port 80 und 443, keine Anmeldedaten in der Adresse. Keine IP-Adresse als Rechnername (auch nicht als Zahl, in Hex oder verkürzt, kein IPv6), kein `localhost`, keine Namen ohne Punkt und keine internen Endungen (`.local`, `.internal`, `.lan`, `.home`, `.corp`, `.intranet`, `.home.arpa` …). Zusätzlich wird der Name nachgeschlagen (A und AAAA) und abgelehnt, wenn **eine** Antwort privat, intern oder reserviert ist (10/8, 172.16/12, 192.168/16, 127/8, 169.254/16 mit der Cloud-Metadaten-Adresse, 100.64/10, Multicast, IPv6 `::1`, `fc00::/7`, `fe80::/10` …, auch als IPv4 eingebettet).
+  - **Weiterleitungen:** höchstens 3, von Hand verfolgt; jedes Ziel wird wie eine eingefügte Adresse geprüft (auch das Nachschlagen des Namens). Die vierte Weiterleitung bricht ab.
+  - **Keine fremden Angaben:** Header und Cookies der Anfrage der App gehen nie an die Seite; gesendet werden nur drei feste Kopfzeilen (`Accept`, `Accept-Language`, `User-Agent`), `credentials: omit`, nur GET ohne Körper.
+  - **Grenzen:** 10 Sekunden für alles zusammen (Abruf, Weiterleitungen und Lesen), 2 MB für die Seite (zu große Seiten werden abgebrochen, nicht abgeschnitten gelesen); ausgewertet wird nur `text/html`.
+  - **Bilder:** Bild-Adressen aus der Seite (`og:image`) gehen nur als `https`-Link ohne Anmeldedaten und höchstens 500 Zeichen weiter und werden **nie** abgerufen. Von der Seite kommt nichts außer den fünf Feldern (Name, Hersteller, Setnummer, Teilezahl, Bild) zurück.
+  - **Rebrickable und BrickLink** (`/sets/<Nr>`, `/minifigs/fig-…`, `catalogitem.page?S=` oder `?M=`) werden gar nicht abgerufen: die Nummer aus der Adresse geht an den vorhandenen Katalog (P7), das Formular ist das grüne Katalogformular. Rebrickable-MOCs und andere Seiten dieser Anbieter werden wie jede andere Seite gelesen.
+  - **Bekannte Restlücke:** Das Nachschlagen des Namens und der eigentliche Abruf sind zwei Schritte; ein Angreifer, der den Namen dazwischen umstellt (DNS-Rebinding), wäre nicht erkannt. Gemildert, weil nur du angemeldet bist, nur du Adressen einfügst und von der Seite nie der Inhalt zurückkommt, nur fünf Felder.
+- 01.11.2026 (P9, Verhalten, von Claude entschieden, vom PO änderbar):
+  - **Weg.** Erfassen → Art wählen → „Link einfügen“ (`#/erfassen/link/figur|set|sonderteil`, S7c). Der Link wird nach einer kurzen Pause automatisch gelesen (oder über „Aus Zwischenablage einfügen“). Die Karte „Erkannt“ zeigt Quelle, Bild und die Zeilen der Art, was fehlt, steht als „bitte ergänzen“ da. „Weiter“ öffnet das Formular (`#/erfassen/<art>/link/<Adresse>`) mit grünen Feldern; der Link steht im Feld „Links“ und bleibt am Objekt.
+  - **Rebrickable/BrickLink** zeigen statt der Felder Art und Nummer; das Formular holt die Daten aus dem Katalog (`#/erfassen/set|figur/katalog/<Nr>/link/<Adresse>`). Führt der Link zu einer Figur, obwohl „Set“ gewählt war, öffnet sich das Figuren-Formular.
+  - **Merlins Steine:** Name, Hersteller, Setnummer, Teilezahl, Bild. Die echte Seite (Stand 01.11.2026, `…/sets/bb-109580/`) hat keine Produktdaten mehr; Setnummer und Name kommen deshalb auch aus dem Titel („… • Set 109580 • SetDB“), Hersteller aus „Von: …“, Teilezahl aus der Beschreibung. Beispielseiten als Testdateien: `supabase/functions/_shared/samples/`.
+  - **Andere Seiten:** nur Titel und Vorschaubild (Open Graph, sonst `<title>`); der Titel enthält oft den Shopnamen („… | BlueBrixx“), den du kürzt. Hersteller bleibt unverändert, bis du ihn wählst; wurde ein Hersteller gefunden: „BlueBrixx“ und „LEGO“ als Auswahl, alles andere als „Andere“ mit Namen.
+  - **Nicht lesbar** (Seite antwortet nicht, zu groß, kein HTML, Adresse nicht erlaubt, Dienst gestört, offline): Hinweis mit Grund, „Noch einmal lesen“ (wo Warten helfen kann) und „Ohne Vorschau weiter – Link wird gespeichert“; das Formular öffnet sich dann leer bis auf den Link (F3). Ein Neuladen des Formulars liest den Link noch einmal; geht auch das nicht, ist es leer mit Link.
+  - **Funktion** `link-preview` mit `npm run deploy:functions` bereitgestellt (ohne neuen Schlüssel). Demo und Tests nutzen Beispielseiten in `src/demo/links.ts`.
 
 ## 8. Abhängigkeiten
 

@@ -151,15 +151,16 @@ test.describe("Erfassen-Blatt (S7)", () => {
       await expect(sheet).toBeVisible();
       await expect(heading(page)).toHaveText("Erfassen");
 
-      // Figure is chosen to begin with; the link comes with a later package.
+      // Figure is chosen to begin with.
       const figure = sheet.getByRole("button", { name: TEXTS.capture.what.minifig });
       await expect(figure).toHaveAttribute("aria-pressed", "true");
       await expect(sheet.getByRole("button", { name: TEXTS.capture.what.diorama })).toBeDisabled();
       await expect(sheet.getByRole("button", { name: TEXTS.capture.what.wish })).toBeDisabled();
+      // "Nummer oder Suche" works since P7 (figures and sets), "Foto" since P8 (figures), "Link
+      // einfügen" since P9 (all kinds).
       await expect(
-        sheet.getByRole("button", { name: new RegExp(TEXTS.capture.ways.link.title) }),
-      ).toBeDisabled();
-      // "Nummer oder Suche" works since P7 (figures and sets), "Foto" since P8 (figures).
+        sheet.getByRole("link", { name: new RegExp(TEXTS.capture.ways.link.title) }),
+      ).toHaveAttribute("href", "#/erfassen/link/figur");
       await expect(
         sheet.getByRole("link", { name: new RegExp(TEXTS.capture.ways.search.title) }),
       ).toHaveAttribute("href", "#/erfassen/suche/figur");

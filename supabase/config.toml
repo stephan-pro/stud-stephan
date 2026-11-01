@@ -50,6 +50,13 @@ verify_jwt = false
 [functions.bricklink]
 verify_jwt = false
 
+[functions.recognize]
+verify_jwt = false
+
+# P9: fetches pasted addresses; limits in `_shared/safeFetch.ts`.
+[functions.link-preview]
+verify_jwt = false
+
 [analytics]
 enabled = false
 

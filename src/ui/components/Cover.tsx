@@ -15,7 +15,7 @@ interface CoverProps {
   readonly tintKey: string;
   /** The patterns of the placeholders need an id each. */
   readonly scribbleId: string;
-  readonly variant: "tile" | "hero" | "small" | "thumb";
+  readonly variant: "tile" | "hero" | "small" | "thumb" | "banner";
   readonly children?: ComponentChildren;
 }
 

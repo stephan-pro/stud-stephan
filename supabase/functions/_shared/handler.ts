@@ -12,6 +12,7 @@ import {
   MAX_QUERY_LENGTH,
 } from "./catalogTypes.ts";
 import { CatalogError, type Fetch, isRecord, str } from "./json.ts";
+import { type LinkAnswer, LinkError, MAX_LINK_LENGTH } from "./linkTypes.ts";
 import { MAX_PHOTO_BYTES, type RecognizeAnswer } from "./recognizeTypes.ts";
 
 const CORS = {
@@ -162,6 +163,33 @@ export function handleRecognize(request: Request, deps: RecognizeHandlerDeps): P
     },
     readPhoto,
   );
+}
+
+export interface LinkHandlerDeps {
+  readonly signedIn: HandlerDeps["signedIn"];
+  /** What the address gives; throws `LinkError` for an address or page that is not usable. */
+  readonly preview: (address: string) => Promise<LinkAnswer>;
+}
+
+const LINK_STATUS = { blocked: 422, unreachable: 502 } as const;
+
+/**
+ * The function `link-preview` (P9): `{url}` in, what the address gives out (`LinkAnswer`). The
+ * sign-in is checked first, like in every function, before anything is fetched.
+ */
+export function handleLinkPreview(request: Request, deps: LinkHandlerDeps): Promise<Response> {
+  return serve(request, deps, async (body) => {
+    const address = isRecord(body) ? str(body.url) : undefined;
+    if (address === undefined || address.length > MAX_LINK_LENGTH) return failure("bad_request");
+    try {
+      return answer(200, await deps.preview(address));
+    } catch (error) {
+      if (error instanceof LinkError) {
+        return answer(LINK_STATUS[error.failure], { failure: error.failure });
+      }
+      throw error;
+    }
+  });
 }
 
 export interface BricklinkHandlerDeps {

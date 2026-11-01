@@ -689,6 +689,14 @@ a {
   height: 300px;
 }
 
+/* The picture of a pasted link (Link.dc.html): a framed band, 150 px high. */
+.cover--banner {
+  width: 100%;
+  height: 150px;
+  border: var(--border) solid var(--ink);
+  border-radius: var(--radius-input);
+}
+
 .cover--small {
   width: 72px;
   height: 56px;
@@ -789,6 +797,10 @@ a {
 
 .pill--pop {
   background: var(--pop);
+}
+
+.pill--mint {
+  background: var(--tint-mint);
 }
 
 .pill--positive {

@@ -10,10 +10,13 @@ import {
   type BricklinkHandlerDeps,
   type HandlerDeps,
   isSignedIn,
+  type LinkHandlerDeps,
   type RecognizeHandlerDeps,
 } from "./handler.ts";
 import { CatalogError, type Fetch } from "./json.ts";
+import { previewLink } from "./linkService.ts";
 import { createRebrickable } from "./rebrickableClient.ts";
+import type { Resolve } from "./safeFetch.ts";
 
 /** BrickLink allows 5,000 calls a day; the rest is left for the price run (P11). */
 export const BRICKLINK_DAILY_CAP = 4500;
@@ -73,6 +76,17 @@ export function recognizeHandlerDeps(env: Environment, send: Fetch): RecognizeHa
   return {
     signedIn: (request) => isSignedIn(request, env("SUPABASE_URL") ?? "", send),
     service: createBrickognize({ fetch: send }),
+  };
+}
+
+/**
+ * The page function needs no key. `resolve` looks up the addresses of a name (the function's
+ * `index.ts` gives `Deno.resolveDns`); `send` fetches the pages.
+ */
+export function linkHandlerDeps(env: Environment, send: Fetch, resolve: Resolve): LinkHandlerDeps {
+  return {
+    signedIn: (request) => isSignedIn(request, env("SUPABASE_URL") ?? "", send),
+    preview: (address) => previewLink({ fetch: send, resolve }, address),
   };
 }
 

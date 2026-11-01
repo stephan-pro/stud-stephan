@@ -347,8 +347,63 @@ export const TEXTS = {
     retry: "Noch einmal erkennen",
     byNumber: "Per Nummer weiter",
   },
-  /** S8 filled from the catalog (P7). */
+  /** S7c capture by link (P9, F3). */
+  linkCapture: {
+    title: "Link einfügen",
+    back: "Zurück zum Erfassen",
+    label: "Link",
+    placeholder: "Rebrickable, Merlins Steine oder Hersteller-Seite",
+    paste: "Aus Zwischenablage einfügen",
+    pasteFailed: "Die Zwischenablage ließ sich nicht lesen. Füg den Link von Hand ein.",
+    idle: "Füg einen Link ein: ein Set von Rebrickable oder BrickLink, eine Seite der Merlins Steine SetDB oder die Seite eines Herstellers. Gelesen wird nur diese eine Seite.",
+    reading: "Link wird gelesen …",
+    notAnAddress: "Das ist keine Web-Adresse. Sie beginnt mit https://.",
+    recognized: "Erkannt",
+    sources: {
+      rebrickable: "Rebrickable",
+      bricklink: "BrickLink",
+      merlin: "Merlins Steine SetDB",
+      page: "Webseite",
+    },
+    rows: {
+      name: "Name",
+      manufacturer: "Hersteller",
+      number: { minifig: "Nummer", legoSet: "Setnummer", specialPart: "Nummer" },
+      pieceCount: "Teilezahl",
+      image: "Bild",
+      kind: "Art",
+      catalogNumber: "Nummer",
+    },
+    kinds: { minifig: "Figur", legoSet: "Set" },
+    imageTaken: "übernommen",
+    pleaseAdd: "bitte ergänzen",
+    catalogNote: "Name, Teile und Bild holt die App gleich aus dem Katalog.",
+    next: "Weiter",
+    imageAlt: "Vorschaubild der Seite",
+    nothingFound: {
+      title: "Aus dieser Seite ließ sich nichts lesen",
+      text: "Das Formular öffnet sich trotzdem, der Link wird gespeichert. Die Angaben trägst du selbst ein.",
+    },
+    failed: {
+      title: "Die Seite lässt sich nicht lesen",
+      blocked:
+        "Diese Adresse darf die App nicht abrufen. Gelesen werden nur öffentliche Webseiten (http oder https).",
+      unreachable:
+        "Die Seite antwortet nicht, ist zu groß oder keine normale Webseite. Der Link lässt sich trotzdem speichern.",
+      offline: "Prüf deine Verbindung. Der Link lässt sich trotzdem speichern.",
+      unavailable: "Das Lesen von Links geht gerade nicht. Der Link lässt sich trotzdem speichern.",
+      not_signed_in: "Du bist nicht mehr angemeldet. Melde dich neu an.",
+    },
+    retry: "Noch einmal lesen",
+    withoutPreview: "Ohne Vorschau weiter – Link wird gespeichert",
+  },
+  /** S8 filled from the catalog (P7) or from a link (P9). */
   catalogForm: {
+    linkBanner: "Grüne Felder stammen aus dem Link. Du kannst sie ändern.",
+    linkPrefilledNote: "Aus dem Link übernommen",
+    linkLoading: "Der Link wird gelesen …",
+    linkUnreadable:
+      "Die Seite ließ sich nicht lesen. Der Link ist gespeichert; trag die Angaben selbst ein.",
     banner: "Grüne Felder kommen aus dem Katalog. Du kannst sie ändern.",
     loading: "Der Katalogeintrag wird geholt …",
     failed: {

@@ -11,14 +11,17 @@ import { createSupabaseClient } from "./auth/supabaseClient";
 import { type Catalog, SupabaseCatalog } from "./backend/catalog";
 import { FakeCatalog } from "./backend/fakeCatalog";
 import { createFakeHttpRemote } from "./backend/fakeHttpRemote";
+import { FakeLinkPreviewer, type LinkControl } from "./backend/fakeLinkPreviewer";
 import { FakeRecognizer, type RecognitionControl } from "./backend/fakeRecognizer";
 import { FakeRemote } from "./backend/fakeRemote";
 import { FakeStore } from "./backend/fakeStore";
+import { type LinkPreviewer, SupabaseLinkPreviewer } from "./backend/linkPreview";
 import { type Recognizer, SupabaseRecognizer } from "./backend/recognition";
 import type { Remote } from "./backend/remote";
 import { SupabaseRemote } from "./backend/supabaseRemote";
 import { DEMO_CATALOG } from "./demo/catalog";
 import { DEMO_COLLECTION } from "./demo/collection";
+import { DEMO_LINK_PAGES } from "./demo/links";
 import { DEMO_SUGGESTIONS } from "./demo/recognition";
 import { App } from "./ui/App";
 
@@ -50,12 +53,25 @@ function fakeRecognition(): RecognitionControl {
   }
 }
 
+/** Lets an end-to-end test steer the example link reading: `localStorage["stud-stephan-fake:link"]`. */
+function fakeLink(): LinkControl {
+  try {
+    const value = localStorage.getItem("stud-stephan-fake:link");
+    return value === "offline" || value === "unavailable" || value === "unreachable"
+      ? value
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Sign-in and data of the server this build runs on (`src/backend/mode.ts`); none in the demo. */
 function createBackend(): {
   auth: Auth;
   remote: Remote;
   catalog: Catalog;
   recognizer: Recognizer;
+  previewer: LinkPreviewer;
 } | null {
   if (__BACKEND__ === "demo") return null;
   if (__BACKEND__ === "fake") {
@@ -68,6 +84,7 @@ function createBackend(): {
       // The catalog functions are not part of the fake server: a few example entries in memory.
       catalog: new FakeCatalog(DEMO_CATALOG, fakeCatalogFailure),
       recognizer: new FakeRecognizer(DEMO_SUGGESTIONS, fakeRecognition),
+      previewer: new FakeLinkPreviewer(DEMO_LINK_PAGES, fakeLink),
     };
   }
   // `vite.config.ts` stops the build if one of the two values is missing.
@@ -81,6 +98,7 @@ function createBackend(): {
     remote: new SupabaseRemote(client),
     catalog: new SupabaseCatalog(client),
     recognizer: new SupabaseRecognizer(client),
+    previewer: new SupabaseLinkPreviewer(client),
   };
 }
 
@@ -105,6 +123,10 @@ render(
     recognizer={
       backend?.recognizer ??
       (__BACKEND__ === "demo" ? new FakeRecognizer(DEMO_SUGGESTIONS, fakeRecognition) : undefined)
+    }
+    previewer={
+      backend?.previewer ??
+      (__BACKEND__ === "demo" ? new FakeLinkPreviewer(DEMO_LINK_PAGES, fakeLink) : undefined)
     }
     demo={__BACKEND__ === "demo" ? DEMO_COLLECTION : undefined}
   />,

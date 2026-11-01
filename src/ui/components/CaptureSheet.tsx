@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
 import type { FormType } from "../../domain/forms";
-import { formHash, photoHash, searchHash } from "../route";
+import { formHash, linkHash, photoHash, searchHash } from "../route";
 import { TEXTS } from "../texts";
 import { Icon, type IconName } from "./Icon";
 import { Sheet } from "./Sheet";
@@ -38,6 +38,7 @@ const WAYS: readonly {
 function wayHref(way: keyof typeof T.ways, type: FormType | undefined): string | undefined {
   if (type === undefined) return undefined;
   if (way === "manual") return formHash({ type, mode: "new" });
+  if (way === "link") return linkHash(type);
   if (way === "search" && type !== "specialPart") return searchHash(type);
   // Brickognize recognizes figures only.
   if (way === "photo" && type === "minifig") return photoHash();
@@ -46,7 +47,7 @@ function wayHref(way: keyof typeof T.ways, type: FormType | undefined): string |
 
 /**
  * S7: first what is captured, then how. "Manuell" (P6), "Nummer oder Suche" (P7, figures and sets)
- * and "Foto" (P8, figures) work; the link comes with P9 and says so instead of leading nowhere.
+ * "Foto" (P8, figures) and "Link einfügen" (P9, all kinds) work.
  */
 export function CaptureSheet({ onClose }: { readonly onClose: () => void }) {
   const [what, setWhat] = useState<What>("minifig");
