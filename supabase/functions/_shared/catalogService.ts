@@ -15,7 +15,7 @@ import type {
   CatalogKind,
   CatalogSetInfo,
 } from "./catalogTypes.ts";
-import { CatalogError, joinTheme } from "./json.ts";
+import { CatalogError, decodeNames, joinTheme } from "./json.ts";
 import type { RebrickableClient } from "./rebrickableClient.ts";
 
 export interface CatalogDeps {
@@ -75,7 +75,7 @@ async function cached<T>(
   const now = deps.now();
   const notBefore = new Date(now.getTime() - CACHE_DAYS * 86_400_000).toISOString();
   const known = await deps.store.read(key, notBefore);
-  if (known !== undefined && known !== null) return known as T;
+  if (known !== undefined && known !== null) return decodeNames(known as T);
   const { value, complete } = await produce();
   if (complete) await deps.store.write(key, value, now.toISOString());
   return value;

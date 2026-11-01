@@ -50,6 +50,21 @@ export function decodeEntities(text: string): string {
     .replace(/&amp;/g, "&");
 }
 
+/**
+ * A cached answer with every `name` decoded, at any depth: entries stored before BrickLink's HTML
+ * characters were decoded still carry them (30 days of cache).
+ */
+export function decodeNames<T>(value: T): T {
+  if (Array.isArray(value)) return value.map((entry) => decodeNames(entry)) as T;
+  if (!isRecord(value)) return value;
+  const out: Json = {};
+  for (const [key, entry] of Object.entries(value)) {
+    out[key] =
+      key === "name" && typeof entry === "string" ? decodeEntities(entry) : decodeNames(entry);
+  }
+  return out as T;
+}
+
 /** A year from 1900 to 2100, else nothing. */
 export function year(value: unknown): number | undefined {
   const number = num(value);

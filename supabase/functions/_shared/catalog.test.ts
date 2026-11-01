@@ -394,6 +394,25 @@ describe("Katalog: Zwischenspeicher 30 Tage", () => {
     expect(again.name).toBe("Clone Trooper & Battle Droid Battle Pack");
   });
 
+  it("Einträge von vor dem Entschlüsseln kommen aus dem Zwischenspeicher ohne HTML-Zeichen", async () => {
+    const store = new MemoryStore();
+    await store.write(
+      "item:minifig:sw0194",
+      {
+        kind: "minifig",
+        number: "sw0194",
+        name: "Captain Rex &#40;Phase 2&#41;",
+        sets: [{ number: "75372-1", name: "Lobster Lovin&#39; &amp; Co" }],
+      },
+      "2026-11-01T12:00:00.000Z",
+    );
+    const log: string[] = [];
+    const item = await loadItem(deps(working(), store, log), "minifig", "sw0194");
+    expect(log).toEqual([]);
+    expect(item.name).toBe("Captain Rex (Phase 2)");
+    expect(item.sets?.[0]?.name).toBe("Lobster Lovin' & Co");
+  });
+
   it("nach 30 Tagen wird neu geholt", async () => {
     const store = new MemoryStore();
     const log: string[] = [];
