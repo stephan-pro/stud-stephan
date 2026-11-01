@@ -52,15 +52,21 @@ const FAILURES: readonly CatalogFailure[] = [
   "unavailable",
 ];
 
-/** What a failed call of the function answered: the `failure` in its JSON body, if it has one. */
-async function failureOf(error: unknown): Promise<CatalogCallError> {
+/**
+ * What a failed call of an Edge Function answered: the `failure` in its JSON body, if it has one.
+ * `source` names the function in the message (`catalog`, `recognize`).
+ */
+export async function failureOf(error: unknown, source = "catalog"): Promise<CatalogCallError> {
   const context = (error as { context?: unknown } | null)?.context;
   if (context instanceof Response) {
     const body = (await context.json().catch(() => null)) as { failure?: unknown } | null;
     const failure = FAILURES.find((candidate) => candidate === body?.failure);
-    return new CatalogCallError(`catalog: ${failure ?? context.status}`, failure ?? "unavailable");
+    return new CatalogCallError(
+      `${source}: ${failure ?? context.status}`,
+      failure ?? "unavailable",
+    );
   }
-  return new CatalogCallError(`catalog: ${String(error)}`, "offline");
+  return new CatalogCallError(`${source}: ${String(error)}`, "offline");
 }
 
 export class SupabaseCatalog implements Catalog {

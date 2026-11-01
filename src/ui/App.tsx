@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Auth, Session } from "../auth/auth";
 import type { Catalog } from "../backend/catalog";
+import type { Recognizer } from "../backend/recognition";
 import type { Remote } from "../backend/remote";
 import type { Collection, ShowcaseItem } from "../domain/types";
+import { CapturePhoto } from "./capturePhoto";
 import { AccountCard } from "./components/AccountCard";
 import { CaptureSheet } from "./components/CaptureSheet";
 import { ComingSoon } from "./components/ComingSoon";
@@ -12,6 +14,7 @@ import { StorageCard } from "./components/StorageCard";
 import { Toast } from "./components/Toast";
 import { DetailPage, detailName } from "./pages/DetailPage";
 import { FormPage } from "./pages/FormPage";
+import { PhotoPage } from "./pages/PhotoPage";
 import { SearchPage } from "./pages/SearchPage";
 import { INITIAL_VIEW, ShowcasePage, type ShowcaseView } from "./pages/ShowcasePage";
 import { SignInPage } from "./pages/SignInPage";
@@ -48,6 +51,8 @@ interface ShellProps {
   readonly remote?: Remote | undefined;
   /** The official catalog (P7): search by number or name, entries to fill forms from. */
   readonly catalog?: Catalog | undefined;
+  /** The photo recognition (P8): a photo of a figure in, suggestions out. */
+  readonly recognizer?: Recognizer | undefined;
   /** The example collection of the demo (no server). */
   readonly demo?: Collection | undefined;
   /** Missing in the demo (no sign-in). */
@@ -57,14 +62,22 @@ interface ShellProps {
 }
 
 /** The shell: navigation (sidebar on the PC, bottom bar on the phone) and the current page. */
-function Shell({ session, remote, catalog, demo, onSignOut, focusOnMount }: ShellProps) {
+function Shell({
+  session,
+  remote,
+  catalog,
+  recognizer,
+  demo,
+  onSignOut,
+  focusOnMount,
+}: ShellProps) {
   const [page, setPage] = useState(currentLocation);
   const [view, setView] = useState<ShowcaseView>(INITIAL_VIEW);
   const data = useCollection(remote, demo);
   const online = useOnline();
   const firstPage = useRef(true);
   const removal = usePendingRemoval(remote, data);
-  const { route, detail, form, search: catalogSearch } = page;
+  const { route, detail, form, search: catalogSearch, photo } = page;
   const address = locationHash(page);
   const name = detail ? detailName(data, detail) : undefined;
 
@@ -86,6 +99,12 @@ function Shell({ session, remote, catalog, demo, onSignOut, focusOnMount }: Shel
   useEffect(() => {
     document.title = documentTitle(route, name);
   }, [route, name]);
+
+  // The photo of the recognition lives as long as the person stays on its way: recognition,
+  // search, form. Anywhere else it is let go, so it never lands on an unrelated figure.
+  useEffect(() => {
+    if (!photo && !catalogSearch && !form) CapturePhoto.clear();
+  }, [photo, catalogSearch, form]);
 
   useEffect(() => {
     // A freshly loaded page starts at the top without moving the focus (the skip link comes
@@ -138,6 +157,10 @@ function Shell({ session, remote, catalog, demo, onSignOut, focusOnMount }: Shel
             <div class="detail">
               <FormPage key={address} data={data} form={form} remote={remote} catalog={catalog} />
             </div>
+          ) : photo ? (
+            <div class="detail">
+              <PhotoPage recognizer={recognizer} />
+            </div>
           ) : catalogSearch ? (
             <div class="detail">
               <SearchPage type={catalogSearch} catalog={catalog} />
@@ -169,7 +192,9 @@ function Shell({ session, remote, catalog, demo, onSignOut, focusOnMount }: Shel
           />
         )}
         {removal.failed && <Toast message={TEXTS.remove.failed} />}
-        {route !== "settings" && !form && !catalogSearch && <PhoneNavigation current={route} />}
+        {route !== "settings" && !form && !catalogSearch && !photo && (
+          <PhoneNavigation current={route} />
+        )}
       </div>
     </PhotoSourceContext.Provider>
   );
@@ -187,11 +212,13 @@ export function App({
   auth,
   remote,
   catalog,
+  recognizer,
   demo,
 }: {
   readonly auth: Auth | null;
   readonly remote?: Remote | undefined;
   readonly catalog?: Catalog | undefined;
+  readonly recognizer?: Recognizer | undefined;
   /** The example collection; only the demo has one. */
   readonly demo?: Collection | undefined;
 }) {
@@ -222,6 +249,7 @@ export function App({
         session={DEMO_SESSION}
         remote={remote}
         catalog={catalog}
+        recognizer={recognizer}
         demo={demo}
         focusOnMount={false}
       />
@@ -254,6 +282,7 @@ export function App({
       session={session}
       remote={remote}
       catalog={catalog}
+      recognizer={recognizer}
       onSignOut={() => void signOut()}
       focusOnMount={changed.current}
     />

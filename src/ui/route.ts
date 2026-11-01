@@ -89,7 +89,11 @@ export interface PageLocation {
   readonly detail?: DetailRef;
   readonly form?: FormRef;
   readonly search?: SearchType;
+  /** The photo recognition (S7a, "#/erfassen/foto"), also below "Erfassen". */
+  readonly photo?: true;
 }
+
+const PHOTO_PATH = "foto";
 
 function decode(segment: string): string | undefined {
   try {
@@ -123,6 +127,9 @@ export function parseLocation(hash: string): PageLocation {
   }
   if (route === "capture" && segments.length === 2 && type) {
     return { route, form: { type, mode: "new" } };
+  }
+  if (route === "capture" && segments.length === 2 && second === PHOTO_PATH) {
+    return { route, photo: true };
   }
   if (route === "capture" && segments.length === 3 && second === SEARCH_PATH) {
     const searchType = typeOf(third);
@@ -175,10 +182,16 @@ export function searchHash(type: SearchType): string {
   return `${routeHash("capture")}/${SEARCH_PATH}/${DETAIL_PATHS[type]}`;
 }
 
+/** The link target of the photo recognition: "#/erfassen/foto". */
+export function photoHash(): string {
+  return `${routeHash("capture")}/${PHOTO_PATH}`;
+}
+
 /** The normal spelling of an address; differing spellings are rewritten to it. */
 export function locationHash(page: PageLocation): string {
   if (page.form) return formHash(page.form);
   if (page.search) return searchHash(page.search);
+  if (page.photo) return photoHash();
   return page.detail ? detailHash(page.detail) : routeHash(page.route);
 }
 

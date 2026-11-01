@@ -151,20 +151,21 @@ test.describe("Erfassen-Blatt (S7)", () => {
       await expect(sheet).toBeVisible();
       await expect(heading(page)).toHaveText("Erfassen");
 
-      // Figure is chosen to begin with; photo, number and link come with later packages.
+      // Figure is chosen to begin with; the link comes with a later package.
       const figure = sheet.getByRole("button", { name: TEXTS.capture.what.minifig });
       await expect(figure).toHaveAttribute("aria-pressed", "true");
       await expect(sheet.getByRole("button", { name: TEXTS.capture.what.diorama })).toBeDisabled();
       await expect(sheet.getByRole("button", { name: TEXTS.capture.what.wish })).toBeDisabled();
-      for (const way of ["photo", "link"] as const) {
-        await expect(
-          sheet.getByRole("button", { name: new RegExp(TEXTS.capture.ways[way].title) }),
-        ).toBeDisabled();
-      }
-      // "Nummer oder Suche" works since P7 (figures and sets).
+      await expect(
+        sheet.getByRole("button", { name: new RegExp(TEXTS.capture.ways.link.title) }),
+      ).toBeDisabled();
+      // "Nummer oder Suche" works since P7 (figures and sets), "Foto" since P8 (figures).
       await expect(
         sheet.getByRole("link", { name: new RegExp(TEXTS.capture.ways.search.title) }),
       ).toHaveAttribute("href", "#/erfassen/suche/figur");
+      await expect(
+        sheet.getByRole("link", { name: new RegExp(TEXTS.capture.ways.photo.title) }),
+      ).toHaveAttribute("href", "#/erfassen/foto");
       await expectNoAccessibilityViolations(page);
 
       await sheet.getByRole("button", { name: TEXTS.capture.what.legoSet }).click();

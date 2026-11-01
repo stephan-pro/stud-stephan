@@ -58,7 +58,7 @@ pg_cron (wöchentlich) ──► Edge Function „bricklink“ ──► BrickLi
 | P5 | Vitrine, Filter, Detailseiten | Sonnet | Medium | ✅ 01.11.2026 |
 | P6 | Manuell erfassen, bearbeiten, löschen, Mods | Sonnet | Medium | ✅ 01.11.2026 (Hochformat-Foto am Redmi vom PO bestätigt) |
 | P7 | Katalog (BrickLink-Nummern, Rebrickable-Suche) | Sonnet | Medium | ✅ 01.11.2026 (Prüfung mit sw0194 und 75372 vom PO bestätigt; „Stammt aus Set“ bleibt bei mehreren Sets leer, so gewollt) |
-| P8 | Fotoerkennung (Brickognize) | Sonnet | Medium | offen |
+| P8 | Fotoerkennung (Brickognize) | Sonnet | Medium | umgesetzt 01.11.2026, wartet auf Bereitstellung (`npm run deploy:functions`) und Prüfung am Redmi durch den PO |
 | P9 | Erfassen per Link (Merlins Steine, Rebrickable, andere) | Sonnet | Medium | offen |
 | P10 | Dioramen | Sonnet | Medium | offen |
 | P11 | Marktwerte und Wertentwicklung (BrickLink) | Opus | High | offen |
@@ -329,6 +329,15 @@ Tickets are written in English. Every acceptance criterion is at least one test,
   - Handy: Die Lupe öffnet das Suchfeld; am PC steht es immer da (wie im PC-Dummy).
   - Noch nicht dabei, weil das Paket es bringt: „+2,5 % Woche“ in der Sammlungskarte (Verlauf des Gesamtwerts, P13), „Bearbeiten“, „Weiteres Exemplar anlegen“ und „Löschen“ (P6), Diorama verlinken und „Einem Diorama zuordnen“ (P10), „＋ Wunschliste“ bei fehlenden Figuren eines Sets (P12). Ein Diorama steht auf der Figur mit Namen und Bild, noch ohne Link.
   - Neuer Design-Wert: `--line` (#E1E4EA) für die Trennlinien in Listen, in `DESIGN.md` und `tokens.css` eingetragen.
+
+- 01.11.2026 (P8, von Claude entschieden, vom PO änderbar):
+  - **Weg.** Erfassen → Figur → „Foto“ öffnet `#/erfassen/foto`. Dort wählt oder fotografiert man (am Handy fragt das Gerät nach Kamera oder Galerie), das Foto wird mit `resizePhoto` verkleinert und an die Funktion `recognize` geschickt, nie direkt an Brickognize. Nur Figuren; bei Sets und Sonderteilen ist der Weg ausgegraut („Erkannt werden nur Figuren“).
+  - **Vorschläge.** Bis zu 5, bester zuerst (grün), mit Katalogbild, Name, BrickLink-Nummer und Trefferquote. Brickognize liefert weder Jahr noch Thema, deshalb steht in der Zeile (anders als im Dummy) nur die Nummer; die BrickLink-Abfragen für Jahr und Thema würden das Tageslimit belasten. Ein Tipp öffnet das Formular aus dem Katalog (P7) mit grünen Feldern. Einträge ohne BrickLink-Nummer oder nur mit Nummern anderer Seiten werden weggelassen.
+  - **Eigenes Foto.** Es bleibt im Speicher des Browsers, solange man auf dem Weg Foto → Suche → Formular ist, und wird beim Öffnen eines Formulars für eine neue Figur wie ein dort gewähltes Foto hochgeladen (Titelbild). Verlässt man den Weg (z. B. zurück zum Erfassen-Blatt), ist es weg. „Abbrechen“ im Formular führt zu den Vorschlägen zurück, solange das Foto da ist.
+  - **Fehler.** Kein Treffer: „Keine Figur erkannt“ mit Weg zur Suche. Dienst gestört, offline oder überlastet: „Erkennung gerade nicht erreichbar“ mit „Noch einmal erkennen“ und „Per Nummer weiter“. Ein Foto, das nicht gelesen werden kann, wird abgelehnt.
+  - **Funktion.** Prüft wie `catalog`/`bricklink` selbst die Anmeldung (`isSignedIn`), nimmt nur WebP/JPEG/PNG bis 3 MB, braucht keinen Schlüssel. Eine Zeitgrenze von 25 s für Brickognize.
+  - **`npm run deploy:functions`** meldet bei Bedarf selbst bei Supabase an (`npx supabase login`), setzt die Schlüssel und stellt alle Funktionen bereit (jetzt auch `recognize`): ein Aufruf reicht.
+  - Demo und Tests nutzen drei Beispiel-Vorschläge (`src/demo/recognition.ts`).
 
 - 01.11.2026 (P7, von Claude entschieden, vom PO änderbar):
   - **Nummer oder Name.** Eine BrickLink-Nummer (`sw0194`) oder Setnummer (`75372`, ohne „-1“ wird es ergänzt) fragt BrickLink direkt und gibt höchstens einen Treffer. Ein Name sucht bei Rebrickable (bis zu 8 Treffer; BrickLink hat keine Namenssuche). Ab 2 Zeichen, 0,4 s nach dem letzten Tastendruck.

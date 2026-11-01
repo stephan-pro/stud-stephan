@@ -1,5 +1,6 @@
 // `npm run deploy:functions` – sets the secrets of the catalog functions in the Supabase project and
-// deploys the functions (P7). Only for the PO, in his own terminal after `npx supabase login`.
+// deploys all functions (P7 catalog, bricklink; P8 recognize). Only for the PO, in his own
+// terminal; a missing `npx supabase login` is done on the way.
 // The keys are read from .env.local and handed to the Supabase CLI through a temporary file that is
 // deleted afterwards; they are never printed. No database password and no Docker are needed.
 // `npm run deploy:functions -- --project-ref=<Kennung>` for another project.
@@ -41,16 +42,34 @@ if (!/^[a-z0-9]{10,40}$/.test(project)) {
   process.exit(1);
 }
 
-function supabase(args) {
-  const result = spawnSync("npx", ["supabase", ...args], { stdio: "inherit", shell: true });
-  if (result.status !== 0) {
+function run(args, stdio = "inherit") {
+  return spawnSync("npx", ["supabase", ...args], { stdio, shell: true });
+}
+
+/** One call is enough: if the CLI is not logged in yet, the login (browser) is done on the way. */
+function ensureLogin() {
+  console.log("Anmeldung bei Supabase prüfen …");
+  if (run(["projects", "list"], "ignore").status === 0) return;
+  console.log("Noch nicht angemeldet: Gleich öffnet sich der Browser, dort bitte bestätigen.\n");
+  if (run(["login"]).status !== 0) {
     console.error(
-      `\n❌ Der Schritt „supabase ${args.slice(0, 2).join(" ")}“ ist fehlgeschlagen (Code ${result.status}).` +
-        "\n   Falls es um eine fehlende Anmeldung geht: erst `npx supabase login` ausführen.",
+      "\n❌ Die Anmeldung bei Supabase hat nicht geklappt. Bitte noch einmal versuchen.",
     );
     process.exit(1);
   }
 }
+
+function supabase(args) {
+  const result = run(args);
+  if (result.status !== 0) {
+    console.error(
+      `\n❌ Der Schritt „supabase ${args.slice(0, 2).join(" ")}“ ist fehlgeschlagen (Code ${result.status}).`,
+    );
+    process.exit(1);
+  }
+}
+
+ensureLogin();
 
 const folder = mkdtempSync(join(tmpdir(), "stud-stephan-"));
 const file = join(folder, "secrets.env");
@@ -66,9 +85,10 @@ try {
   rmSync(folder, { recursive: true, force: true });
 }
 
-console.log("\n2/2 Funktionen catalog und bricklink bereitstellen …");
+// No function name: every folder in supabase/functions is deployed (catalog, bricklink, recognize).
+console.log("\n2/2 Funktionen catalog, bricklink und recognize bereitstellen …");
 supabase(["functions", "deploy", "--project-ref", project, "--use-api", "--no-verify-jwt"]);
 
 console.log(
-  "\n✅ Fertig. Prüfung in der App: Erfassen → Figur → Nummer oder Suche → sw0194 eintippen.",
+  "\n✅ Fertig. Prüfung in der App: Erfassen → Figur → Foto (Foto-Erkennung) oder Nummer oder Suche.",
 );

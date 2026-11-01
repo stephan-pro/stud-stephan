@@ -3,9 +3,15 @@
 // "unavailable" instead of failing at start.
 
 import { createBricklink } from "./bricklinkClient.ts";
+import { createBrickognize } from "./brickognizeClient.ts";
 import type { CatalogDeps } from "./catalogService.ts";
 import { type CatalogStore, supabaseStore } from "./catalogStore.ts";
-import { type BricklinkHandlerDeps, type HandlerDeps, isSignedIn } from "./handler.ts";
+import {
+  type BricklinkHandlerDeps,
+  type HandlerDeps,
+  isSignedIn,
+  type RecognizeHandlerDeps,
+} from "./handler.ts";
 import { CatalogError, type Fetch } from "./json.ts";
 import { createRebrickable } from "./rebrickableClient.ts";
 
@@ -59,6 +65,14 @@ export function catalogHandlerDeps(
       if (!bricklink || !key) return undefined;
       return { bricklink, rebrickable: createRebrickable({ fetch: send, key }), store, now };
     },
+  };
+}
+
+/** Brickognize needs no key, so the function is always ready. */
+export function recognizeHandlerDeps(env: Environment, send: Fetch): RecognizeHandlerDeps {
+  return {
+    signedIn: (request) => isSignedIn(request, env("SUPABASE_URL") ?? "", send),
+    service: createBrickognize({ fetch: send }),
   };
 }
 

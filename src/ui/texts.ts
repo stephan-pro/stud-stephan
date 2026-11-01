@@ -278,6 +278,7 @@ export const TEXTS = {
       manual: { title: "Manuell", text: "Für Customs und alles ohne Katalog" },
     },
     soon: "Kommt bald",
+    onlyFigures: "Erkannt werden nur Figuren",
     noCatalogForParts: "Für Sonderteile gibt es keinen Katalog",
     later: "Diorama und Wunsch kommen bald.",
   },
@@ -314,6 +315,37 @@ export const TEXTS = {
     unknownNumber: "Nummer unbekannt",
     facts: (facts: readonly string[]) => facts.join(" · "),
     imageAlt: (name: string) => `${name}, Katalogbild`,
+  },
+  /** S7a photo recognition (P8, F1). */
+  recognition: {
+    title: "Foto-Erkennung",
+    back: "Zurück zum Erfassen",
+    empty:
+      "Mach ein Foto der Figur oder wähl eins aus. Am besten steht sie vor ruhigem Hintergrund und ist ganz zu sehen.",
+    pick: "Foto aufnehmen oder wählen",
+    again: "Neues Foto",
+    yourPhoto: "Dein Foto",
+    photoAlt: "Dein Foto der Figur",
+    resizing: "Foto wird verkleinert …",
+    recognizing: "Wird erkannt …",
+    suggestions: (count: number) => (count === 1 ? "1 Vorschlag" : `${count} Vorschläge`),
+    scoreLabel: "Trefferquote",
+    choose: (name: string, percent: string) => `${name}, ${percent}, übernehmen`,
+    none: {
+      title: "Keine Figur erkannt",
+      text: "Probier ein anderes Foto, oder such die Figur per Nummer.",
+    },
+    notFitting: "Keiner passt – per Nummer suchen",
+    failed: {
+      title: "Erkennung gerade nicht erreichbar",
+      offline: "Prüf deine Verbindung. Per Nummer geht es auch ohne Foto-Erkennung.",
+      unavailable: "Der Dienst antwortet gerade nicht. Versuch es später noch einmal.",
+      limit_reached: "Der Dienst ist gerade überlastet. Versuch es später noch einmal.",
+      not_signed_in: "Du bist nicht mehr angemeldet. Melde dich neu an.",
+      unreadable: "Dieses Foto konnte nicht gelesen werden. Nimm ein anderes.",
+    },
+    retry: "Noch einmal erkennen",
+    byNumber: "Per Nummer weiter",
   },
   /** S8 filled from the catalog (P7). */
   catalogForm: {

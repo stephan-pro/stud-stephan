@@ -8,6 +8,7 @@ import {
   PHONE_NAVIGATION,
   parseLocation,
   parseRoute,
+  photoHash,
   ROUTE_PATHS,
   ROUTES,
   routeHash,
@@ -179,6 +180,20 @@ describe("P7 Adressen der Katalogsuche und des Formulars aus dem Katalog", () =>
     expect(locationHash({ route: "capture", search: "minifig" })).toBe("#/erfassen/suche/figur");
     const form = { type: "legoSet", mode: "catalog", ref: "75372-1" } as const;
     expect(locationHash({ route: "capture", form })).toBe("#/erfassen/set/katalog/75372-1");
+  });
+});
+
+describe("P8 Adresse der Foto-Erkennung", () => {
+  it("P8 Die Foto-Erkennung liegt unter Erfassen: #/erfassen/foto", () => {
+    expect(photoHash()).toBe("#/erfassen/foto");
+    expect(parseLocation("#/erfassen/foto")).toEqual({ route: "capture", photo: true });
+    expect(parseLocation("#/erfassen/foto/")).toEqual({ route: "capture", photo: true });
+    expect(locationHash({ route: "capture", photo: true })).toBe("#/erfassen/foto");
+  });
+
+  it("P8 Mit weiteren Teilen ist es keine Foto-Erkennung", () => {
+    expect(parseLocation("#/erfassen/foto/x")).toEqual({ route: "showcase" });
+    expect(parseLocation("#/vitrine/foto")).toEqual({ route: "showcase" });
   });
 });
 

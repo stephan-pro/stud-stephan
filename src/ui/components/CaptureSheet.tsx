@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
 import type { FormType } from "../../domain/forms";
-import { formHash, searchHash } from "../route";
+import { formHash, photoHash, searchHash } from "../route";
 import { TEXTS } from "../texts";
 import { Icon, type IconName } from "./Icon";
 import { Sheet } from "./Sheet";
@@ -39,12 +39,14 @@ function wayHref(way: keyof typeof T.ways, type: FormType | undefined): string |
   if (type === undefined) return undefined;
   if (way === "manual") return formHash({ type, mode: "new" });
   if (way === "search" && type !== "specialPart") return searchHash(type);
+  // Brickognize recognizes figures only.
+  if (way === "photo" && type === "minifig") return photoHash();
   return undefined;
 }
 
 /**
- * S7: first what is captured, then how. "Manuell" (P6) and "Nummer oder Suche" (P7, figures and
- * sets) work; photo and link come with P8 and P9 and say so instead of leading nowhere.
+ * S7: first what is captured, then how. "Manuell" (P6), "Nummer oder Suche" (P7, figures and sets)
+ * and "Foto" (P8, figures) work; the link comes with P9 and says so instead of leading nowhere.
  */
 export function CaptureSheet({ onClose }: { readonly onClose: () => void }) {
   const [what, setWhat] = useState<What>("minifig");
@@ -79,7 +81,9 @@ export function CaptureSheet({ onClose }: { readonly onClose: () => void }) {
             ? text.text
             : way.value === "search" && type
               ? T.noCatalogForParts
-              : T.soon;
+              : way.value === "photo" && type
+                ? T.onlyFigures
+                : T.soon;
           const body = (
             <>
               <span class={`way__icon way__icon--${way.tint}`}>

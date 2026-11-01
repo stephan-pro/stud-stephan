@@ -2,6 +2,7 @@
 // answers. The functions' `index.ts` only connects this to `Deno.serve` and the environment.
 
 import type { BricklinkClient } from "./bricklinkClient.ts";
+import type { Brickognize } from "./brickognizeClient.ts";
 import { type CatalogDeps, loadItem, searchCatalog } from "./catalogService.ts";
 import {
   type CatalogAnswer,
@@ -11,6 +12,7 @@ import {
   MAX_QUERY_LENGTH,
 } from "./catalogTypes.ts";
 import { CatalogError, type Fetch, isRecord, str } from "./json.ts";
+import { MAX_PHOTO_BYTES, type RecognizeAnswer } from "./recognizeTypes.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -88,12 +90,13 @@ async function serve(
   request: Request,
   deps: Pick<HandlerDeps, "signedIn">,
   run: (body: unknown) => Promise<Response>,
+  read: (request: Request) => Promise<unknown> = readBody,
 ): Promise<Response> {
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
   if (request.method !== "POST") return failure("bad_request");
   if (!(await deps.signedIn(request))) return failure("not_signed_in");
   try {
-    return await run(await readBody(request));
+    return await run(await read(request));
   } catch (error) {
     if (error instanceof CatalogError) return failure(error.failure);
     return failure("unavailable");
@@ -113,6 +116,52 @@ export function handleCatalog(request: Request, deps: HandlerDeps): Promise<Resp
         : { op: "item", item: await loadItem(services, parsed.kind, parsed.ref) };
     return answer(200, result);
   });
+}
+
+export interface RecognizeHandlerDeps {
+  readonly signedIn: HandlerDeps["signedIn"];
+  readonly service: Brickognize;
+}
+
+/** The photos the app sends: made small in the browser as WebP, or JPEG where WebP is not possible. */
+const PHOTO_TYPES = ["image/webp", "image/jpeg", "image/png"];
+
+interface PhotoBody {
+  readonly bytes: Uint8Array<ArrayBuffer>;
+  readonly contentType: string;
+}
+
+/** The photo of the request, or nothing if the body is empty, too big or not a picture type. */
+async function readPhoto(request: Request): Promise<PhotoBody | undefined> {
+  const contentType = (request.headers.get("Content-Type") ?? "").split(";")[0]?.trim() ?? "";
+  if (!PHOTO_TYPES.includes(contentType)) return undefined;
+  try {
+    const bytes = new Uint8Array(await request.arrayBuffer());
+    return bytes.length === 0 || bytes.length > MAX_PHOTO_BYTES
+      ? undefined
+      : { bytes, contentType };
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The function `recognize` (P8): the body is the photo itself (`Content-Type: image/webp` …); the
+ * answer is `{suggestions}` with up to five figures, best first.
+ */
+export function handleRecognize(request: Request, deps: RecognizeHandlerDeps): Promise<Response> {
+  return serve(
+    request,
+    deps,
+    async (photo) => {
+      if (!photo) return failure("bad_request");
+      const { bytes, contentType } = photo as PhotoBody;
+      const suggestions = await deps.service.recognize(bytes, contentType);
+      const result: RecognizeAnswer = { suggestions };
+      return answer(200, result);
+    },
+    readPhoto,
+  );
 }
 
 export interface BricklinkHandlerDeps {

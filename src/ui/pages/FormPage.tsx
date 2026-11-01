@@ -21,11 +21,12 @@ import { formatMoney } from "../../domain/money";
 import { shortSetNumber } from "../../domain/showcase";
 import type { Collection, ManufacturerKind, ModPart, ShowcaseItem } from "../../domain/types";
 import { modSpend } from "../../domain/value";
+import { CapturePhoto } from "../capturePhoto";
 import { Choice, FormCard, fieldId, TextField } from "../components/Fields";
 import { Icon } from "../components/Icon";
 import { ModSheet } from "../components/ModSheet";
 import { PhotoField } from "../components/PhotoField";
-import { detailHash, type FormRef, formHash, routeHash, searchHash } from "../route";
+import { detailHash, type FormRef, formHash, photoHash, routeHash, searchHash } from "../route";
 import { TEXTS } from "../texts";
 import type { LoadedCollection } from "../useCollection";
 
@@ -94,6 +95,8 @@ interface FormBodyProps {
 
 /** Where "Abbrechen" leads: back to the object, to the search, or to the showcase. */
 function cancelHash(form: FormRef): string {
+  // With a photo taken for the recognition the person comes back to its suggestions.
+  if (CapturePhoto.peek() && form.mode === "catalog" && form.type === "minifig") return photoHash();
   if (form.mode === "new") return routeHash("showcase");
   if (form.mode === "catalog") return searchHash(form.type);
   return detailHash({ type: form.type, id: form.id });
@@ -110,6 +113,12 @@ function FormBody({ form, collection, start, remote, update, catalogForm }: Form
   // The id is made once; editing keeps the one the object has.
   const id = useRef(start.existing?.id ?? newId(type)).current;
   const unsaved = useRef(new Set<string>()).current;
+  // The photo taken for the recognition (S7a) goes with a new figure, however the form was reached.
+  const initialPhoto = useRef(
+    type === "minifig" && (form.mode === "new" || form.mode === "catalog")
+      ? CapturePhoto.peek()
+      : undefined,
+  ).current;
 
   // Photos sent for a form that is left without saving are taken out of storage again.
   useEffect(
@@ -243,6 +252,7 @@ function FormBody({ form, collection, start, remote, update, catalogForm }: Form
           folder={id}
           unsaved={unsaved}
           name={values.name || title}
+          initialFile={initialPhoto}
         />
       </FormCard>
 

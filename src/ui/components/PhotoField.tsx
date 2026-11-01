@@ -1,4 +1,4 @@
-import { useRef, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { type Remote, RemoteError } from "../../backend/remote";
 import { LIMITS } from "../../backend/rules";
 import { PhotoError, resizePhoto } from "../../files/browserPhoto";
@@ -35,6 +35,8 @@ interface PhotoFieldProps {
    */
   readonly unsaved: Set<string>;
   readonly name: string;
+  /** A photo to send as soon as the form opens (the one taken for the recognition). */
+  readonly initialFile?: File | undefined;
 }
 
 const EXTENSIONS: Readonly<Record<string, string>> = {
@@ -60,7 +62,15 @@ function jobLabel(job: Job): string {
  * made small in the browser (`resizePhoto`), then sent with retries (`uploadFile`) and shown as
  * soon as it is stored. The first photo is the cover; any other can be moved up to it.
  */
-export function PhotoField({ photos, onPhotos, remote, folder, unsaved, name }: PhotoFieldProps) {
+export function PhotoField({
+  photos,
+  onPhotos,
+  remote,
+  folder,
+  unsaved,
+  name,
+  initialFile,
+}: PhotoFieldProps) {
   const [jobs, setJobs] = useState<readonly Job[]>([]);
   const nextKey = useRef(0);
   const input = useRef<HTMLInputElement>(null);
@@ -108,17 +118,28 @@ export function PhotoField({ photos, onPhotos, remote, folder, unsaved, name }: 
     }
   };
 
-  const add = (files: FileList | null) => {
-    if (!files) return;
-    const chosen = [...files].slice(0, Math.max(0, room));
-    for (const file of chosen) {
+  const start = (files: readonly File[]) => {
+    for (const file of files.slice(0, Math.max(0, room))) {
       const job: Job = { key: nextKey.current++, file, step: "resizing", attempt: 1, attempts: 4 };
       setJobs((current) => [...current, job]);
       void run(job);
     }
+  };
+
+  const add = (files: FileList | null) => {
+    if (!files) return;
+    start([...files]);
     // The same photo can be chosen again after it was taken out.
     if (input.current) input.current.value = "";
   };
+
+  // The photo of the recognition (S7a) is sent like one chosen here, once, when the form opens.
+  const started = useRef(false);
+  useEffect(() => {
+    if (started.current || !initialFile || !remote) return;
+    started.current = true;
+    start([initialFile]);
+  }, []);
 
   const take = (path: string) => {
     onPhotos((current) => current.filter((candidate) => candidate !== path));
