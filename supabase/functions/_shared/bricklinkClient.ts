@@ -4,6 +4,7 @@
 
 import {
   CatalogError,
+  decodeEntities,
   type Fetch,
   isRecord,
   list,
@@ -97,7 +98,8 @@ function entriesOf(data: unknown, wanted: ItemType): BricklinkEntry[] {
     for (const entry of list(group.entries)) {
       if (!isRecord(entry) || !isRecord(entry.item) || entry.item.type !== wanted) continue;
       const number = str(entry.item.no);
-      const name = str(entry.item.name);
+      const rawName = str(entry.item.name);
+      const name = rawName === undefined ? undefined : decodeEntities(rawName);
       if (number === undefined || name === undefined) continue;
       const quantity = num(entry.quantity) ?? 1;
       const known = found.get(number);
@@ -143,8 +145,10 @@ export function createBricklink(options: BricklinkOptions): BricklinkClient {
     async item(type, number) {
       const data = await get(`/items/${type}/${enc(number)}`);
       if (!isRecord(data)) throw new CatalogError("unavailable", "BrickLink: unerwartete Antwort");
-      const name = str(data.name);
-      if (name === undefined) throw new CatalogError("not_found", "BrickLink: Eintrag ohne Namen");
+      const rawName = str(data.name);
+      if (rawName === undefined)
+        throw new CatalogError("not_found", "BrickLink: Eintrag ohne Namen");
+      const name = decodeEntities(rawName);
       const item: BricklinkItem = { number: str(data.no) ?? number, name };
       const released = year(data.year_released);
       const categoryId = num(data.category_id);

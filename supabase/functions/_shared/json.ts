@@ -37,6 +37,19 @@ export function toCents(value: unknown): number | undefined {
   return Number.isFinite(amount) && amount >= 0 ? Math.round(amount * 100) : undefined;
 }
 
+/** BrickLink sends names with HTML characters ("Batman &#40;Minifigure&#41;", "Lobster Lovin&#39;"). */
+export function decodeEntities(text: string): string {
+  return text
+    .replace(/&#(\d{1,6});/g, (whole, code: string) => {
+      const point = Number(code);
+      return point > 0 && point <= 0x10ffff ? String.fromCodePoint(point) : whole;
+    })
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
+}
+
 /** A year from 1900 to 2100, else nothing. */
 export function year(value: unknown): number | undefined {
   const number = num(value);

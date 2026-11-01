@@ -201,7 +201,8 @@ async function figuresOfSet(
 ): Promise<SeriesFigureInfo[]> {
   return cached(
     deps,
-    `series:figures:${setNumber}`,
+    // "figures2": the first version stored names with HTML characters.
+    `series:figures2:${setNumber}`,
     async () => {
       const { minifigs, sets } = await deps.bricklink.contentsOfSet(setNumber);
       const found = new Map<string, SeriesFigureInfo>();

@@ -224,6 +224,32 @@ describe("P12 Aufbau in Portionen", () => {
     expect([...deps.cache.counts.values()]).toEqual([3]);
   });
 
+  it("Namen von BrickLink kommen ohne HTML-Zeichen an", async () => {
+    const entities = brickLink([
+      {
+        match_no: "0",
+        entries: [
+          {
+            item: {
+              no: "coltlbm08",
+              type: "MINIFIG",
+              name: "Lobster Lovin&#39; Batman &#40;Only&#41; &amp; Co",
+            },
+            quantity: 1,
+          },
+        ],
+      },
+    ]);
+    const store = new MemorySeriesStore();
+    const deps = seriesDeps(store, { extra: [["/items/SET/75372-1/subsets", entities]] });
+    const summary = await startSeries(deps, "stephan", 2);
+    await workOnSeries(deps, { budgetMs: 50_000 });
+    const detail = await store.detail("stephan", summary.id, false);
+    expect(detail?.figures.map((figure) => figure.name)).toContain(
+      "Lobster Lovin' Batman (Only) & Co",
+    );
+  });
+
   it("Eine Person arbeitet nur an ihren Reihen", async () => {
     const store = new MemorySeriesStore();
     const deps = seriesDeps(store);
