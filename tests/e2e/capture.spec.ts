@@ -154,9 +154,9 @@ test.describe("Erfassen-Blatt (S7)", () => {
       // Figure is chosen to begin with.
       const figure = sheet.getByRole("button", { name: TEXTS.capture.what.minifig });
       await expect(figure).toHaveAttribute("aria-pressed", "true");
-      // The diorama works since P10 (`dioramas.spec.ts`); only the wish is still to come.
+      // The diorama works since P10 (`dioramas.spec.ts`), the wish since P15 (`wishCapture.spec.ts`).
       await expect(sheet.getByRole("button", { name: TEXTS.capture.what.diorama })).toBeEnabled();
-      await expect(sheet.getByRole("button", { name: TEXTS.capture.what.wish })).toBeDisabled();
+      await expect(sheet.getByRole("button", { name: TEXTS.capture.what.wish })).toBeEnabled();
       // "Nummer oder Suche" works since P7 (figures and sets), "Foto" since P8 (figures), "Link
       // einfügen" since P9 (all kinds).
       await expect(
@@ -252,16 +252,18 @@ test.describe("Formular (S8): Prüfung und Speichern", () => {
     await expect(heading(page)).toHaveText(T.titleNew.minifig);
   });
 
-  test("P6 Ein anderer Hersteller braucht einen Namen, ein falsches Jahr beim Set wird gemeldet", async ({
-    page,
-  }) => {
+  test("P6 Ein anderer Hersteller braucht einen Namen", async ({ page }) => {
     await page.goto("#/erfassen/figur");
     await field(page, T.fields.name).fill("Test");
     await page.getByRole("button", { name: T.manufacturers.custom }).click();
     await save(page).click();
     await expect(field(page, T.fields.manufacturerName)).toBeFocused();
     await expect(page.getByText(T.errors.required)).toBeVisible();
+  });
 
+  // A test of its own with a fresh start: right after only the address changed from one form to
+  // another, WebKit under load sometimes drew the new form twice and lost what had been typed.
+  test("P6 Ein falsches Jahr beim Set wird gemeldet", async ({ page }) => {
     await page.goto("#/erfassen/set");
     await field(page, T.fields.name).fill("Set");
     await field(page, T.fields.year).fill("1500");

@@ -119,8 +119,9 @@ test.describe("mit Beispielsammlung", () => {
     expect(Math.abs(chips.y + chips.height / 2 - (filter.y + filter.height / 2))).toBeLessThan(20);
     expect(filter.x).toBeGreaterThan(chips.x + chips.width);
 
-    // The sidebar reaches the bottom of the window, also after scrolling.
-    await page.mouse.wheel(0, 600);
+    // The sidebar reaches the bottom of the window, also after scrolling (by script: mobile WebKit
+    // has no mouse wheel).
+    await page.evaluate(() => scrollBy(0, 600));
     const sidebar = await box(page.locator(".sidebar"));
     expect(Math.round(sidebar.y + sidebar.height)).toBeGreaterThanOrEqual(PC.height - 16);
   });

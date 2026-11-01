@@ -2,10 +2,23 @@
 // values the sheet holds, their check, the wish a valid sheet makes, and the form "Erhalten" opens
 // (S8 filled from the wish). No DOM and no texts of the interface.
 
-import type { CatalogForm } from "./catalog";
+import type { CatalogItem } from "../backend/catalog";
+import type { PageFields } from "../backend/linkPreview";
+import { type CatalogForm, formFromCatalog } from "./catalog";
 import { emptyForm, FIELD_LIMITS, moneyText, tooLong, trimmed } from "./forms";
+import { manufacturerFromName } from "./linkForm";
 import { MAX_CENTS, parseMoney } from "./money";
-import type { CatalogFigure, Cents, Condition, Id, Priority, Timestamp, WishItem } from "./types";
+import { shortSetNumber } from "./showcase";
+import type {
+  CatalogFigure,
+  Cents,
+  Condition,
+  Id,
+  Manufacturer,
+  Priority,
+  Timestamp,
+  WishItem,
+} from "./types";
 
 /** Everything the sheet holds while typing. */
 export interface WishValues {
@@ -73,7 +86,10 @@ export function withWishValues(wish: WishItem, values: WishValues): WishItem {
   };
 }
 
-/** What a wish is made from: a figure of a series, a figure of a set, or a set. */
+/**
+ * What a wish is made from: a figure of a series, a figure of a set, a set, or (P15) a catalog entry
+ * or a page found by number, search or link in the capture sheet.
+ */
 export interface WishSource {
   readonly type: WishItem["type"];
   readonly name: string;
@@ -83,6 +99,47 @@ export interface WishSource {
   readonly imageUrl?: string | undefined;
   /** The series it was wished from (F13). */
   readonly fromSeries?: string | undefined;
+  /** LEGO unless a page named another manufacturer. */
+  readonly manufacturer?: Manufacturer | undefined;
+  /** The pasted link the wish was found by. */
+  readonly links?: readonly string[] | undefined;
+}
+
+/** A catalog entry (number or search, F2) as a wish; `link` when it was reached by a pasted link. */
+export function wishSourceOfItem(item: CatalogItem, link?: string): WishSource {
+  return {
+    type: item.kind,
+    name: item.name,
+    number: item.number === "" ? undefined : item.number,
+    theme: item.theme,
+    imageUrl: item.imageUrl,
+    links: link ? [link] : [],
+  };
+}
+
+/**
+ * What a page (F3) gave, as a wish. Without a name the page's host stands in (the wish needs one);
+ * a number on the page counts for sets only, as in the form.
+ */
+export function wishSourceOfPage(
+  type: WishItem["type"],
+  fields: PageFields,
+  link: string,
+): WishSource {
+  let host = link;
+  try {
+    host = new URL(link).hostname;
+  } catch {
+    // The link stays the name.
+  }
+  return {
+    type,
+    name: fields.name ?? host,
+    number: type === "legoSet" ? fields.setNumber : undefined,
+    imageUrl: fields.imageUrl,
+    manufacturer: fields.manufacturer ? manufacturerFromName(fields.manufacturer) : undefined,
+    links: [link],
+  };
 }
 
 export function wishSourceOfFigure(
@@ -110,10 +167,10 @@ export function newWish(
     id: context.id,
     type: source.type,
     name: source.name,
-    manufacturer: { kind: "lego" },
+    manufacturer: source.manufacturer ?? { kind: "lego" },
     priority: values.priority,
     desiredCondition: values.condition,
-    links: [],
+    links: [...(source.links ?? [])],
     createdAt: context.createdAt,
     ...(number === undefined
       ? {}
@@ -136,6 +193,24 @@ export function wishForFigure(
   bricklinkId: string | undefined,
 ): WishItem | undefined {
   return wishlist.find((wish) => wish.type === "minifig" && same(wish.bricklinkId, bricklinkId));
+}
+
+/**
+ * The wish a new one from `source` would repeat: the same kind and number (a set number with or
+ * without "-1"). Without a number nothing counts as the same.
+ */
+export function wishForSource(
+  wishlist: readonly WishItem[],
+  source: WishSource,
+): WishItem | undefined {
+  if (source.type === "minifig") return wishForFigure(wishlist, source.number);
+  const number = source.number === undefined ? undefined : shortSetNumber(source.number);
+  return wishlist.find(
+    (wish) =>
+      wish.type === "legoSet" &&
+      wish.setNumber !== undefined &&
+      same(shortSetNumber(wish.setNumber), number),
+  );
 }
 
 /** The form "Erhalten" opens (S8): the wish's data in the fields, shown as taken over. */
@@ -162,5 +237,32 @@ export function formFromWish(wish: WishItem): CatalogForm {
     sets: [],
     numberMissing: false,
     origin: "wish",
+  };
+}
+
+/**
+ * "Erhalten" for a set (P15): the form from the wish plus what the catalog adds like for a set from
+ * the catalog: its figures (F7), year, pieces, number of figures and, if the wish has none, the
+ * picture. What the wish says (name, number, theme, links, note) stays.
+ */
+export function withCatalogEntry(form: CatalogForm, item: CatalogItem): CatalogForm {
+  const catalog = formFromCatalog(item);
+  const values = { ...form.values };
+  const prefilled = [...form.prefilled];
+  for (const field of ["year", "pieceCount", "minifigCount", "fromSet"] as const) {
+    if (values[field] === "" && catalog.values[field] !== "") {
+      values[field] = catalog.values[field];
+      prefilled.push(field);
+    }
+  }
+  return {
+    ...form,
+    values,
+    prefilled,
+    extras: {
+      ...catalog.extras,
+      ...form.extras,
+    },
+    sets: catalog.sets,
   };
 }

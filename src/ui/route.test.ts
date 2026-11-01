@@ -340,4 +340,28 @@ describe("P12 Wunschliste und Reihen", () => {
     });
     expect(parseLocation("#/erfassen/sonderteil/wunsch/w")).toEqual({ route: "showcase" });
   });
+
+  it("P15 Wunsch per Nummer, Suche oder Link: eigene Adressen der Suche und der Link-Seite", () => {
+    expect(searchHash("legoSet", true)).toBe("#/erfassen/suche/set/wunsch");
+    expect(linkHash("minifig", true)).toBe("#/erfassen/link/figur/wunsch");
+    expect(parseLocation("#/erfassen/suche/set/wunsch")).toEqual({
+      route: "capture",
+      search: "legoSet",
+      forWish: true,
+    });
+    expect(parseLocation("#/erfassen/link/figur/wunsch")).toEqual({
+      route: "capture",
+      link: "minifig",
+      forWish: true,
+    });
+    expect(locationHash(parseLocation("#/erfassen/link/set/wunsch/"))).toBe(
+      "#/erfassen/link/set/wunsch",
+    );
+    expect(locationHash(parseLocation("#/erfassen/suche/figur/wunsch"))).toBe(
+      "#/erfassen/suche/figur/wunsch",
+    );
+    // Wishes are figures and sets only.
+    expect(parseLocation("#/erfassen/link/sonderteil/wunsch")).toEqual({ route: "showcase" });
+    expect(parseLocation("#/erfassen/suche/x/wunsch")).toEqual({ route: "showcase" });
+  });
 });

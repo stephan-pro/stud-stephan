@@ -28,7 +28,7 @@ import { Scribbles } from "../components/Scribbles";
 import { WishSheet } from "../components/WishSheet";
 import { detailHash, formHash, seriesHash } from "../route";
 import { TEXTS } from "../texts";
-import type { LoadedCollection } from "../useCollection";
+import { type LoadedCollection, useWritable } from "../useCollection";
 import { wishActions } from "../wishActions";
 
 const T = TEXTS.series.detail;
@@ -61,6 +61,7 @@ export function SeriesDetailPage({
   const [filter, setFilter] = useState<SeriesFilter>("all");
   const [picked, setPicked] = useState<SeriesFigure | undefined>();
   const [sure, setSure] = useState(false);
+  const writable = useWritable();
   const [removing, setRemoving] = useState(false);
 
   useEffect(() => {
@@ -331,6 +332,7 @@ export function SeriesDetailPage({
         <button
           type="button"
           class="button button--secondary button--flat pressable"
+          disabled={!writable}
           onClick={() => setSure(true)}
         >
           <Icon name="trash" size={20} />

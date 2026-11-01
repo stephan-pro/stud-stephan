@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- The same motif as icon.svg for launchers that cut their own shape (Android "maskable", Apple
+       touch icon): colour and stripes reach every edge, no frame (the launcher draws the outline),
+       and the studs stay inside the safe circle (radius 40 % = 205 px around the centre). -->
+  <title>Stud Stephan</title>
+  <defs>
+    <pattern id="stripes" width="120" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(31)">
+      <rect x="51" y="-1" width="18" height="18" fill="#FFFFFF" />
+    </pattern>
+    <g id="stud">
+      <circle r="58" fill="#FFC93C" stroke="#14213D" stroke-width="19" />
+      <path d="M-34 -9.1A35.2 35.2 0 0 1 -9.1 -34" fill="none" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round" />
+    </g>
+  </defs>
+  <rect width="512" height="512" fill="#FFC93C" />
+  <rect width="512" height="512" fill="url(#stripes)" opacity="0.45" />
+  <use href="#stud" x="182" y="182" />
+  <use href="#stud" x="330" y="182" />
+  <use href="#stud" x="182" y="330" />
+  <use href="#stud" x="330" y="330" />
+</svg>

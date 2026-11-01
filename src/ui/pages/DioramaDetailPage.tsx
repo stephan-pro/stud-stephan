@@ -14,9 +14,10 @@ import { Icon } from "../components/Icon";
 import { RemoveSheet } from "../components/RemoveSheet";
 import { StudioList, StudioPicker } from "../components/StudioFiles";
 import { Unready } from "../components/Unready";
+import { ReadOnlyNote, WriteLink } from "../components/WriteLink";
 import { detailHash, dioramaHash, routeHash } from "../route";
 import { TEXTS } from "../texts";
-import type { LoadedCollection } from "../useCollection";
+import { type LoadedCollection, useWritable } from "../useCollection";
 import { Title } from "./DetailPage";
 
 const T = TEXTS.dioramas;
@@ -66,6 +67,7 @@ function StudioSection({
         room={LIMITS.studioFilesPerDiorama - diorama.studioFiles.length}
         onAdded={add}
       />
+      <ReadOnlyNote />
     </Section>
   );
 }
@@ -125,13 +127,13 @@ function Detail({
             ))}
           </ul>
         )}
-        <a
+        <WriteLink
           class="button button--pop pressable"
           href={dioramaHash({ kind: "assign", id: diorama.id })}
         >
           <Icon name="plus" size={20} />
           {T.detail.assign}
-        </a>
+        </WriteLink>
       </Section>
       <StudioSection diorama={diorama} data={data} remote={remote} />
       <NoteAndLinks item={diorama} />
@@ -153,6 +155,7 @@ export function DioramaDetailPage({
   readonly onRemove: (diorama: Diorama) => void;
 }) {
   const [asking, setAsking] = useState(false);
+  const writable = useWritable();
   const back = { href: routeHash("dioramas"), label: T.back };
   if (data.state.status !== "ready") {
     return (
@@ -182,17 +185,21 @@ export function DioramaDetailPage({
   return (
     <>
       <BackBar {...back}>
-        <a
+        <WriteLink
           class="icon-button pressable"
           href={dioramaHash({ kind: "edit", id: diorama.id })}
-          aria-label={TEXTS.actions.edit}
+          label={TEXTS.actions.edit}
         >
           <Icon name="edit" />
-        </a>
+        </WriteLink>
         <button
           type="button"
           class="icon-button pressable"
-          aria-label={TEXTS.actions.remove}
+          aria-label={
+            writable ? TEXTS.actions.remove : `${TEXTS.actions.remove} – ${TEXTS.readOnlyShort}`
+          }
+          title={writable ? undefined : TEXTS.readOnlyShort}
+          disabled={!writable}
           onClick={() => setAsking(true)}
         >
           <Icon name="trash" />

@@ -2058,12 +2058,42 @@ a.button {
   outline-color: var(--focus-on-nav);
 }
 
+/* "Neue Version verfügbar" (P15) at the top, so it never covers the "Rückgängig" bar below. */
+.toast--top {
+  top: calc(var(--space-3) + env(safe-area-inset-top));
+  bottom: auto;
+  z-index: 30;
+}
+
+/* The bar under the offline banner (P15): text and "Noch einmal versuchen" side by side. */
+.banner--offline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  background: var(--tint-sand);
+}
+
+/* A note where capturing or changing is switched off without a connection (P15). */
+.read-only-note {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
 @media (min-width: 900px) {
   .toast {
     left: calc(var(--sidebar-width) + 3 * var(--nav-inset));
     right: auto;
     bottom: var(--space-6);
     max-width: 480px;
+  }
+
+  .toast--top {
+    top: var(--space-6);
+    bottom: auto;
   }
 
   .form-bar {
@@ -2129,6 +2159,18 @@ a.button {
   border-top: 1px solid var(--line);
   color: var(--ink);
   text-decoration: none;
+}
+
+/* A hit that opens the wish sheet (P15) is a button: it looks like the link of a hit. */
+button.search-hit {
+  width: 100%;
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .search-hit__text {

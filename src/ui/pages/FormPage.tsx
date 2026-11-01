@@ -29,7 +29,7 @@ import type {
   WishItem,
 } from "../../domain/types";
 import { modSpend } from "../../domain/value";
-import { formFromWish } from "../../domain/wishForm";
+import { formFromWish, withCatalogEntry } from "../../domain/wishForm";
 import { resizePhoto } from "../../files/browserPhoto";
 import { uploadFile } from "../../files/upload";
 import { CaptureLink } from "../captureLink";
@@ -38,6 +38,7 @@ import { Choice, FormCard, fieldId, TextField } from "../components/Fields";
 import { Icon } from "../components/Icon";
 import { ModSheet } from "../components/ModSheet";
 import { PhotoField, photoFileName } from "../components/PhotoField";
+import { ReadOnlyNote } from "../components/WriteLink";
 import { newId, today } from "../ids";
 import {
   detailHash,
@@ -49,7 +50,7 @@ import {
   searchHash,
 } from "../route";
 import { TEXTS } from "../texts";
-import type { LoadedCollection } from "../useCollection";
+import { type LoadedCollection, useWritable } from "../useCollection";
 
 const T = TEXTS.form;
 const CT = TEXTS.catalogForm;
@@ -57,8 +58,9 @@ const PREFIX = "field";
 
 const MANUFACTURERS: readonly ManufacturerKind[] = ["lego", "bluebrixx", "other", "custom"];
 
+/** After the form has drawn its error messages (WebKit sometimes drops a focus set before). */
 function focusField(field: FieldKey): void {
-  document.getElementById(fieldId(PREFIX, field))?.focus();
+  requestAnimationFrame(() => document.getElementById(fieldId(PREFIX, field))?.focus());
 }
 
 /** What the person sees when saving failed: a refusal says why, anything else is "try again". */
@@ -201,6 +203,8 @@ function FormBody({
   const [errors, setErrors] = useState<FormErrors>({});
   const [failure, setFailure] = useState<string | undefined>();
   const [saving, setSaving] = useState(false);
+  // Without a connection (P15) the form stays as typed, only saving waits.
+  const writable = useWritable();
   const [modSheet, setModSheet] = useState<{ part?: ModPart } | null>(null);
   const [summary, setSummary] = useState(0);
   // The id is made once; editing keeps the one the object has.
@@ -583,7 +587,12 @@ function FormBody({
       </FormCard>
 
       <div class="form-bar">
-        <button type="submit" class="button button--primary pressable" disabled={saving}>
+        <ReadOnlyNote />
+        <button
+          type="submit"
+          class="button button--primary pressable"
+          disabled={saving || !writable}
+        >
           <Icon name="check" size={20} />
           {saving ? T.saving : T.save}
         </button>
@@ -692,6 +701,87 @@ function CatalogFormLoader({
         </section>
       )}
     </>
+  );
+}
+
+/**
+ * "Erhalten" (F14): the form filled from the wish. A LEGO set with a number also gets what the
+ * catalog adds (its figures, F7; P15), like a set entered from the catalog. If the catalog cannot be
+ * asked, the form opens from the wish alone and says so.
+ */
+function WishFormLoader({
+  form,
+  wish,
+  collection,
+  remote,
+  update,
+  catalog,
+}: {
+  readonly form: Extract<FormRef, { mode: "wish" }>;
+  readonly wish: WishItem;
+  readonly collection: Collection;
+  readonly remote: Remote | undefined;
+  readonly update: LoadedCollection["update"];
+  readonly catalog: Catalog | undefined;
+}) {
+  const fromCatalog =
+    wish.type === "legoSet" &&
+    wish.manufacturer.kind === "lego" &&
+    (wish.setNumber ?? "").trim() !== "" &&
+    catalog !== undefined;
+  const [load, setLoad] = useState<
+    | { readonly status: "loading" }
+    | { readonly status: "ready"; readonly wishForm: CatalogForm; readonly failed: boolean }
+  >(() =>
+    fromCatalog
+      ? { status: "loading" }
+      : { status: "ready", wishForm: formFromWish(wish), failed: false },
+  );
+
+  useEffect(() => {
+    if (!fromCatalog || !catalog || !wish.setNumber) return;
+    let active = true;
+    catalog.item("legoSet", wish.setNumber).then(
+      (item) =>
+        active &&
+        setLoad({
+          status: "ready",
+          wishForm: withCatalogEntry(formFromWish(wish), item),
+          failed: false,
+        }),
+      () => active && setLoad({ status: "ready", wishForm: formFromWish(wish), failed: true }),
+    );
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (load.status === "loading") {
+    return (
+      <>
+        <header class="page-header">
+          <a class="icon-button back-link pressable" href={cancelHash(form)} aria-label={T.cancel}>
+            <Icon name="close" />
+          </a>
+        </header>
+        <div class="skeleton" role="status" aria-busy="true" aria-label={CT.loading}>
+          <div class="skeleton__card" />
+          <div class="skeleton__card" />
+        </div>
+      </>
+    );
+  }
+  return (
+    <FormBody
+      form={form}
+      collection={collection}
+      start={{ values: load.wishForm.values, existing: undefined }}
+      remote={remote}
+      update={update}
+      catalogForm={load.wishForm}
+      fromWish={wish}
+      notice={load.failed ? CT.wishCatalogFailed : undefined}
+    />
   );
 }
 
@@ -846,16 +936,15 @@ export function FormPage({
   if (form.mode === "wish") {
     const wish = state.collection.wishlist.find((candidate) => candidate.id === form.id);
     if (wish) {
-      const wishForm = formFromWish(wish);
       return (
-        <FormBody
+        <WishFormLoader
+          key={wish.id}
           form={form}
+          wish={wish}
           collection={state.collection}
-          start={{ values: wishForm.values, existing: undefined }}
           remote={remote}
           update={data.update}
-          catalogForm={wishForm}
-          fromWish={wish}
+          catalog={catalog}
         />
       );
     }

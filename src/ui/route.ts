@@ -128,6 +128,11 @@ export interface PageLocation {
   readonly photo?: true;
   /** Capture by link (S7c, "#/erfassen/link/set"), also below "Erfassen". */
   readonly link?: DetailType;
+  /**
+   * The search or the link page finds a wish instead of an object (P15): "#/erfassen/suche/set/wunsch",
+   * "#/erfassen/link/figur/wunsch". Only figures and sets.
+   */
+  readonly forWish?: true;
   /** A page of the dioramas (P10). */
   readonly diorama?: DioramaPage;
   /** A page of the series (P12), below the wishlist. */
@@ -201,6 +206,18 @@ export function parseLocation(hash: string): PageLocation {
   }
   if (route === "capture" && segments.length === 2 && second === PHOTO_PATH) {
     return { route, photo: true };
+  }
+  if (
+    route === "capture" &&
+    segments.length === 4 &&
+    (second === SEARCH_PATH || second === LINK_PATH) &&
+    fourth === WISH_PATH
+  ) {
+    const wishType = typeOf(third);
+    if (!isSearchType(wishType)) return { route: DEFAULT_ROUTE };
+    return second === SEARCH_PATH
+      ? { route, search: wishType, forWish: true }
+      : { route, link: wishType, forWish: true };
   }
   if (route === "capture" && segments.length === 3 && second === SEARCH_PATH) {
     const searchType = typeOf(third);
@@ -276,9 +293,10 @@ export function formHash(form: FormRef): string {
     : `${routeHash("showcase")}/${type}/${id}/${EDIT_PATH}`;
 }
 
-/** The link target of the catalog search, e.g. "#/erfassen/suche/figur". */
-export function searchHash(type: SearchType): string {
-  return `${routeHash("capture")}/${SEARCH_PATH}/${DETAIL_PATHS[type]}`;
+/** The link target of the catalog search, e.g. "#/erfassen/suche/figur" (".../wunsch" for a wish). */
+export function searchHash(type: SearchType, forWish = false): string {
+  const base = `${routeHash("capture")}/${SEARCH_PATH}/${DETAIL_PATHS[type]}`;
+  return forWish ? `${base}/${WISH_PATH}` : base;
 }
 
 /** The link target of the photo recognition: "#/erfassen/foto". */
@@ -286,9 +304,10 @@ export function photoHash(): string {
   return `${routeHash("capture")}/${PHOTO_PATH}`;
 }
 
-/** The link target of capture by link for a kind of thing: "#/erfassen/link/set". */
-export function linkHash(type: DetailType): string {
-  return `${routeHash("capture")}/${LINK_PATH}/${DETAIL_PATHS[type]}`;
+/** The link target of capture by link for a kind of thing: "#/erfassen/link/set" (".../wunsch"). */
+export function linkHash(type: DetailType, forWish = false): string {
+  const base = `${routeHash("capture")}/${LINK_PATH}/${DETAIL_PATHS[type]}`;
+  return forWish ? `${base}/${WISH_PATH}` : base;
 }
 
 /** The link target of a diorama page, e.g. "#/dioramen/diorama-umbara/zuordnen". */
@@ -310,8 +329,8 @@ export function locationHash(page: PageLocation): string {
   if (page.series) return seriesHash(page.series);
   if (page.diorama) return dioramaHash(page.diorama);
   if (page.form) return formHash(page.form);
-  if (page.link) return linkHash(page.link);
-  if (page.search) return searchHash(page.search);
+  if (page.link) return linkHash(page.link, page.forWish === true);
+  if (page.search) return searchHash(page.search, page.forWish === true);
   if (page.photo) return photoHash();
   return page.detail ? detailHash(page.detail) : routeHash(page.route);
 }

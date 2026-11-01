@@ -9,9 +9,10 @@ import { Choice, TextField } from "../components/Fields";
 import { Icon } from "../components/Icon";
 import { Sheet } from "../components/Sheet";
 import { Unready } from "../components/Unready";
+import { ReadOnlyNote } from "../components/WriteLink";
 import { dioramaHash, routeHash } from "../route";
 import { TEXTS } from "../texts";
-import type { LoadedCollection } from "../useCollection";
+import { type LoadedCollection, useWritable } from "../useCollection";
 
 const T = TEXTS.dioramas.assign;
 
@@ -37,6 +38,7 @@ export function AssignPage({
   const [confirming, setConfirming] = useState(false);
   const [saving, setSaving] = useState(false);
   const [failure, setFailure] = useState<string | undefined>();
+  const writable = useWritable();
 
   const back = dioramaHash({ kind: "detail", id });
   const closeLink = (
@@ -190,10 +192,11 @@ export function AssignPage({
         </ul>
       )}
       <div class="form-bar">
+        <ReadOnlyNote />
         <button
           type="button"
           class="button button--primary pressable"
-          disabled={valid.length === 0 || saving}
+          disabled={valid.length === 0 || saving || !writable}
           onClick={submit}
         >
           <Icon name="check" size={20} />

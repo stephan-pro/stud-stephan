@@ -71,7 +71,7 @@ for (const [size, viewport] of [
     await expect(page.getByText(TEXTS.sources.lines.bricklink.ok)).toBeVisible();
     await expect(page.getByRole("button", { name: B.export, exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: B.import, exact: true })).toBeVisible();
-    await expect(page.getByText(TEXTS.version("0.1"))).toBeVisible();
+    await expect(page.getByText(TEXTS.version("1.0"))).toBeVisible();
     await expectNoAccessibilityViolations(page);
   });
 }

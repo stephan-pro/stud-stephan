@@ -5,11 +5,12 @@ import { dioramaImages, figureWithoutDiorama } from "../../domain/dioramas";
 import type { Collection, Diorama, Minifig } from "../../domain/types";
 import { dioramaHash } from "../route";
 import { TEXTS } from "../texts";
-import type { LoadedCollection } from "../useCollection";
+import { type LoadedCollection, useWritable } from "../useCollection";
 import { Cover } from "./Cover";
 import { Section } from "./DetailParts";
 import { Icon } from "./Icon";
 import { Sheet } from "./Sheet";
+import { ReadOnlyNote } from "./WriteLink";
 
 const T = TEXTS.detail.diorama;
 const S = TEXTS.dioramas.figureSection;
@@ -46,6 +47,8 @@ export function FigureDiorama({
   const [choosing, setChoosing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  // Without a connection (P15) neither taking out nor assigning works.
+  const off = !useWritable();
 
   const store = async (next: Minifig) => {
     if (!remote || busy) {
@@ -76,7 +79,7 @@ export function FigureDiorama({
           <button
             type="button"
             class="button button--secondary pressable"
-            disabled={busy}
+            disabled={busy || off}
             onClick={() => void store(figureWithoutDiorama(minifig))}
           >
             {S.take}
@@ -88,7 +91,7 @@ export function FigureDiorama({
           <button
             type="button"
             class="button button--secondary pressable"
-            disabled={busy}
+            disabled={busy || off}
             onClick={() => setChoosing(true)}
           >
             <Icon name="plus" size={20} />
@@ -96,6 +99,7 @@ export function FigureDiorama({
           </button>
         </>
       )}
+      <ReadOnlyNote />
       {failed && (
         <p class="field__error" role="alert">
           {S.failed}

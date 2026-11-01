@@ -1,7 +1,7 @@
 // Figures in dioramas (F8). A figure stands in at most one diorama: the minifig holds the one
 // `dioramaId`, so two dioramas can never claim the same figure.
 
-import type { CoverImage } from "./showcase";
+import { type CoverImage, normalize } from "./showcase";
 import type { Collection, Diorama, Id, Minifig } from "./types";
 
 /** The photos of a diorama in their order, the first is the cover (S5, S6). */
@@ -16,6 +16,27 @@ export function figuresInDiorama(collection: Collection, dioramaId: Id): Minifig
 /** "N Figuren haben noch kein Diorama". */
 export function figuresWithoutDiorama(collection: Collection): Minifig[] {
   return collection.minifigs.filter((minifig) => !minifig.dioramaId);
+}
+
+/**
+ * The search of the diorama list (S5, P15): every word must appear in the name, the note or the
+ * name of a figure standing in it (case and accents do not matter). An empty search keeps all.
+ */
+export function filterDioramas(collection: Collection, query: string): Diorama[] {
+  const words = normalize(query).split(/\s+/).filter(Boolean);
+  if (words.length === 0) return collection.dioramas;
+  return collection.dioramas.filter((diorama) => {
+    const text = normalize(
+      [
+        diorama.name,
+        diorama.note,
+        ...figuresInDiorama(collection, diorama.id).map((figure) => figure.name),
+      ]
+        .filter(Boolean)
+        .join(" "),
+    );
+    return words.every((word) => text.includes(word));
+  });
 }
 
 /** Of the chosen figures, those that already stand in another diorama ("steht in: …"). */

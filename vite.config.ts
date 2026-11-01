@@ -1,6 +1,7 @@
 import { loadEnv } from "vite";
 import { defineConfig } from "vitest/config";
 import { backendMode, checkSupabaseSettings } from "./src/backend/mode";
+import { serviceWorker } from "./src/pwa/vitePlugin";
 
 /** Where the app finds the fake server in the build mode `e2e` (`scripts/fake-server.ts`). */
 const FAKE_SERVER = "http://localhost:4180";
@@ -17,6 +18,8 @@ export default defineConfig(({ mode, isPreview, isSsrBuild }) => {
   return {
     // GitHub Pages serves the app under /<repo-name>/.
     base: "/stud-stephan/",
+    // `sw.js` with the app's files for offline use (P15); only in `vite build`.
+    plugins: [serviceWorker()],
     define: {
       // Which server the app uses (`src/backend/mode.ts`), fixed at build time.
       __BACKEND__: JSON.stringify(backend),
@@ -38,6 +41,10 @@ export default defineConfig(({ mode, isPreview, isSsrBuild }) => {
           "supabase/functions/_shared/**/*.ts",
           "src/files/**/*.ts",
           "src/backup/**/*.ts",
+          // P15: rules of the service worker, the copy for offline, the list of the build.
+          "src/pwa/swPolicy.ts",
+          "src/pwa/snapshot.ts",
+          "src/pwa/vitePlugin.ts",
           "src/ui/route.ts",
           "src/ui/labels.ts",
         ],

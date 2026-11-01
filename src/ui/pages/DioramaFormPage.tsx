@@ -18,10 +18,11 @@ import { Icon } from "../components/Icon";
 import { PhotoField } from "../components/PhotoField";
 import { StudioList, StudioPicker } from "../components/StudioFiles";
 import { Unready } from "../components/Unready";
+import { ReadOnlyNote } from "../components/WriteLink";
 import { newId, today } from "../ids";
 import { dioramaHash, routeHash } from "../route";
 import { TEXTS } from "../texts";
-import type { LoadedCollection } from "../useCollection";
+import { type LoadedCollection, useWritable } from "../useCollection";
 
 const T = TEXTS.form;
 const D = TEXTS.dioramas.form;
@@ -55,6 +56,7 @@ function FormBody({
   const [errors, setErrors] = useState<DioramaFormErrors>({});
   const [failure, setFailure] = useState<string | undefined>();
   const [saving, setSaving] = useState(false);
+  const writable = useWritable();
   const [summary, setSummary] = useState(0);
   const id = useRef(existing?.id ?? newId("diorama")).current;
   // Photos and Studio files sent in this form and not saved yet: removed again if it is left.
@@ -214,7 +216,12 @@ function FormBody({
       </FormCard>
 
       <div class="form-bar">
-        <button type="submit" class="button button--primary pressable" disabled={saving}>
+        <ReadOnlyNote />
+        <button
+          type="submit"
+          class="button button--primary pressable"
+          disabled={saving || !writable}
+        >
           <Icon name="check" size={20} />
           {saving ? T.saving : T.save}
         </button>

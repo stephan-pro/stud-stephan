@@ -8,6 +8,7 @@ import {
   figuresToSave,
   figuresWithoutDiorama,
   figureWithoutDiorama,
+  filterDioramas,
   removeDiorama,
   removeFromDiorama,
 } from "./dioramas";
@@ -108,5 +109,33 @@ describe("F8 Figuren in Dioramen", () => {
     removeFromDiorama(start, ["guard"]);
     removeDiorama(start, "kamino");
     expect(start).toEqual(copy);
+  });
+});
+
+describe("P15 Suche in der Dioramen-Liste (Lupe wie im Dummy)", () => {
+  const collection = aCollection({
+    dioramas: [
+      aDiorama({ id: "umbara", name: "Umbara-Gefecht", note: "Nachtkampf im Dschungel" }),
+      aDiorama({ id: "kamino", name: "Kamino Klonfabrik" }),
+    ],
+    minifigs: [aMinifig({ id: "rex", name: "Captain Rex", dioramaId: "kamino" })],
+  });
+  const names = (query: string) => filterDioramas(collection, query).map((d) => d.id);
+
+  it("P15 Ohne Suchtext stehen alle Dioramen da", () => {
+    expect(names("")).toEqual(["umbara", "kamino"]);
+    expect(names("   ")).toEqual(["umbara", "kamino"]);
+  });
+
+  it("P15 Gesucht wird in Name, Notiz und den Namen der Figuren, ohne Groß/klein und Akzente", () => {
+    expect(names("UMBARA")).toEqual(["umbara"]);
+    expect(names("dschungel")).toEqual(["umbara"]);
+    expect(names("rex")).toEqual(["kamino"]);
+    expect(names("Klönfabrik")).toEqual(["kamino"]);
+  });
+
+  it("P15 Jedes Wort muss passen", () => {
+    expect(names("kamino rex")).toEqual(["kamino"]);
+    expect(names("kamino dschungel")).toEqual([]);
   });
 });

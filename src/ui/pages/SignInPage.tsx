@@ -104,8 +104,9 @@ export function SignInPage({ auth, onSignedIn, focusOnMount = false }: SignInPag
   }, [focusOnMount]);
 
   // After the address the code field gets the focus, so the code can be typed at once.
+  // Only once the step has finished (not busy): WebKit drops a focus set in the render in between.
   useEffect(() => {
-    if (focusNext.current === undefined) return;
+    if (focusNext.current === undefined || busy) return;
     document.getElementById(focusNext.current)?.focus();
     focusNext.current = undefined;
   });

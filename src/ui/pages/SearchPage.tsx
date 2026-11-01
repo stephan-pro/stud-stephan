@@ -1,9 +1,12 @@
 import { useEffect, useState } from "preact/hooks";
 import { type Catalog, CatalogCallError, type CatalogHit } from "../../backend/catalog";
+import type { Remote } from "../../backend/remote";
 import { Cover } from "../components/Cover";
 import { Icon } from "../components/Icon";
+import { type WishPick, WishPicker } from "../components/WishPicker";
 import { formHash, routeHash, type SearchType, searchHash } from "../route";
 import { TEXTS } from "../texts";
+import type { LoadedCollection } from "../useCollection";
 
 const T = TEXTS.search;
 
@@ -39,18 +42,29 @@ function facts(hit: CatalogHit): string {
   );
 }
 
-/** S7b: number or name in, live hits from the catalog out; a hit opens the form filled (F2). */
+/**
+ * S7b: number or name in, live hits from the catalog out; a hit opens the form filled (F2). For a
+ * wish (P15, `forWish`) a hit opens the wish sheet instead.
+ */
 export function SearchPage({
   type: initialType,
   catalog,
+  forWish = false,
+  data,
+  remote,
 }: {
   readonly type: SearchType;
   readonly catalog: Catalog | undefined;
+  readonly forWish?: boolean;
+  /** The collection the wish goes into (only for a wish). */
+  readonly data?: LoadedCollection | undefined;
+  readonly remote?: Remote | undefined;
 }) {
   const [type, setType] = useState(initialType);
   const [query, setQuery] = useState("");
   const [state, setState] = useState<SearchState>({ status: "idle" });
   const [attempt, setAttempt] = useState(0);
+  const [pick, setPick] = useState<Extract<WishPick, { kind: "catalog" }> | undefined>();
 
   useEffect(() => {
     const text = query.trim();
@@ -79,7 +93,7 @@ export function SearchPage({
   const choose = (next: SearchType) => {
     setType(next);
     // The address follows the chip; the router is not told, the page stays.
-    history.replaceState(null, "", searchHash(next));
+    history.replaceState(null, "", searchHash(next, forWish));
   };
 
   return (
@@ -89,7 +103,7 @@ export function SearchPage({
           <Icon name="back" />
         </a>
         <h1 class="page-title page-title--small" tabIndex={-1}>
-          {T.title}
+          {forWish ? TEXTS.wishCapture.searchTitle : T.title}
         </h1>
         <span class="header-spacer" />
       </header>
@@ -139,7 +153,7 @@ export function SearchPage({
             (state.hits.length > 0 ? T.results(state.hits.length) : T.none)}
         </p>
         {state.status === "done" && state.hits.length === 0 && (
-          <p class="card__text">{T.noneHint}</p>
+          <p class="card__text">{forWish ? TEXTS.wishCapture.noneHint : T.noneHint}</p>
         )}
         {state.status === "failed" && (
           <div role="alert" class="search-results__failed">
@@ -155,12 +169,9 @@ export function SearchPage({
         )}
         {state.status === "done" && state.hits.length > 0 && (
           <ul class="search-hits">
-            {state.hits.map((hit) => (
-              <li key={`${hit.kind}-${hit.ref}`}>
-                <a
-                  class="search-hit pressable"
-                  href={formHash({ type: hit.kind, mode: "catalog", ref: hit.ref })}
-                >
+            {state.hits.map((hit) => {
+              const body = (
+                <>
                   <Cover
                     image={hit.imageUrl ? { kind: "catalog", url: hit.imageUrl } : undefined}
                     alt=""
@@ -172,22 +183,59 @@ export function SearchPage({
                     <span class="search-hit__name">{hit.name}</span>
                     <span class="search-hit__facts">{facts(hit)}</span>
                   </span>
-                  <span class="visually-hidden">{T.pick(hit.name)}</span>
-                  <Icon name="plus" size={22} />
-                </a>
-              </li>
-            ))}
+                  <span class="visually-hidden">
+                    {forWish ? TEXTS.wishCapture.pick(hit.name) : T.pick(hit.name)}
+                  </span>
+                  <Icon name={forWish ? "wishlist" : "plus"} size={22} />
+                </>
+              );
+              return (
+                <li key={`${hit.kind}-${hit.ref}`}>
+                  {forWish ? (
+                    <button
+                      type="button"
+                      class="search-hit pressable"
+                      onClick={() =>
+                        setPick({ kind: "catalog", catalogKind: hit.kind, ref: hit.ref })
+                      }
+                    >
+                      {body}
+                    </button>
+                  ) : (
+                    <a
+                      class="search-hit pressable"
+                      href={formHash({ type: hit.kind, mode: "catalog", ref: hit.ref })}
+                    >
+                      {body}
+                    </a>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
 
-      <a
-        class="button button--secondary button--flat pressable"
-        href={formHash({ type, mode: "new" })}
-      >
-        <Icon name="edit" size={20} />
-        {T.manual}
-      </a>
+      {forWish && pick && data && (
+        <WishPicker
+          key={`${pick.catalogKind}-${pick.ref}`}
+          pick={pick}
+          data={data}
+          remote={remote}
+          catalog={catalog}
+          onClose={() => setPick(undefined)}
+        />
+      )}
+
+      {!forWish && (
+        <a
+          class="button button--secondary button--flat pressable"
+          href={formHash({ type, mode: "new" })}
+        >
+          <Icon name="edit" size={20} />
+          {T.manual}
+        </a>
+      )}
     </>
   );
 }

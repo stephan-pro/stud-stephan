@@ -5,6 +5,7 @@
 import type { PageFields } from "../backend/linkPreview";
 import type { CatalogForm } from "./catalog";
 import { emptyForm, type FieldKey, type FormType, type FormValues, fieldsOf } from "./forms";
+import type { Manufacturer } from "./types";
 
 /** The rows of the card "Erkannt" (S7c), in order. */
 export type LinkRowKey = "name" | "manufacturer" | "number" | "pieceCount" | "image";
@@ -44,12 +45,20 @@ export function hasFields(fields: PageFields): boolean {
   );
 }
 
-/** The manufacturer of the form for a name from a page: the known ones by kind, else named. */
+/** The manufacturer for a name from a page: the known ones by kind, else named. */
+export function manufacturerFromName(name: string): Manufacturer {
+  if (/^bluebrixx$/i.test(name.trim())) return { kind: "bluebrixx" };
+  if (/^lego$/i.test(name.trim())) return { kind: "lego" };
+  return { kind: "other", name };
+}
+
+/** The same as the two fields of the form. */
 function manufacturerOf(name: string): Pick<FormValues, "manufacturerKind" | "manufacturerName"> {
-  if (/^bluebrixx$/i.test(name.trim()))
-    return { manufacturerKind: "bluebrixx", manufacturerName: "" };
-  if (/^lego$/i.test(name.trim())) return { manufacturerKind: "lego", manufacturerName: "" };
-  return { manufacturerKind: "other", manufacturerName: name };
+  const manufacturer = manufacturerFromName(name);
+  return {
+    manufacturerKind: manufacturer.kind,
+    manufacturerName: "name" in manufacturer ? manufacturer.name : "",
+  };
 }
 
 /**

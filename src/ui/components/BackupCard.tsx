@@ -15,8 +15,10 @@ import { type BackupStamp, deviceStamp } from "../backupStamp";
 import { problemText, summaryText } from "../backupText";
 import { today as todayOnDevice } from "../ids";
 import { TEXTS } from "../texts";
+import { useWritable } from "../useCollection";
 import { Rows } from "./DetailParts";
 import { Sheet } from "./Sheet";
+import { ReadOnlyNote } from "./WriteLink";
 
 /** From this size on the card advises the WLAN. */
 const BIG_BACKUP_BYTES = 50_000_000;
@@ -77,6 +79,8 @@ export function BackupCard({
 }: BackupCardProps) {
   const T = TEXTS.backup;
   const [busy, setBusy] = useState<string | undefined>(undefined);
+  // Export reads every file from the server, import writes: both need a connection (P15).
+  const writable = useWritable();
   const [message, setMessage] = useState<Message | undefined>(undefined);
   const [pending, setPending] = useState<Pending | undefined>(undefined);
   const [lastDay, setLastDay] = useState(() => stamp.read());
@@ -238,11 +242,12 @@ export function BackupCard({
             ? T.last.recent(formatDate(notice.date))
             : T.last.due(formatDate(notice.date), notice.days)}
       </p>
+      <ReadOnlyNote />
       <div class="backup__buttons">
         <button
           class="button button--secondary pressable"
           type="button"
-          disabled={busy !== undefined}
+          disabled={busy !== undefined || !writable}
           onClick={() => void exportNow()}
         >
           {T.export}
@@ -250,7 +255,7 @@ export function BackupCard({
         <button
           class="button button--secondary pressable"
           type="button"
-          disabled={busy !== undefined}
+          disabled={busy !== undefined || !writable}
           onClick={() => picker.current?.click()}
         >
           {T.import}

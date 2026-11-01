@@ -7,20 +7,24 @@ import type { PriceRunner } from "../backend/priceRun";
 import type { Recognizer } from "../backend/recognition";
 import type { Remote } from "../backend/remote";
 import type { SeriesBuilder } from "../backend/seriesBuilder";
+import { formatDateTime } from "../domain/dates";
 import { recordPriceRun } from "../domain/prices";
 import type { Collection, RemovableObject } from "../domain/types";
+import type { SnapshotStore } from "../pwa/snapshot";
 import { APP_VERSION } from "../version";
 import { CaptureLink } from "./captureLink";
 import { CapturePhoto } from "./capturePhoto";
 import { AccountCard } from "./components/AccountCard";
 import { BackupCard } from "./components/BackupCard";
 import { CaptureSheet } from "./components/CaptureSheet";
+import { InstallCard } from "./components/InstallCard";
 import { PhoneNavigation, Sidebar } from "./components/Navigation";
-import { PageHeader } from "./components/PageHeader";
+import { type HeaderSearch, PageHeader } from "./components/PageHeader";
 import { PriceRunCard } from "./components/PriceRunCard";
 import { SourcesCard } from "./components/SourcesCard";
 import { StorageCard } from "./components/StorageCard";
 import { Toast } from "./components/Toast";
+import { UpdateNotice } from "./components/UpdateNotice";
 import { today } from "./ids";
 import { AssignPage } from "./pages/AssignPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -47,7 +51,13 @@ import {
   routeHash,
 } from "./route";
 import { TEXTS } from "./texts";
-import { type LoadedCollection, useCollection, useOnline } from "./useCollection";
+import {
+  type LoadedCollection,
+  type OfflineCopy,
+  useCollection,
+  useOnline,
+  WritableContext,
+} from "./useCollection";
 import { usePendingRemoval } from "./usePendingRemoval";
 
 /** The page of the current address; an empty or unknown address is rewritten to the start page. */
@@ -80,6 +90,8 @@ interface ShellProps {
   readonly seriesBuilder?: SeriesBuilder | undefined;
   /** The example collection of the demo (no server). */
   readonly demo?: Collection | undefined;
+  /** Where the collection is kept for reading offline (P15); missing in the demo. */
+  readonly snapshots?: SnapshotStore | undefined;
   /** Missing in the demo (no sign-in). */
   readonly onSignOut?: (() => void) | undefined;
   /** Move the focus to the heading at once (right after signing in; not on a fresh load). */
@@ -96,14 +108,30 @@ function Shell({
   priceRunner,
   seriesBuilder,
   demo,
+  snapshots,
   onSignOut,
   focusOnMount,
 }: ShellProps) {
   const [page, setPage] = useState(currentLocation);
   const [view, setView] = useState<ShowcaseView>(INITIAL_VIEW);
-  const data = useCollection(remote, demo);
+  /** The search of the diorama list (P15); like the showcase's it stays while the app runs. */
+  const [dioramaSearch, setDioramaSearch] = useState({ open: false, query: "" });
+  const offlineCopy = useMemo<OfflineCopy | undefined>(
+    () => (snapshots && !demo ? { store: snapshots, userId: session.userId } : undefined),
+    [snapshots, demo, session.userId],
+  );
+  const data = useCollection(remote, demo, offlineCopy);
   const runner = useDemoPriceRunner(priceRunner, demo, data);
   const online = useOnline();
+  /** When the shown collection is the copy kept on the device (P15), the time it was kept. */
+  const savedAt = data.state.status === "ready" ? data.state.savedAt : undefined;
+  // Capturing and changing only with a connection and with the server's collection (P15).
+  const writable = online && savedAt === undefined;
+  const { retry } = data;
+  // Back online while the copy is shown: ask the server again (the copy stays until it answers).
+  useEffect(() => {
+    if (online && savedAt !== undefined) retry();
+  }, [online]);
   const firstPage = useRef(true);
   const removal = usePendingRemoval(remote, data);
   const { route, detail, form, search: catalogSearch, photo, link, diorama, series } = page;
@@ -171,7 +199,8 @@ function Shell({
       data.state.collection.sets.length +
       data.state.collection.specialParts.length >
       0;
-  const search =
+  const hasDioramas = data.state.status === "ready" && data.state.collection.dioramas.length > 0;
+  const search: HeaderSearch | undefined =
     route === "showcase" && !detail && hasItems
       ? {
           open: view.searchOpen,
@@ -184,136 +213,195 @@ function Shell({
             }
           },
         }
-      : undefined;
+      : route === "dioramas" && hasDioramas
+        ? {
+            open: dioramaSearch.open,
+            query: dioramaSearch.query,
+            onQuery: (query: string) => setDioramaSearch({ ...dioramaSearch, query }),
+            onToggle: () => {
+              // Closing the field on the phone also ends the search, so no list stays filtered unseen.
+              setDioramaSearch(
+                dioramaSearch.open ? { open: false, query: "" } : { ...dioramaSearch, open: true },
+              );
+              if (!dioramaSearch.open) {
+                requestAnimationFrame(() => document.getElementById("dioramas-search")?.focus());
+              }
+            },
+          }
+        : undefined;
 
   return (
     <PhotoSourceContext.Provider value={remote}>
-      <div class="shell">
-        {/* A button, not a link to "#inhalt": the address belongs to the router. */}
-        <button type="button" class="skip-link" onClick={focusHeading}>
-          {TEXTS.skipLink}
-        </button>
-        <Sidebar current={route} />
-        <main
-          class={`page page--${route}${form || (diorama && diorama.kind !== "detail") ? " page--form" : ""}`}
-        >
-          {!online && (
-            <p class="banner" role="status">
-              {TEXTS.offline}
-            </p>
-          )}
-          {diorama ? (
-            <div class="detail">
-              {diorama.kind === "detail" && (
-                <DioramaDetailPage data={data} id={diorama.id} remote={remote} onRemove={remove} />
-              )}
-              {diorama.kind === "assign" && (
-                <AssignPage data={data} id={diorama.id} remote={remote} />
-              )}
-              {(diorama.kind === "new" || diorama.kind === "edit") && (
-                <DioramaFormPage
+      <WritableContext.Provider value={writable}>
+        <div class="shell">
+          {/* A button, not a link to "#inhalt": the address belongs to the router. */}
+          <button type="button" class="skip-link" onClick={focusHeading}>
+            {TEXTS.skipLink}
+          </button>
+          <Sidebar current={route} />
+          <main
+            class={`page page--${route}${form || (diorama && diorama.kind !== "detail") ? " page--form" : ""}`}
+          >
+            {savedAt !== undefined ? (
+              <div class="banner banner--offline" role="status">
+                <span>
+                  {online
+                    ? TEXTS.serverCopy(formatDateTime(savedAt))
+                    : TEXTS.offlineCopy(formatDateTime(savedAt))}
+                </span>
+                {online && (
+                  <button type="button" class="button button--secondary pressable" onClick={retry}>
+                    {TEXTS.serverCopyRetry}
+                  </button>
+                )}
+              </div>
+            ) : (
+              !online && (
+                <p class="banner" role="status">
+                  {TEXTS.offline}
+                </p>
+              )
+            )}
+            {diorama ? (
+              <div class="detail">
+                {diorama.kind === "detail" && (
+                  <DioramaDetailPage
+                    data={data}
+                    id={diorama.id}
+                    remote={remote}
+                    onRemove={remove}
+                  />
+                )}
+                {diorama.kind === "assign" && (
+                  <AssignPage data={data} id={diorama.id} remote={remote} />
+                )}
+                {(diorama.kind === "new" || diorama.kind === "edit") && (
+                  <DioramaFormPage
+                    key={address}
+                    data={data}
+                    editing={diorama.kind === "edit" ? diorama.id : undefined}
+                    remote={remote}
+                  />
+                )}
+              </div>
+            ) : series?.kind === "detail" ? (
+              <div class="detail">
+                <SeriesDetailPage
+                  key={address}
+                  id={series.id}
+                  data={data}
+                  builder={seriesBuilder}
+                  remote={remote}
+                />
+              </div>
+            ) : form ? (
+              <div class="detail">
+                <FormPage
                   key={address}
                   data={data}
-                  editing={diorama.kind === "edit" ? diorama.id : undefined}
+                  form={form}
                   remote={remote}
+                  catalog={catalog}
+                  previewer={previewer}
                 />
-              )}
-            </div>
-          ) : series?.kind === "detail" ? (
-            <div class="detail">
-              <SeriesDetailPage
-                key={address}
-                id={series.id}
-                data={data}
-                builder={seriesBuilder}
-                remote={remote}
-              />
-            </div>
-          ) : form ? (
-            <div class="detail">
-              <FormPage
-                key={address}
-                data={data}
-                form={form}
-                remote={remote}
-                catalog={catalog}
-                previewer={previewer}
-              />
-            </div>
-          ) : link ? (
-            <div class="detail">
-              <LinkPage type={link} previewer={previewer} />
-            </div>
-          ) : photo ? (
-            <div class="detail">
-              <PhotoPage recognizer={recognizer} />
-            </div>
-          ) : catalogSearch ? (
-            <div class="detail">
-              <SearchPage type={catalogSearch} catalog={catalog} />
-            </div>
-          ) : detail ? (
-            <div class="detail">
-              <DetailPage data={data} detail={detail} remote={remote} onRemove={remove} />
-            </div>
-          ) : (
-            <>
-              <PageHeader route={route} search={search} />
-              {(route === "showcase" || route === "capture") && (
-                <ShowcasePage data={data} view={view} onView={setView} />
-              )}
-              {route === "capture" && (
-                <CaptureSheet onClose={() => (location.hash = routeHash("showcase"))} />
-              )}
-              {route === "settings" && <AccountCard email={session.email} onSignOut={onSignOut} />}
-              {route === "settings" && catalog !== undefined && <SourcesCard catalog={catalog} />}
-              {route === "settings" && runner !== undefined && (
-                // The demo writes the prices straight into the shown collection.
-                <PriceRunCard runner={runner} onPricesChanged={demo ? () => {} : data.retry} />
-              )}
-              {route === "settings" && remote !== undefined && <StorageCard remote={remote} />}
-              {route === "settings" && remote !== undefined && (
-                <BackupCard
-                  remote={remote}
-                  collection={data.state.status === "ready" ? data.state.collection : undefined}
-                  onRestored={reloadFrom(remote, data)}
-                />
-              )}
-              {route === "settings" && <p class="version">{TEXTS.version(APP_VERSION)}</p>}
-              {route === "dioramas" && (
-                <DioramasPage data={data} onShowWithoutDiorama={showWithoutDiorama} />
-              )}
-              {route === "wishlist" &&
-                (series ? (
-                  <SeriesPage data={data} builder={seriesBuilder} />
-                ) : (
-                  <WishlistPage data={data} remote={remote} />
-                ))}
-              {route === "dashboard" && (
-                <DashboardPage
+              </div>
+            ) : link ? (
+              <div class="detail">
+                <LinkPage
+                  key={address}
+                  type={link}
+                  previewer={previewer}
+                  forWish={page.forWish === true}
                   data={data}
-                  today={today()}
-                  onShowWithoutDiorama={showWithoutDiorama}
+                  remote={remote}
+                  catalog={catalog}
                 />
-              )}
-            </>
+              </div>
+            ) : photo ? (
+              <div class="detail">
+                <PhotoPage recognizer={recognizer} />
+              </div>
+            ) : catalogSearch ? (
+              <div class="detail">
+                <SearchPage
+                  key={page.forWish ? "wish" : "object"}
+                  type={catalogSearch}
+                  catalog={catalog}
+                  forWish={page.forWish === true}
+                  data={data}
+                  remote={remote}
+                />
+              </div>
+            ) : detail ? (
+              <div class="detail">
+                <DetailPage data={data} detail={detail} remote={remote} onRemove={remove} />
+              </div>
+            ) : (
+              <>
+                <PageHeader route={route} search={search} />
+                {(route === "showcase" || route === "capture") && (
+                  <ShowcasePage data={data} view={view} onView={setView} />
+                )}
+                {route === "capture" && (
+                  <CaptureSheet onClose={() => (location.hash = routeHash("showcase"))} />
+                )}
+                {route === "settings" && (
+                  <AccountCard email={session.email} onSignOut={onSignOut} />
+                )}
+                {route === "settings" && <InstallCard />}
+                {route === "settings" && catalog !== undefined && <SourcesCard catalog={catalog} />}
+                {route === "settings" && runner !== undefined && (
+                  // The demo writes the prices straight into the shown collection.
+                  <PriceRunCard runner={runner} onPricesChanged={demo ? () => {} : data.retry} />
+                )}
+                {route === "settings" && remote !== undefined && <StorageCard remote={remote} />}
+                {route === "settings" && remote !== undefined && (
+                  <BackupCard
+                    remote={remote}
+                    collection={data.state.status === "ready" ? data.state.collection : undefined}
+                    onRestored={reloadFrom(remote, data)}
+                  />
+                )}
+                {route === "settings" && <p class="version">{TEXTS.version(APP_VERSION)}</p>}
+                {route === "dioramas" && (
+                  <DioramasPage
+                    data={data}
+                    query={dioramaSearch.query}
+                    onShowWithoutDiorama={showWithoutDiorama}
+                  />
+                )}
+                {route === "wishlist" &&
+                  (series ? (
+                    <SeriesPage data={data} builder={seriesBuilder} />
+                  ) : (
+                    <WishlistPage data={data} remote={remote} />
+                  ))}
+                {route === "dashboard" && (
+                  <DashboardPage
+                    data={data}
+                    today={today()}
+                    onShowWithoutDiorama={showWithoutDiorama}
+                  />
+                )}
+              </>
+            )}
+          </main>
+          {removal.pending && (
+            <Toast
+              message={TEXTS.remove.done(removal.pending.name)}
+              action={TEXTS.remove.undo}
+              onAction={removal.undo}
+            />
           )}
-        </main>
-        {removal.pending && (
-          <Toast
-            message={TEXTS.remove.done(removal.pending.name)}
-            action={TEXTS.remove.undo}
-            onAction={removal.undo}
-          />
-        )}
-        {removal.failed && <Toast message={TEXTS.remove.failed} />}
-        {route !== "settings" &&
-          !form &&
-          !catalogSearch &&
-          !photo &&
-          !link &&
-          (!diorama || diorama.kind === "detail") && <PhoneNavigation current={route} />}
-      </div>
+          {removal.failed && <Toast message={TEXTS.remove.failed} />}
+          {route !== "settings" &&
+            !form &&
+            !catalogSearch &&
+            !photo &&
+            !link &&
+            (!diorama || diorama.kind === "detail") && <PhoneNavigation current={route} />}
+        </div>
+      </WritableContext.Provider>
     </PhotoSourceContext.Provider>
   );
 }
@@ -383,6 +471,7 @@ export function App({
   priceRunner,
   seriesBuilder,
   demo,
+  snapshots,
 }: {
   readonly auth: Auth | null;
   readonly remote?: Remote | undefined;
@@ -393,7 +482,38 @@ export function App({
   readonly seriesBuilder?: SeriesBuilder | undefined;
   /** The example collection; only the demo has one. */
   readonly demo?: Collection | undefined;
+  /** The copy of the collection for reading offline (P15); it leaves the device on signing out. */
+  readonly snapshots?: SnapshotStore | undefined;
 }) {
+  return (
+    <>
+      <UpdateNotice />
+      <Signed
+        auth={auth}
+        remote={remote}
+        catalog={catalog}
+        recognizer={recognizer}
+        previewer={previewer}
+        priceRunner={priceRunner}
+        seriesBuilder={seriesBuilder}
+        demo={demo}
+        snapshots={snapshots}
+      />
+    </>
+  );
+}
+
+function Signed({
+  auth,
+  remote,
+  catalog,
+  recognizer,
+  previewer,
+  priceRunner,
+  seriesBuilder,
+  demo,
+  snapshots,
+}: Parameters<typeof App>[0]) {
   /** `undefined` while it is read from the device, `null` when signed out. */
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   /** Whether the session changed while the app ran (then the new page takes the focus). */
@@ -407,6 +527,8 @@ export function App({
     });
     const stop = auth.onChange((next) => {
       changed.current = true;
+      // Signed out (here or refused by the server): the copy of the collection leaves the device.
+      if (next === null) void snapshots?.clear();
       setSession(next);
     });
     return () => {
@@ -448,6 +570,7 @@ export function App({
     // After signing in again the app starts at the showcase, not at the settings.
     history.replaceState(null, "", routeHash(DEFAULT_ROUTE));
     changed.current = true;
+    await snapshots?.clear();
     await auth.signOut();
     setSession(null);
   };
@@ -461,6 +584,7 @@ export function App({
       previewer={previewer}
       priceRunner={priceRunner}
       seriesBuilder={seriesBuilder}
+      snapshots={snapshots}
       onSignOut={() => void signOut()}
       focusOnMount={changed.current}
     />

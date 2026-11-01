@@ -36,10 +36,11 @@ import { Icon } from "../components/Icon";
 import { RemoveSheet } from "../components/RemoveSheet";
 import { ValueCard } from "../components/ValueCard";
 import { WishSheet } from "../components/WishSheet";
+import { WriteLink } from "../components/WriteLink";
 import { manufacturerLabel, safeUrl } from "../labels";
 import { type DetailRef, detailHash, formHash, routeHash } from "../route";
 import { TEXTS } from "../texts";
-import type { LoadedCollection } from "../useCollection";
+import { type LoadedCollection, useWritable } from "../useCollection";
 import { wishActions } from "../wishActions";
 
 const T = TEXTS.detail;
@@ -430,25 +431,33 @@ function Actions({
   readonly onRemove: () => void;
 }) {
   const A = TEXTS.actions;
+  const writable = useWritable();
   return (
     <>
-      <a
+      <WriteLink
         class="icon-button pressable"
         href={formHash({ type: item.type, mode: "edit", id: item.id })}
-        aria-label={A.edit}
+        label={A.edit}
       >
         <Icon name="edit" />
-      </a>
+      </WriteLink>
       {item.type === "minifig" && (
-        <a
+        <WriteLink
           class="icon-button pressable"
           href={formHash({ type: "minifig", mode: "copy", id: item.id })}
-          aria-label={A.copy}
+          label={A.copy}
         >
           <Icon name="copy" />
-        </a>
+        </WriteLink>
       )}
-      <button type="button" class="icon-button pressable" aria-label={A.remove} onClick={onRemove}>
+      <button
+        type="button"
+        class="icon-button pressable"
+        aria-label={writable ? A.remove : `${A.remove} – ${TEXTS.readOnlyShort}`}
+        title={writable ? undefined : TEXTS.readOnlyShort}
+        disabled={!writable}
+        onClick={onRemove}
+      >
         <Icon name="trash" />
       </button>
     </>

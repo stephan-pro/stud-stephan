@@ -1,19 +1,28 @@
 import type { ComponentChildren } from "preact";
 import { useEffect, useState } from "preact/hooks";
+import type { Catalog } from "../../backend/catalog";
 import {
   type LinkAnswer,
   LinkCallError,
   type LinkPreviewer,
   type PageFields,
 } from "../../backend/linkPreview";
+import type { Remote } from "../../backend/remote";
 import { webAddress } from "../../domain/forms";
 import { hasFields, linkRows } from "../../domain/linkForm";
 import { CaptureLink } from "../captureLink";
 import { Cover } from "../components/Cover";
 import { fieldId } from "../components/Fields";
 import { Icon } from "../components/Icon";
-import { type DetailType, formHash, routeHash } from "../route";
+import { type WishPick, WishPicker } from "../components/WishPicker";
+import { type DetailType, formHash, linkHash, routeHash } from "../route";
 import { TEXTS } from "../texts";
+import type { LoadedCollection } from "../useCollection";
+
+/** A wish is a figure or a set; a special part counts as a set here (never offered for wishes). */
+function wishType(type: DetailType): "minifig" | "legoSet" {
+  return type === "minifig" ? "minifig" : "legoSet";
+}
 
 const T = TEXTS.linkCapture;
 
@@ -57,16 +66,47 @@ function Source({ label }: { readonly label: string }) {
  * link saved and the rest empty.
  */
 export function LinkPage({
-  type,
+  type: initialType,
   previewer,
+  forWish = false,
+  data,
+  remote,
+  catalog,
 }: {
   readonly type: DetailType;
   readonly previewer: LinkPreviewer | undefined;
+  /** A wish instead of an object (P15): "Weiter" opens the wish sheet. */
+  readonly forWish?: boolean;
+  readonly data?: LoadedCollection | undefined;
+  readonly remote?: Remote | undefined;
+  readonly catalog?: Catalog | undefined;
 }) {
+  const [type, setType] = useState(initialType);
   const [text, setText] = useState("");
   const [state, setState] = useState<LinkState>({ status: "idle" });
   const [attempt, setAttempt] = useState(0);
   const [pasteFailed, setPasteFailed] = useState(false);
+  const [pick, setPick] = useState<WishPick | undefined>();
+
+  /** "Weiter": the form (an object) or the wish sheet (a wish, P15). */
+  const lead = (href: string, wish: WishPick, label: string, primary: boolean) => {
+    const className = `button ${primary ? "button--primary" : "button--secondary"} button--flat pressable`;
+    return forWish ? (
+      <button type="button" class={className} onClick={() => setPick(wish)}>
+        {label}
+      </button>
+    ) : (
+      <a class={className} href={href}>
+        {label}
+      </a>
+    );
+  };
+
+  const chooseType = (next: "minifig" | "legoSet") => {
+    setType(next);
+    setPick(undefined);
+    history.replaceState(null, "", linkHash(next, true));
+  };
 
   useEffect(() => {
     const trimmed = text.trim();
@@ -116,14 +156,13 @@ export function LinkPage({
     }
   };
 
-  const withoutPreview = (address: string) => (
-    <a
-      class="button button--secondary button--flat pressable"
-      href={formHash({ type, mode: "link", link: address })}
-    >
-      {T.withoutPreview}
-    </a>
-  );
+  const withoutPreview = (address: string) =>
+    lead(
+      formHash({ type, mode: "link", link: address }),
+      { kind: "page", type: wishType(type), fields: {}, link: address },
+      forWish ? TEXTS.wishCapture.next : T.withoutPreview,
+      false,
+    );
 
   return (
     <>
@@ -132,10 +171,29 @@ export function LinkPage({
           <Icon name="back" />
         </a>
         <h1 class="page-title page-title--small" tabIndex={-1}>
-          {T.title}
+          {forWish ? TEXTS.wishCapture.linkTitle : T.title}
         </h1>
         <span class="header-spacer" />
       </header>
+
+      {forWish && (
+        <fieldset class="choice">
+          <legend class="visually-hidden">{TEXTS.wishCapture.kindsLabel}</legend>
+          <div class="chips">
+            {(["minifig", "legoSet"] as const).map((kind) => (
+              <button
+                key={kind}
+                type="button"
+                class="chip pressable"
+                aria-pressed={type === kind}
+                onClick={() => chooseType(kind)}
+              >
+                {TEXTS.search.kinds[kind]}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      )}
 
       <div class="field">
         <label class="field__label" for={fieldId("link", "address")}>
@@ -210,17 +268,22 @@ export function LinkPage({
             </dl>
             <p class="card__text">{T.catalogNote}</p>
           </section>
-          <a
-            class="button button--primary button--flat pressable"
-            href={formHash({
+          {lead(
+            formHash({
               type: state.answer.catalogKind,
               mode: "catalog",
               ref: state.answer.ref,
               link: state.address,
-            })}
-          >
-            {T.next}
-          </a>
+            }),
+            {
+              kind: "catalog",
+              catalogKind: state.answer.catalogKind,
+              ref: state.answer.ref,
+              link: state.address,
+            },
+            forWish ? TEXTS.wishCapture.next : T.next,
+            true,
+          )}
         </>
       )}
 
@@ -229,7 +292,29 @@ export function LinkPage({
           type={type}
           address={state.address}
           answer={state.answer}
-          previewer={previewer}
+          previewer={forWish ? undefined : previewer}
+          next={lead(
+            formHash({ type, mode: "link", link: state.address }),
+            {
+              kind: "page",
+              type: wishType(type),
+              fields: state.answer.fields,
+              link: state.address,
+            },
+            forWish ? TEXTS.wishCapture.next : T.next,
+            true,
+          )}
+        />
+      )}
+
+      {forWish && pick && data && (
+        <WishPicker
+          key={pick.kind === "catalog" ? `${pick.catalogKind}-${pick.ref}` : pick.link}
+          pick={pick}
+          data={data}
+          remote={remote}
+          catalog={catalog}
+          onClose={() => setPick(undefined)}
         />
       )}
     </>
@@ -242,20 +327,15 @@ function PageResult({
   address,
   answer,
   previewer,
+  next,
 }: {
   readonly type: DetailType;
   readonly address: string;
   readonly answer: Extract<LinkAnswer, { kind: "page" }>;
+  /** Fetches the page's picture; none for a wish, which keeps only the picture's address. */
   readonly previewer: LinkPreviewer | undefined;
+  readonly next: ComponentChildren;
 }) {
-  const next = (
-    <a
-      class="button button--primary button--flat pressable"
-      href={formHash({ type, mode: "link", link: address })}
-    >
-      {T.next}
-    </a>
-  );
   if (!hasFields(answer.fields)) {
     return (
       <>

@@ -4,7 +4,9 @@ import type { PriceRunner, PriceRunStatus } from "../../backend/priceRun";
 import { formatDateTime } from "../../domain/dates";
 import { nextPriceRun, priceRunDone, priceRunState } from "../../domain/priceRun";
 import { TEXTS } from "../texts";
+import { useWritable } from "../useCollection";
 import { Rows } from "./DetailParts";
+import { ReadOnlyNote } from "./WriteLink";
 
 /** While a run started elsewhere (the weekly job) is going on, the card looks again this often. */
 const POLL_MS = 15_000;
@@ -46,6 +48,7 @@ export function PriceRunCard({
   const [loadFailed, setLoadFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [busy, setBusy] = useState(false);
+  const writable = useWritable();
   const [problem, setProblem] = useState<Problem | undefined>(undefined);
   const [finished, setFinished] = useState(false);
   const mounted = useRef(true);
@@ -174,10 +177,11 @@ export function PriceRunCard({
               {T.failures[problem]}
             </p>
           )}
+          <ReadOnlyNote />
           <button
             class="button button--secondary pressable"
             type="button"
-            disabled={busy}
+            disabled={busy || !writable}
             onClick={() => void update()}
           >
             {busy ? T.updating : T.update}

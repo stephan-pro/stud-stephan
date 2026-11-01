@@ -214,7 +214,32 @@ export const TEXTS = {
   },
   /** Bar at the top when the device has no connection. */
   offline:
-    "Keine Verbindung. Was schon geladen ist, bleibt lesbar; neue Daten gibt es erst wieder mit Verbindung.",
+    "Keine Verbindung. Lesen geht weiter; Erfassen und Ändern gehen erst wieder mit Verbindung.",
+  /** The same bar while the copy kept on the device is shown (P15). */
+  offlineCopy: (savedAt: string) =>
+    `Keine Verbindung – du siehst den Stand vom ${savedAt}. Lesen geht; Erfassen und Ändern gehen erst wieder mit Verbindung.`,
+  /** Online, but the server did not answer: the copy is shown. */
+  serverCopy: (savedAt: string) =>
+    `Der Server antwortet gerade nicht – du siehst den Stand vom ${savedAt}. Erfassen und Ändern gehen erst wieder, wenn er antwortet.`,
+  serverCopyRetry: "Noch einmal versuchen",
+  /** Where capturing or changing is switched off without a connection (P15). */
+  readOnly: "Ohne Verbindung kannst du nichts erfassen oder ändern. Deine Eingaben bleiben stehen.",
+  readOnlyShort: "Geht erst wieder mit Verbindung",
+  /** A new version of the app is ready (service worker, P15); it never takes over by itself. */
+  update: {
+    message: "Neue Version verfügbar",
+    action: "Neu laden",
+  },
+  /** S12: the install hint (P15). */
+  install: {
+    title: "App installieren",
+    offered:
+      "Stud Stephan lässt sich wie eine App installieren: mit eigenem Symbol auf dem Startbildschirm, ohne Browserleiste und auch ohne Verbindung lesbar.",
+    button: "Installieren",
+    installed: "Stud Stephan ist auf diesem Gerät als App installiert.",
+    manual:
+      "Im Browser-Menü (⋮ oben rechts) „App installieren“ oder „Zum Startbildschirm hinzufügen“ wählen. Ist sie schon installiert, öffne sie über ihr Symbol.",
+  },
   /** S1 showcase (P5). */
   showcase: {
     searchOpen: "Suchen",
@@ -381,16 +406,36 @@ export const TEXTS = {
       link: { title: "Link einfügen", text: "Rebrickable, Merlins Steine, Hersteller" },
       manual: { title: "Manuell", text: "Für Customs und alles ohne Katalog" },
     },
-    soon: "Kommt bald",
     onlyFigures: "Erkannt werden nur Figuren",
     noCatalogForParts: "Für Sonderteile gibt es keinen Katalog",
-    later:
-      "Einen Wunsch legst du in einer Reihe an oder bei einer fehlenden Figur auf der Seite eines Sets.",
+    wishHint:
+      "Einen Wunsch findest du per Nummer, Suche oder Link. Auch in einer Reihe und bei einer fehlenden Figur eines Sets kannst du Wünsche anlegen.",
+    wishWays: "Wünsche per Nummer, Suche oder Link",
     onlyManual: "Ein Diorama erfasst du von Hand",
+  },
+  /** A wish from the capture sheet: number, search or link (P15). */
+  wishCapture: {
+    searchTitle: "Wunsch per Nummer oder Suche",
+    linkTitle: "Wunsch per Link",
+    pick: (name: string) => `${name} auf die Wunschliste`,
+    loading: "Der Katalogeintrag wird geholt …",
+    retry: "Noch einmal versuchen",
+    next: "Weiter zum Wunsch",
+    kindsLabel: "Figur oder Set",
+    noneHint: "Prüf die Schreibweise oder leg den Wunsch über einen Link an.",
+    failed: {
+      offline: "Keine Verbindung zum Katalog. Prüf das Internet und versuch es noch einmal.",
+      limit_reached: "Für heute sind alle Katalog-Abfragen verbraucht. Morgen geht es wieder.",
+      not_found: "Diesen Eintrag kennt der Katalog nicht.",
+      unavailable: "Der Katalog antwortet gerade nicht. Versuch es gleich noch einmal.",
+    },
   },
   /** S5 list, S6 detail, S6a assign sheet and the diorama form (P10, F8). */
   dioramas: {
     back: "Zurück zu den Dioramen",
+    searchLabel: "Dioramen durchsuchen",
+    searchPlaceholder: "In den Dioramen suchen",
+    noMatch: (query: string) => `Kein Diorama passt zu „${query}“.`,
     loading: "Die Dioramen werden geladen …",
     figures: (count: number) => (count === 1 ? "1 Figur" : `${count} Figuren`),
     pieces: (count: number) => `${count.toLocaleString("de-DE")} Teile`,
@@ -778,6 +823,8 @@ export const TEXTS = {
     wishBanner:
       "Grüne Felder kommen aus deinem Wunsch. Mit dem Speichern verschwindet er von der Wunschliste.",
     wishPrefilledNote: "Aus dem Wunsch übernommen",
+    wishCatalogFailed:
+      "Die Figuren des Sets konnten gerade nicht aus dem Katalog geholt werden. Du kannst trotzdem speichern; „Enthaltene Figuren“ bleibt dann leer.",
     loading: "Der Katalogeintrag wird geholt …",
     failed: {
       title: "Der Katalogeintrag kommt nicht an",

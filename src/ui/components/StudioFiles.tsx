@@ -7,6 +7,7 @@ import { formatBytes } from "../../files/bytes";
 import { StudioFileRefused, uploadStudioFile } from "../../files/studioUpload";
 import { newId } from "../ids";
 import { TEXTS } from "../texts";
+import { useWritable } from "../useCollection";
 import { Icon } from "./Icon";
 
 const T = TEXTS.dioramas.studio;
@@ -51,6 +52,7 @@ export function StudioPicker({ remote, dioramaId, room, onAdded }: StudioPickerP
   const nextKey = useRef(0);
   const input = useRef<HTMLInputElement>(null);
   const space = room - jobs.length;
+  const writable = useWritable();
 
   const patch = (key: number, fields: Partial<Job>) =>
     setJobs((current) => current.map((job) => (job.key === key ? { ...job, ...fields } : job)));
@@ -151,7 +153,7 @@ export function StudioPicker({ remote, dioramaId, room, onAdded }: StudioPickerP
       <button
         type="button"
         class="button button--secondary pressable"
-        disabled={!remote || space <= 0}
+        disabled={!remote || space <= 0 || !writable}
         onClick={() => input.current?.click()}
       >
         <Icon name="upload" size={20} />

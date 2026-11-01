@@ -32,7 +32,7 @@ export function subTheme(theme: string | undefined): string | undefined {
 }
 
 /** Lower case without accents, for searching and for comparing names. */
-function normalize(text: string): string {
+export function normalize(text: string): string {
   return text.normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase("de").trim();
 }
 

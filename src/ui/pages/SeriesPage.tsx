@@ -15,7 +15,7 @@ import { Icon } from "../components/Icon";
 import { Sheet } from "../components/Sheet";
 import { seriesHash } from "../route";
 import { TEXTS } from "../texts";
-import type { LoadedCollection } from "../useCollection";
+import { type LoadedCollection, useWritable } from "../useCollection";
 import { WishSwitch } from "./WishlistPage";
 
 const T = TEXTS.series;
@@ -78,6 +78,7 @@ function PlanSheet({
   const [plan, setPlan] = useState<SeriesPlan | undefined>();
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const writable = useWritable();
 
   useEffect(() => {
     let active = true;
@@ -116,7 +117,7 @@ function PlanSheet({
         <button
           class="button button--primary pressable"
           type="button"
-          disabled={plan === undefined || busy || tooBig}
+          disabled={plan === undefined || busy || tooBig || !writable}
           onClick={() => void create()}
         >
           {busy ? P.creating : warn ? P.createAnyway : P.create}

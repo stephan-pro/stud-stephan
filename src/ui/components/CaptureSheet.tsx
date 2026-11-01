@@ -2,8 +2,10 @@ import { useState } from "preact/hooks";
 import type { FormType } from "../../domain/forms";
 import { dioramaHash, formHash, linkHash, photoHash, searchHash } from "../route";
 import { TEXTS } from "../texts";
+import { useWritable } from "../useCollection";
 import { Icon, type IconName } from "./Icon";
 import { Sheet } from "./Sheet";
+import { ReadOnlyNote } from "./WriteLink";
 
 const T = TEXTS.capture;
 
@@ -18,14 +20,9 @@ const WHAT: readonly { readonly value: What; readonly icon: IconName }[] = [
   { value: "wish", icon: "wishlist" },
 ];
 
-/** What a form exists for (the wish comes with P12); the diorama has a form of its own. */
+/** What a form exists for; the diorama has a form of its own, the wish a sheet (S9a). */
 function formType(what: What): FormType | undefined {
   return what === "minifig" || what === "legoSet" || what === "specialPart" ? what : undefined;
-}
-
-/** Whether something can be captured at all: the three kinds of the showcase and the diorama. */
-function capturable(what: What): boolean {
-  return formType(what) !== undefined || what === "diorama";
 }
 
 const WAYS: readonly {
@@ -39,13 +36,17 @@ const WAYS: readonly {
   { value: "manual", icon: "edit", tint: "lilac" },
 ];
 
-/** Where a way leads for the kind of thing, or nothing while it does not work yet. */
-function wayHref(
-  way: keyof typeof T.ways,
-  type: FormType | undefined,
-  diorama: boolean,
-): string | undefined {
-  if (diorama) return way === "manual" ? dioramaHash({ kind: "new" }) : undefined;
+/** Where a way leads for the kind of thing, or nothing where it does not work. */
+function wayHref(way: keyof typeof T.ways, what: What): string | undefined {
+  if (what === "diorama") return way === "manual" ? dioramaHash({ kind: "new" }) : undefined;
+  // A wish (P15) is found in the catalog or by a link; the search and the link page say "Figur" or
+  // "Set" themselves.
+  if (what === "wish") {
+    if (way === "search") return searchHash("minifig", true);
+    if (way === "link") return linkHash("legoSet", true);
+    return undefined;
+  }
+  const type = formType(what);
   if (type === undefined) return undefined;
   if (way === "manual") return formHash({ type, mode: "new" });
   if (way === "link") return linkHash(type);
@@ -57,10 +58,12 @@ function wayHref(
 
 /**
  * S7: first what is captured, then how. "Manuell" (P6), "Nummer oder Suche" (P7, figures and sets)
- * "Foto" (P8, figures) and "Link einfügen" (P9, all kinds) work.
+ * "Foto" (P8, figures) and "Link einfügen" (P9, all kinds) work; a wish by number, search or link
+ * (P15). Without a connection every way is switched off with a hint (P15).
  */
 export function CaptureSheet({ onClose }: { readonly onClose: () => void }) {
   const [what, setWhat] = useState<What>("minifig");
+  const writable = useWritable();
   const type = formType(what);
   return (
     <Sheet id="capture" title={T.title} closeLabel={T.close} onClose={onClose}>
@@ -73,7 +76,6 @@ export function CaptureSheet({ onClose }: { readonly onClose: () => void }) {
               type="button"
               class="what pressable"
               aria-pressed={what === entry.value}
-              disabled={!capturable(entry.value)}
               onClick={() => setWhat(entry.value)}
             >
               <Icon name={entry.icon} size={24} />
@@ -81,22 +83,25 @@ export function CaptureSheet({ onClose }: { readonly onClose: () => void }) {
             </button>
           ))}
         </div>
-        <p class="card__text">{T.later}</p>
+        {what === "wish" && <p class="card__text">{T.wishHint}</p>}
       </fieldset>
       <h3 class="card__title card__title--small">{T.how}</h3>
+      <ReadOnlyNote />
       <ul class="ways">
         {WAYS.map((way) => {
           const text = T.ways[way.value];
-          const href = wayHref(way.value, type, what === "diorama");
-          const hint = href
-            ? text.text
-            : what === "diorama"
-              ? T.onlyManual
-              : way.value === "search" && type
-                ? T.noCatalogForParts
-                : way.value === "photo" && type
-                  ? T.onlyFigures
-                  : T.soon;
+          const href = writable ? wayHref(way.value, what) : undefined;
+          const hint = !writable
+            ? TEXTS.readOnlyShort
+            : href
+              ? text.text
+              : what === "diorama"
+                ? T.onlyManual
+                : what === "wish"
+                  ? T.wishWays
+                  : way.value === "search" && type
+                    ? T.noCatalogForParts
+                    : T.onlyFigures;
           const body = (
             <>
               <span class={`way__icon way__icon--${way.tint}`}>

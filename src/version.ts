@@ -1,2 +1,2 @@
-/** The version the settings show (P15 sets 1.0 for the release). */
-export const APP_VERSION = "0.1";
+/** The version the settings show (release 1.0 with P15; `version` in package.json is 1.0.0). */
+export const APP_VERSION = "1.0";

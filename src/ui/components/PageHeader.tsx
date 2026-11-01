@@ -3,17 +3,70 @@ import { TEXTS } from "../texts";
 import { Icon } from "./Icon";
 import { Studs } from "./Studs";
 
+/**
+ * Search of a list page (showcase, dioramas): a button on the phone opens the field, the PC has the
+ * field open all the time.
+ */
+export interface HeaderSearch {
+  readonly open: boolean;
+  readonly onToggle: () => void;
+  readonly query: string;
+  readonly onQuery: (query: string) => void;
+}
+
 interface PageHeaderProps {
   readonly route: Route;
-  /** Search button of the showcase on the phone (the PC has the search field open all the time). */
-  readonly search?:
-    | {
-        readonly open: boolean;
-        readonly onToggle: () => void;
-        readonly query: string;
-        readonly onQuery: (query: string) => void;
-      }
-    | undefined;
+  readonly search?: HeaderSearch | undefined;
+}
+
+/** The texts and the field id of each page's search. */
+const SEARCH_TEXTS: Partial<
+  Record<Route, { readonly id: string; readonly label: string; readonly placeholder: string }>
+> = {
+  showcase: {
+    id: "showcase-search",
+    label: TEXTS.showcase.searchLabel,
+    placeholder: TEXTS.showcase.searchPlaceholder,
+  },
+  dioramas: {
+    id: "dioramas-search",
+    label: TEXTS.dioramas.searchLabel,
+    placeholder: TEXTS.dioramas.searchPlaceholder,
+  },
+};
+
+function Search({ route, search }: { readonly route: Route; readonly search: HeaderSearch }) {
+  const texts = SEARCH_TEXTS[route];
+  if (!texts) return null;
+  return (
+    <>
+      <button
+        type="button"
+        class="icon-button search-toggle pressable"
+        aria-label={search.open ? TEXTS.showcase.searchClose : TEXTS.showcase.searchOpen}
+        aria-expanded={search.open}
+        onClick={search.onToggle}
+      >
+        <Icon name={search.open ? "close" : "search"} />
+      </button>
+      <div class="search" data-open={search.open}>
+        <label class="visually-hidden" for={texts.id}>
+          {texts.label}
+        </label>
+        <input
+          id={texts.id}
+          class="search__input"
+          type="search"
+          placeholder={texts.placeholder}
+          value={search.query}
+          onInput={(event) => search.onQuery(event.currentTarget.value)}
+        />
+        <span class="search__icon" aria-hidden="true">
+          <Icon name="search" size={20} />
+        </span>
+      </div>
+    </>
+  );
 }
 
 /**
@@ -40,35 +93,7 @@ export function PageHeader({ route, search }: PageHeaderProps) {
             </h1>
           </div>
         </div>
-        {search && (
-          <button
-            type="button"
-            class="icon-button search-toggle pressable"
-            aria-label={search.open ? TEXTS.showcase.searchClose : TEXTS.showcase.searchOpen}
-            aria-expanded={search.open}
-            onClick={search.onToggle}
-          >
-            <Icon name={search.open ? "close" : "search"} />
-          </button>
-        )}
-        {search && (
-          <div class="search" data-open={search.open}>
-            <label class="visually-hidden" for="showcase-search">
-              {TEXTS.showcase.searchLabel}
-            </label>
-            <input
-              id="showcase-search"
-              class="search__input"
-              type="search"
-              placeholder={TEXTS.showcase.searchPlaceholder}
-              value={search.query}
-              onInput={(event) => search.onQuery(event.currentTarget.value)}
-            />
-            <span class="search__icon" aria-hidden="true">
-              <Icon name="search" size={20} />
-            </span>
-          </div>
-        )}
+        {search && <Search route={route} search={search} />}
       </header>
     );
   }
@@ -94,6 +119,7 @@ export function PageHeader({ route, search }: PageHeaderProps) {
       <h1 class="page-title" tabIndex={-1}>
         {routeLabel(route)}
       </h1>
+      {search && <Search route={route} search={search} />}
     </header>
   );
 }

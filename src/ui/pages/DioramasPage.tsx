@@ -1,4 +1,9 @@
-import { dioramaImages, figuresInDiorama, figuresWithoutDiorama } from "../../domain/dioramas";
+import {
+  dioramaImages,
+  figuresInDiorama,
+  figuresWithoutDiorama,
+  filterDioramas,
+} from "../../domain/dioramas";
 import type { Diorama } from "../../domain/types";
 import { Cover } from "../components/Cover";
 import { Icon } from "../components/Icon";
@@ -26,15 +31,19 @@ function factsOf(diorama: Diorama, figures: number): string {
  */
 export function DioramasPage({
   data,
+  query = "",
   onShowWithoutDiorama,
 }: {
   readonly data: LoadedCollection;
+  /** The search of the page header (P15). */
+  readonly query?: string;
   /** Shows the showcase with the filter "ohne Diorama". */
   readonly onShowWithoutDiorama: () => void;
 }) {
   if (data.state.status !== "ready") return <Unready data={data} />;
   const { collection } = data.state;
   const without = figuresWithoutDiorama(collection).length;
+  const shown = filterDioramas(collection, query);
 
   return (
     <>
@@ -59,9 +68,13 @@ export function DioramasPage({
             {T.empty.action}
           </a>
         </section>
+      ) : shown.length === 0 ? (
+        <p class="card__text" role="status">
+          {T.noMatch(query.trim())}
+        </p>
       ) : (
         <ul class="diorama-list">
-          {collection.dioramas.map((diorama) => (
+          {shown.map((diorama) => (
             <li key={diorama.id}>
               <a
                 class="diorama-card pressable"

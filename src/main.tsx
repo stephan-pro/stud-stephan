@@ -29,7 +29,16 @@ import { DEMO_LINK_PAGES } from "./demo/links";
 import { DEMO_SUGGESTIONS } from "./demo/recognition";
 import { seedDemoStore } from "./demo/seed";
 import { DEMO_SERIES_CATALOG } from "./demo/series";
+import { catchInstallOffer } from "./pwa/install";
+import { registerServiceWorker } from "./pwa/register";
+import { BrowserSnapshotStore } from "./pwa/snapshotStore";
 import { App } from "./ui/App";
+
+// Installable and readable offline (P15): only in a built app, never with the dev server or the demo.
+catchInstallOffer();
+if (import.meta.env.PROD && __BACKEND__ !== "demo") {
+  registerServiceWorker(import.meta.env.BASE_URL);
+}
 
 /** Lets an end-to-end test make the example catalog fail: `localStorage["stud-stephan-fake:catalog-failure"]`. */
 function fakeCatalogFailure(): "offline" | "unavailable" | "limit_reached" | undefined {
@@ -197,6 +206,7 @@ render(
       (__BACKEND__ === "demo" ? new FakeSeriesBuilder(DEMO_SERIES_CATALOG) : undefined)
     }
     demo={__BACKEND__ === "demo" ? DEMO_COLLECTION : undefined}
+    snapshots={backend ? new BrowserSnapshotStore() : undefined}
   />,
   root,
 );

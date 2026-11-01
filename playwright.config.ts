@@ -20,6 +20,9 @@ export default defineConfig({
     baseURL: `http://localhost:${port}/stud-stephan/`,
     locale: "de-DE",
     trace: "on-first-retry",
+    // The service worker (P15) keeps the app's files; `pwa.spec.ts` switches it on for itself. The
+    // other tests run without it, so routes and offline steps act on the network as before.
+    serviceWorkers: "block",
   },
   // Runs against the production build and the fake server; `npm run check` builds both before
   // this step (the fake server into dist-fake, `npm run build:fake`).

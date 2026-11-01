@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- The motif of icon.svg for 16 to 48 px (favicon, browser tab): no stripes and thicker lines,
+       which would blur at that size; the gloss arc stays as one short white stroke. -->
+  <title>Stud Stephan</title>
+  <rect x="2.5" y="2.5" width="59" height="59" rx="14" fill="#FFC93C" stroke="#14213D" stroke-width="5" />
+  <g fill="#FFC93C" stroke="#14213D" stroke-width="3.6">
+    <circle cx="21.5" cy="21.5" r="7.4" />
+    <circle cx="42.5" cy="21.5" r="7.4" />
+    <circle cx="21.5" cy="42.5" r="7.4" />
+    <circle cx="42.5" cy="42.5" r="7.4" />
+  </g>
+  <g fill="none" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round">
+    <path d="M17.6 20.4A4.2 4.2 0 0 1 20.4 17.6" />
+    <path d="M38.6 20.4A4.2 4.2 0 0 1 41.4 17.6" />
+    <path d="M17.6 41.4A4.2 4.2 0 0 1 20.4 38.6" />
+    <path d="M38.6 41.4A4.2 4.2 0 0 1 41.4 38.6" />
+  </g>
+</svg>

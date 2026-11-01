@@ -14,10 +14,12 @@ import {
 import { targetReached } from "../../domain/wishlist";
 import { newId } from "../ids";
 import { TEXTS } from "../texts";
+import { useWritable } from "../useCollection";
 import type { WishActions } from "../wishActions";
 import { Choice, TextField } from "./Fields";
 import { Icon } from "./Icon";
 import { Sheet } from "./Sheet";
+import { ReadOnlyNote } from "./WriteLink";
 
 const T = TEXTS.wishSheet;
 
@@ -54,6 +56,8 @@ export function WishSheet({
   const [busy, setBusy] = useState<"save" | "remove" | undefined>();
   const [failure, setFailure] = useState(false);
   const [sure, setSure] = useState(false);
+  // Without a connection (P15) the sheet can be read but not saved.
+  const off = !useWritable();
   const set = (change: Partial<WishValues>) => setValues((current) => ({ ...current, ...change }));
 
   // The market price of the wished condition, as the list shows it.
@@ -114,7 +118,7 @@ export function WishSheet({
             class="button button--primary pressable"
             type="submit"
             form="wish-form"
-            disabled={busy !== undefined}
+            disabled={busy !== undefined || off}
           >
             {busy === "save" ? T.saving : existing ? T.save : T.add}
           </button>
@@ -122,7 +126,7 @@ export function WishSheet({
             <button
               class="button button--secondary pressable"
               type="button"
-              disabled={busy !== undefined}
+              disabled={busy !== undefined || off}
               onClick={onReceived}
             >
               <Icon name="check" size={20} />
@@ -136,7 +140,7 @@ export function WishSheet({
                 <button
                   class="button button--danger pressable"
                   type="button"
-                  disabled={busy !== undefined}
+                  disabled={busy !== undefined || off}
                   onClick={() => void remove()}
                 >
                   {busy === "remove" ? T.removing : T.removeConfirm}
@@ -153,7 +157,7 @@ export function WishSheet({
               <button
                 class="button button--danger pressable"
                 type="button"
-                disabled={busy !== undefined}
+                disabled={busy !== undefined || off}
                 onClick={() => setSure(true)}
               >
                 <Icon name="trash" size={20} />
@@ -216,6 +220,7 @@ export function WishSheet({
             {T.failed}
           </p>
         )}
+        <ReadOnlyNote />
       </form>
     </Sheet>
   );
