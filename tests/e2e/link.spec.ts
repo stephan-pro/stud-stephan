@@ -56,6 +56,16 @@ test.describe("Link einfügen (S7c)", () => {
       await expect(page.getByRole("button", { name: L.paste })).toBeVisible();
       await expectNoAccessibilityViolations(page);
 
+      // The picture of the example page loads (a 1 × 1 pixel PNG stands in for it).
+      await page.route("**/bluebrixx-110374.jpg", (route) =>
+        route.fulfill({
+          contentType: "image/png",
+          body: Buffer.from(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+            "base64",
+          ),
+        }),
+      );
       await paste(page, MERLIN_LINK);
       await expect(page.getByRole("heading", { name: L.recognized })).toBeVisible();
       await expect(page.getByText(L.sources.merlin, { exact: true })).toBeVisible();
@@ -103,6 +113,20 @@ test.describe("Link einfügen (S7c)", () => {
     await page.reload();
     await expect(heading(page)).toHaveText("Burgtor mit Zugbrücke");
     await expect(page.getByRole("link", { name: /merlinssteine\.de/ })).toBeVisible();
+  });
+
+  test("F3 Sperrt die andere Seite die Einbettung des Bildes (wie Merlins Steine), sagt die Karte es, statt „übernommen“ zu zeigen", async ({
+    page,
+  }) => {
+    await page.route("**/bluebrixx-110374.jpg", (route) => route.abort());
+    await page.goto("#/erfassen/link/set");
+    await paste(page, MERLIN_LINK);
+    await expect(page.locator(".rows__row").nth(4)).toContainText(L.imageBlocked);
+    await expect(page.locator(".rows__row").nth(4)).not.toContainText(L.imageTaken);
+    await expectNoAccessibilityViolations(page);
+    // The form still opens and the person can add an own photo.
+    await page.getByRole("link", { name: L.next }).click();
+    await expect(field(page, F.fields.name)).toHaveValue("Burgtor mit Zugbrücke");
   });
 
   test("F3 Die Seite liest nur Titel und Bild (Shop oder MOC): der Rest bleibt zum Ergänzen", async ({

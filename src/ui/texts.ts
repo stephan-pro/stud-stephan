@@ -376,6 +376,7 @@ export const TEXTS = {
     },
     kinds: { minifig: "Figur", legoSet: "Set" },
     imageTaken: "übernommen",
+    imageBlocked: "gesperrt – nimm ein eigenes Foto",
     pleaseAdd: "bitte ergänzen",
     catalogNote: "Name, Teile und Bild holt die App gleich aus dem Katalog.",
     next: "Weiter",

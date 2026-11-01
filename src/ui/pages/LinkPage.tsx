@@ -1,5 +1,11 @@
+import type { ComponentChildren } from "preact";
 import { useEffect, useState } from "preact/hooks";
-import { type LinkAnswer, LinkCallError, type LinkPreviewer } from "../../backend/linkPreview";
+import {
+  type LinkAnswer,
+  LinkCallError,
+  type LinkPreviewer,
+  type PageFields,
+} from "../../backend/linkPreview";
 import { webAddress } from "../../domain/forms";
 import { hasFields, linkRows } from "../../domain/linkForm";
 import { CaptureLink } from "../captureLink";
@@ -256,6 +262,33 @@ function PageResult({
   }
   const { fields } = answer;
   return (
+    <PageCard
+      key={address}
+      type={type}
+      address={address}
+      answer={answer}
+      fields={fields}
+      next={next}
+    />
+  );
+}
+
+/** The card itself; its own component so the "picture failed" note starts over for each address. */
+function PageCard({
+  type,
+  address,
+  answer,
+  fields,
+  next,
+}: {
+  readonly type: DetailType;
+  readonly address: string;
+  readonly answer: Extract<LinkAnswer, { kind: "page" }>;
+  readonly fields: PageFields;
+  readonly next: ComponentChildren;
+}) {
+  const [imageFailed, setImageFailed] = useState(false);
+  return (
     <>
       <section class="card" aria-labelledby="link-recognized">
         <div class="card__head">
@@ -270,6 +303,7 @@ function PageResult({
           tintKey={address}
           scribbleId="link-preview"
           variant="banner"
+          onBroken={() => setImageFailed(true)}
         />
         <dl class="rows">
           {linkRows(type, fields).map((row) => (
@@ -281,7 +315,11 @@ function PageResult({
                 {row.value === undefined ? (
                   <span class="pill pill--pop">{T.pleaseAdd}</span>
                 ) : row.key === "image" ? (
-                  T.imageTaken
+                  imageFailed ? (
+                    T.imageBlocked
+                  ) : (
+                    T.imageTaken
+                  )
                 ) : (
                   row.value
                 )}

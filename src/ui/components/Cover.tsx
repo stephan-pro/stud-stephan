@@ -17,6 +17,8 @@ interface CoverProps {
   readonly scribbleId: string;
   readonly variant: "tile" | "hero" | "small" | "thumb" | "banner";
   readonly children?: ComponentChildren;
+  /** Called when the picture could not be loaded (e.g. the other site does not allow it). */
+  readonly onBroken?: (() => void) | undefined;
 }
 
 /**
@@ -24,7 +26,15 @@ interface CoverProps {
  * is none, it is fetched, or it cannot be shown. Own photos come from the private storage through
  * a signed address (`Remote.signedUrl`), catalog images from their own address.
  */
-export function Cover({ image, alt, tintKey, scribbleId, variant, children }: CoverProps) {
+export function Cover({
+  image,
+  alt,
+  tintKey,
+  scribbleId,
+  variant,
+  children,
+  onBroken,
+}: CoverProps) {
   const photoUrl = usePhotoUrl(image?.kind === "photo" ? image.path : undefined);
   const url = image?.kind === "catalog" ? image.url : photoUrl;
   const [broken, setBroken] = useState<string | undefined>();
@@ -42,7 +52,10 @@ export function Cover({ image, alt, tintKey, scribbleId, variant, children }: Co
           loading="lazy"
           decoding="async"
           referrerpolicy="no-referrer"
-          onError={() => setBroken(url)}
+          onError={() => {
+            setBroken(url);
+            onBroken?.();
+          }}
         />
       ) : (
         <>
