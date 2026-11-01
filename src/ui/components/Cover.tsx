@@ -43,7 +43,11 @@ export function Cover({
   const showImage = typeof url === "string" && broken !== url;
 
   return (
-    <div class={`cover cover--${variant} cover--tint-${tintIndex(tintKey)}`}>
+    <div
+      class={`cover cover--${variant} cover--tint-${tintIndex(tintKey)}${
+        showImage ? (image?.kind === "catalog" ? " cover--catalog" : " cover--photo") : ""
+      }`}
+    >
       {showImage ? (
         <img
           class="cover__image"

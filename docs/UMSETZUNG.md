@@ -419,6 +419,8 @@ Tickets are written in English. Every acceptance criterion is at least one test,
   - **„+ Wunschliste“** bei einer fehlenden Figur eines Sets (S3, nur mit BrickLink-Nummer) und in einer Reihe öffnet dasselbe Blatt mit Priorität „mittel“, Zustand „gebraucht“ (Sets: „neu“).
   - **Noch nicht dabei:** Einen Wunsch direkt aus dem Erfassen-Blatt (Nummer, Suche, Link) anzulegen; „Wunsch“ bleibt dort ausgegraut mit dem Hinweis, wo man Wünsche anlegt.
 
+- 01.11.2026 (P12-Nacharbeit, Vorgabe des PO: Bilder werden nicht mehr abgeschnitten): Gespeichert wird immer das ganze Bild, nur die Anzeige ändert sich (`Cover.tsx`, `app.css`). **Katalogbilder** überall `object-fit: contain` auf `--surface` (weiß) mit etwas Innenabstand. **Eigene Fotos** auf der Detailseite (`cover--hero`, Galerie) `contain` auf der Platzhalter-Tönung; in Kacheln und kleinen Bildern (Reihen, Sets, Dioramen, Listen) weiter `cover`, aber `object-position: center top`, damit der Kopf drin bleibt. Test `tests/e2e/pictures.spec.ts` (Hoch- und Querformat, Handy und PC).
+
 ## 8. Abhängigkeiten
 
 | Paket | Art | Wofür / warum |

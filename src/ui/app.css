@@ -667,6 +667,28 @@ a.button {
   object-fit: cover;
 }
 
+/* Pictures are shown whole where they are meant to be seen (figures are portrait): catalog images
+   always, own photos on the detail page; own photos elsewhere fill the box but keep the head. */
+
+.cover.cover--catalog {
+  background: var(--surface);
+}
+
+.cover--catalog .cover__image {
+  box-sizing: border-box;
+  padding: var(--space-1);
+  object-fit: contain;
+}
+
+.cover--photo .cover__image {
+  object-position: center top;
+}
+
+.cover--hero.cover--photo .cover__image {
+  object-fit: contain;
+  object-position: center;
+}
+
 .cover--tint-0 {
   background: var(--tint-blue);
 }
