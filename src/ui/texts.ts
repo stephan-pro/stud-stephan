@@ -680,7 +680,10 @@ export const TEXTS = {
       statusPresent: "vorhanden",
       statusWished: "auf der Wunschliste",
       statusMissing: "fehlt",
-      noFigures: "In dieser Reihe hat BrickLink bisher keine Figuren gefunden.",
+      noFigures: (asked: number, total: number) =>
+        asked === 0
+          ? "In dieser Reihe hat BrickLink bisher keine Figuren gefunden."
+          : `BrickLink hat zu ${asked} von ${total} Sets keine Figuren gefunden.`,
       nothingShown: "Dazu gibt es in dieser Reihe nichts.",
       building: (done: number, total: number) =>
         `Die Reihe wird noch aufgebaut: ${done} von ${total} Sets sind abgefragt. Die Liste wächst von selbst.`,

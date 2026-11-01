@@ -154,7 +154,8 @@ describe("P12 Aufbau in Portionen", () => {
     const second = seriesDeps(new MemorySeriesStore(), { cache: deps.cache });
     await startSeries(second, "anna", 2);
     await workOnSeries(second, { budgetMs: 50_000 });
-    expect([...deps.cache.counts.values()]).toEqual([3]);
+    // Only the set without figures is asked again (an empty answer is not remembered).
+    expect([...deps.cache.counts.values()]).toEqual([4]);
   });
 
   it("F13 Ist das Tageslimit verbraucht, wartet der Aufbau und geht am nächsten Tag weiter", async () => {

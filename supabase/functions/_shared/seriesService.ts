@@ -64,8 +64,10 @@ const isSetList = (value: unknown): value is { number: string; name: string }[] 
   Array.isArray(value) &&
   value.every((set) => typeof set?.number === "string" && typeof set?.name === "string");
 
+/** An empty list is not taken from the cache: older builds stored "no figures" for sets they read too shallowly. */
 const isFigureList = (value: unknown): value is SeriesFigureInfo[] =>
   Array.isArray(value) &&
+  value.length > 0 &&
   value.every((figure) => typeof figure?.number === "string" && typeof figure?.name === "string");
 
 /** Lower case without accents and punctuation. */

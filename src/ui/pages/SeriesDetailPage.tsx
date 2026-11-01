@@ -203,7 +203,7 @@ export function SeriesDetailPage({
         </div>
         <span class="card__text">
           {progress.total === 0
-            ? T.noFigures
+            ? T.noFigures(seriesAsked(summary), summary.total)
             : progress.missing === 0
               ? T.allThere
               : T.missingLine(progress.missing, progress.wished)}
