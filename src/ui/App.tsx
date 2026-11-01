@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Auth, Session } from "../auth/auth";
+import type { Catalog } from "../backend/catalog";
 import type { Remote } from "../backend/remote";
 import type { Collection, ShowcaseItem } from "../domain/types";
 import { AccountCard } from "./components/AccountCard";
@@ -11,6 +12,7 @@ import { StorageCard } from "./components/StorageCard";
 import { Toast } from "./components/Toast";
 import { DetailPage, detailName } from "./pages/DetailPage";
 import { FormPage } from "./pages/FormPage";
+import { SearchPage } from "./pages/SearchPage";
 import { INITIAL_VIEW, ShowcasePage, type ShowcaseView } from "./pages/ShowcasePage";
 import { SignInPage } from "./pages/SignInPage";
 import { PhotoSourceContext } from "./photos";
@@ -44,6 +46,8 @@ interface ShellProps {
   readonly session: Session;
   /** The server's files and data; in the demo a store in memory. */
   readonly remote?: Remote | undefined;
+  /** The official catalog (P7): search by number or name, entries to fill forms from. */
+  readonly catalog?: Catalog | undefined;
   /** The example collection of the demo (no server). */
   readonly demo?: Collection | undefined;
   /** Missing in the demo (no sign-in). */
@@ -53,14 +57,14 @@ interface ShellProps {
 }
 
 /** The shell: navigation (sidebar on the PC, bottom bar on the phone) and the current page. */
-function Shell({ session, remote, demo, onSignOut, focusOnMount }: ShellProps) {
+function Shell({ session, remote, catalog, demo, onSignOut, focusOnMount }: ShellProps) {
   const [page, setPage] = useState(currentLocation);
   const [view, setView] = useState<ShowcaseView>(INITIAL_VIEW);
   const data = useCollection(remote, demo);
   const online = useOnline();
   const firstPage = useRef(true);
   const removal = usePendingRemoval(remote, data);
-  const { route, detail, form } = page;
+  const { route, detail, form, search: catalogSearch } = page;
   const address = locationHash(page);
   const name = detail ? detailName(data, detail) : undefined;
 
@@ -132,7 +136,11 @@ function Shell({ session, remote, demo, onSignOut, focusOnMount }: ShellProps) {
           )}
           {form ? (
             <div class="detail">
-              <FormPage key={address} data={data} form={form} remote={remote} />
+              <FormPage key={address} data={data} form={form} remote={remote} catalog={catalog} />
+            </div>
+          ) : catalogSearch ? (
+            <div class="detail">
+              <SearchPage type={catalogSearch} catalog={catalog} />
             </div>
           ) : detail ? (
             <div class="detail">
@@ -161,7 +169,7 @@ function Shell({ session, remote, demo, onSignOut, focusOnMount }: ShellProps) {
           />
         )}
         {removal.failed && <Toast message={TEXTS.remove.failed} />}
-        {route !== "settings" && !form && <PhoneNavigation current={route} />}
+        {route !== "settings" && !form && !catalogSearch && <PhoneNavigation current={route} />}
       </div>
     </PhotoSourceContext.Provider>
   );
@@ -178,10 +186,12 @@ const DEMO_SESSION: Session = { userId: "demo", email: "" };
 export function App({
   auth,
   remote,
+  catalog,
   demo,
 }: {
   readonly auth: Auth | null;
   readonly remote?: Remote | undefined;
+  readonly catalog?: Catalog | undefined;
   /** The example collection; only the demo has one. */
   readonly demo?: Collection | undefined;
 }) {
@@ -207,7 +217,15 @@ export function App({
   }, [auth]);
 
   if (auth === null) {
-    return <Shell session={DEMO_SESSION} remote={remote} demo={demo} focusOnMount={false} />;
+    return (
+      <Shell
+        session={DEMO_SESSION}
+        remote={remote}
+        catalog={catalog}
+        demo={demo}
+        focusOnMount={false}
+      />
+    );
   }
   if (session === undefined) return null;
   if (session === null) {
@@ -235,6 +253,7 @@ export function App({
     <Shell
       session={session}
       remote={remote}
+      catalog={catalog}
       onSignOut={() => void signOut()}
       focusOnMount={changed.current}
     />

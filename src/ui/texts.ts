@@ -278,7 +278,58 @@ export const TEXTS = {
       manual: { title: "Manuell", text: "Für Customs und alles ohne Katalog" },
     },
     soon: "Kommt bald",
+    noCatalogForParts: "Für Sonderteile gibt es keinen Katalog",
     later: "Diorama und Wunsch kommen bald.",
+  },
+  /** S7b search in the catalog (P7, F2). */
+  search: {
+    tabTitle: "Suchen",
+    title: "Suchen",
+    back: "Zurück zum Erfassen",
+    label: "Nummer oder Name",
+    placeholder: {
+      minifig: "z. B. sw0194 oder Captain Rex",
+      legoSet: "z. B. 75372 oder Battle Pack",
+    },
+    kinds: { minifig: "Figuren", legoSet: "Sets" },
+    kindsLabel: "Was suchen?",
+    idle: "Gib eine Nummer oder einen Namen ein. Die Nummer einer Figur ist die BrickLink-Nummer, z. B. sw0194.",
+    searching: "Suche läuft …",
+    results: (count: number) =>
+      count === 1 ? "1 Treffer im Katalog" : `${count} Treffer im Katalog`,
+    none: "Kein Treffer im Katalog.",
+    noneHint: "Prüf die Schreibweise oder leg es von Hand an.",
+    pick: (name: string) => `${name} übernehmen`,
+    manual: "Nichts dabei? Manuell anlegen",
+    failed: {
+      offline:
+        "Der Katalog ist gerade nicht erreichbar. Prüf deine Verbindung oder leg es von Hand an.",
+      unavailable:
+        "Der Katalog antwortet gerade nicht. Versuch es später noch einmal oder leg es von Hand an.",
+      limit_reached:
+        "Für heute sind alle Katalog-Abfragen verbraucht. Morgen geht es wieder; von Hand anlegen geht immer.",
+      not_signed_in: "Du bist nicht mehr angemeldet. Melde dich neu an.",
+    },
+    retry: "Noch einmal suchen",
+    unknownNumber: "Nummer unbekannt",
+    facts: (facts: readonly string[]) => facts.join(" · "),
+    imageAlt: (name: string) => `${name}, Katalogbild`,
+  },
+  /** S8 filled from the catalog (P7). */
+  catalogForm: {
+    banner: "Grüne Felder kommen aus dem Katalog. Du kannst sie ändern.",
+    loading: "Der Katalogeintrag wird geholt …",
+    failed: {
+      title: "Der Katalogeintrag kommt nicht an",
+      text: "Du kannst es noch einmal versuchen oder die Angaben von Hand eintragen.",
+      retry: "Noch einmal versuchen",
+      manual: "Von Hand anlegen",
+      notFound: "Diesen Eintrag gibt es im Katalog nicht (mehr).",
+    },
+    numberMissing:
+      "Die BrickLink-Nummer wurde im Katalog nicht gefunden. Trag sie ein, wenn du sie kennst; sie ist für den Marktpreis nötig.",
+    fromSetHint: (numbers: readonly string[]) => `Kommt vor in: ${numbers.join(", ")}`,
+    prefilledNote: "Aus dem Katalog übernommen",
   },
   /** S8 form (P6): entering and editing by hand. */
   form: {
@@ -291,6 +342,10 @@ export const TEXTS = {
       specialPart: "Neues Sonderteil",
     },
     titleCopy: "Weiteres Exemplar",
+    titleCatalog: {
+      minifig: "Neue Figur",
+      legoSet: "Neues Set",
+    },
     titleEdit: (name: string) => `${name} bearbeiten`,
     notFound: {
       title: "Nicht gefunden",

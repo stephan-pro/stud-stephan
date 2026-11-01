@@ -12,13 +12,15 @@ interface TextFieldProps {
   readonly onInput: (value: string) => void;
   /** The message when the field is wrong; it also marks the field (`aria-invalid`). */
   readonly error?: string | undefined;
-  readonly hint?: string;
+  readonly hint?: string | undefined;
   readonly placeholder?: string;
   readonly inputMode?: "text" | "decimal" | "numeric" | "url";
   readonly autoComplete?: string;
   /** More than one line (a note, a list of links). */
   readonly rows?: number;
   readonly optional?: string;
+  /** Filled from the catalog: highlighted (and said so to screen readers) until it is changed. */
+  readonly prefilled?: string | undefined;
 }
 
 /** A label, the input and, below it, the hint and the error: all tied together for screen readers. */
@@ -34,8 +36,13 @@ export function TextField({
   autoComplete = "off",
   rows,
   optional,
+  prefilled,
 }: TextFieldProps) {
-  const describedBy = [hint ? `${id}-hint` : undefined, error ? `${id}-error` : undefined]
+  const describedBy = [
+    hint ? `${id}-hint` : undefined,
+    prefilled ? `${id}-prefilled` : undefined,
+    error ? `${id}-error` : undefined,
+  ]
     .filter(Boolean)
     .join(" ");
   const shared = {
@@ -55,18 +62,23 @@ export function TextField({
       {rows ? (
         <textarea
           {...shared}
-          class="field__input field__input--area"
+          class={`field__input field__input--area${prefilled ? " field__input--prefilled" : ""}`}
           rows={rows}
           onInput={(event) => onInput(event.currentTarget.value)}
         />
       ) : (
         <input
           {...shared}
-          class="field__input"
+          class={`field__input${prefilled ? " field__input--prefilled" : ""}`}
           type="text"
           inputMode={inputMode}
           onInput={(event) => onInput(event.currentTarget.value)}
         />
+      )}
+      {prefilled && (
+        <span class="visually-hidden" id={`${id}-prefilled`}>
+          {prefilled}
+        </span>
       )}
       {hint && (
         <p class="field__hint" id={`${id}-hint`}>

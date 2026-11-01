@@ -57,7 +57,7 @@ pg_cron (wöchentlich) ──► Edge Function „bricklink“ ──► BrickLi
 | P4c | Fotos und Studio-Dateien hochladen | Sonnet | Medium | ✅ 01.11.2026 |
 | P5 | Vitrine, Filter, Detailseiten | Sonnet | Medium | ✅ 01.11.2026 |
 | P6 | Manuell erfassen, bearbeiten, löschen, Mods | Sonnet | Medium | ✅ 01.11.2026 (Hochformat-Foto am Redmi vom PO bestätigt) |
-| P7 | Katalog (BrickLink-Nummern, Rebrickable-Suche) | Sonnet | Medium | offen |
+| P7 | Katalog (BrickLink-Nummern, Rebrickable-Suche) | Sonnet | Medium | Code fertig und online 01.11.2026; offen: PO-Schritte (Migration, Secrets, Funktionen bereitstellen, Prüfung mit sw0194) |
 | P8 | Fotoerkennung (Brickognize) | Sonnet | Medium | offen |
 | P9 | Erfassen per Link (Merlins Steine, Rebrickable, andere) | Sonnet | Medium | offen |
 | P10 | Dioramen | Sonnet | Medium | offen |
@@ -329,6 +329,16 @@ Tickets are written in English. Every acceptance criterion is at least one test,
   - Handy: Die Lupe öffnet das Suchfeld; am PC steht es immer da (wie im PC-Dummy).
   - Noch nicht dabei, weil das Paket es bringt: „+2,5 % Woche“ in der Sammlungskarte (Verlauf des Gesamtwerts, P13), „Bearbeiten“, „Weiteres Exemplar anlegen“ und „Löschen“ (P6), Diorama verlinken und „Einem Diorama zuordnen“ (P10), „＋ Wunschliste“ bei fehlenden Figuren eines Sets (P12). Ein Diorama steht auf der Figur mit Namen und Bild, noch ohne Link.
   - Neuer Design-Wert: `--line` (#E1E4EA) für die Trennlinien in Listen, in `DESIGN.md` und `tokens.css` eingetragen.
+
+- 01.11.2026 (P7, von Claude entschieden, vom PO änderbar):
+  - **Nummer oder Name.** Eine BrickLink-Nummer (`sw0194`) oder Setnummer (`75372`, ohne „-1“ wird es ergänzt) fragt BrickLink direkt und gibt höchstens einen Treffer. Ein Name sucht bei Rebrickable (bis zu 8 Treffer; BrickLink hat keine Namenssuche). Ab 2 Zeichen, 0,4 s nach dem letzten Tastendruck.
+  - **Figur nach Name.** Rebrickable kennt die BrickLink-Nummer nicht (P2). Beim Übernehmen sucht die Funktion in den ersten beiden Sets der Figur die gleichnamige Figur im BrickLink-Katalog. Gleicher Name (ohne Groß-/Kleinschreibung und Satzzeichen) = BrickLink-Nummer wird eingetragen; sonst bleibt das Feld leer, der Hinweis „Die BrickLink-Nummer wurde im Katalog nicht gefunden …“ steht darunter, und du trägst sie ein. Die „Bestätigung“ ist also das grüne Feld im Formular, das du ändern kannst.
+  - **Was übernommen wird.** Figur: Name, BrickLink-Nummer, Thema („Hauptthema – Unterthema“), Katalogbild, „Stammt aus Set“ (nur wenn die Figur in genau einem Set vorkommt, sonst steht „Kommt vor in: …“ darunter). Set: Name, Setnummer, Thema, Jahr, Teile (Rebrickable), Zahl der Figuren, Katalogbild und die enthaltenen Figuren (F7). Hersteller ist immer LEGO. Zustand, Herkunft, Preis und Fotos trägst du ein. Die UVP eines Sets (optional im Paket) gibt keine der beiden Quellen her und fehlt.
+  - **Zwischenspeicher und Grenze.** Fertige Katalogeinträge und Themen liegen 30 Tage in der Datenbank (`catalog_cache`); ein Eintrag, bei dem ein Teil (z. B. Rebrickable) ausfiel, wird nicht gemerkt. BrickLink wird höchstens 4.500 Mal am Tag gefragt (`catalog_usage`, Grenze von BrickLink: 5.000; der Rest bleibt für den Preisabruf in P11). Danach sagt die Suche „Für heute sind alle Katalog-Abfragen verbraucht“. Ohne die beiden Tabellen (Migration noch nicht eingespielt) arbeitet die Funktion ohne Zwischenspeicher weiter.
+  - **Anmeldung der Funktionen.** Beide Funktionen prüfen selbst, ob der Aufruf von einem angemeldeten Konto kommt (Anfrage an den Anmeldedienst des Projekts) und sind mit `verify_jwt = false` bereitgestellt; die Prüfung des Gateways passt nicht zu den neuen Schlüsseln. Ohne Anmeldung gibt es keine Antwort und keine Abfrage bei BrickLink.
+  - **Funktion `bricklink`.** Bietet nur die Katalogabfragen (Eintrag, Figuren eines Sets, Sets einer Figur) einzeln an; die App ruft `catalog`. P11 ergänzt den Preisabruf in derselben Funktion.
+  - **Sonderteile** haben keine Suche (der Weg ist im Erfassen-Blatt ausgegraut: „Für Sonderteile gibt es keinen Katalog“); im Dummy gab es dafür einen dritten Chip. Die Trefferzeile hat ein Bild im Format der Kacheln (72 × 56 px) statt des runden 52-px-Bildes. Der Titel des Formulars bleibt „Neue Figur“ / „Neues Set“; der grüne Hinweis oben sagt, dass es aus dem Katalog kommt.
+  - Die Vorschau (`npm run demo`) und die Tests nutzen einen kleinen Beispielkatalog in `src/demo/catalog.ts` statt der echten Funktionen.
 
 - 01.11.2026 (P6, von Claude entschieden, vom PO änderbar):
   - **Erfassen (S7):** Nur „Manuell“ führt weiter (Figur, Set, Sonderteil). Foto, Nummer/Suche und Link sowie die Arten Diorama und Wunsch sind sichtbar, aber ausgegraut mit „Kommt bald“ (P7, P8, P10, P12). Adressen: `#/erfassen/figur|set|sonderteil` (neu), `#/erfassen/figur/kopie/<id>` (weiteres Exemplar, nur Figuren), `#/vitrine/figur|set|sonderteil/<id>/bearbeiten` (bearbeiten).

@@ -13,6 +13,7 @@
     "build:fake": "vite build --ssr scripts/fake-server.ts --outDir dist-fake",
     "preview": "vite preview",
     "try:sources": "node scripts/try-sources.mjs",
+    "deploy:functions": "node scripts/deploy-functions.mjs",
     "check": "node scripts/check.mjs",
     "check:full": "node scripts/check.mjs --full",
     "check:db": "node scripts/check-db.mjs",

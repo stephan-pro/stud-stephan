@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
 import type { FormType } from "../../domain/forms";
-import { formHash } from "../route";
+import { formHash, searchHash } from "../route";
 import { TEXTS } from "../texts";
 import { Icon, type IconName } from "./Icon";
 import { Sheet } from "./Sheet";
@@ -34,9 +34,17 @@ const WAYS: readonly {
   { value: "manual", icon: "edit", tint: "lilac" },
 ];
 
+/** Where a way leads for the kind of thing, or nothing while it does not work yet. */
+function wayHref(way: keyof typeof T.ways, type: FormType | undefined): string | undefined {
+  if (type === undefined) return undefined;
+  if (way === "manual") return formHash({ type, mode: "new" });
+  if (way === "search" && type !== "specialPart") return searchHash(type);
+  return undefined;
+}
+
 /**
- * S7: first what is captured, then how. In P6 only "Manuell" works (photo, number and link come
- * with P7 and P8); the others say so instead of leading nowhere.
+ * S7: first what is captured, then how. "Manuell" (P6) and "Nummer oder Suche" (P7, figures and
+ * sets) work; photo and link come with P8 and P9 and say so instead of leading nowhere.
  */
 export function CaptureSheet({ onClose }: { readonly onClose: () => void }) {
   const [what, setWhat] = useState<What>("minifig");
@@ -66,6 +74,12 @@ export function CaptureSheet({ onClose }: { readonly onClose: () => void }) {
       <ul class="ways">
         {WAYS.map((way) => {
           const text = T.ways[way.value];
+          const href = wayHref(way.value, type);
+          const hint = href
+            ? text.text
+            : way.value === "search" && type
+              ? T.noCatalogForParts
+              : T.soon;
           const body = (
             <>
               <span class={`way__icon way__icon--${way.tint}`}>
@@ -73,15 +87,15 @@ export function CaptureSheet({ onClose }: { readonly onClose: () => void }) {
               </span>
               <span class="way__text">
                 <span class="way__title">{text.title}</span>
-                <span class="way__hint">{way.value === "manual" && type ? text.text : T.soon}</span>
+                <span class="way__hint">{hint}</span>
               </span>
               <Icon name="next" size={20} />
             </>
           );
           return (
             <li key={way.value}>
-              {way.value === "manual" && type ? (
-                <a class="way pressable" href={formHash({ type, mode: "new" })}>
+              {href ? (
+                <a class="way pressable" href={href}>
                   {body}
                 </a>
               ) : (

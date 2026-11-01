@@ -13,6 +13,7 @@ import {
   routeHash,
   routeLabel,
   SIDEBAR_NAVIGATION,
+  searchHash,
 } from "./route";
 import { TEXTS } from "./texts";
 
@@ -140,6 +141,44 @@ describe("P6 Adressen der Formulare", () => {
     "#/erfassen/figur/kopie/%E0%A4%A",
   ])("P6 Die unvollständige Adresse %s öffnet die Vitrine", (hash) => {
     expect(parseLocation(hash)).toEqual({ route: "showcase" });
+  });
+});
+
+describe("P7 Adressen der Katalogsuche und des Formulars aus dem Katalog", () => {
+  it("P7 Die Suche liegt unter Erfassen: #/erfassen/suche/figur und …/set", () => {
+    expect(searchHash("minifig")).toBe("#/erfassen/suche/figur");
+    expect(searchHash("legoSet")).toBe("#/erfassen/suche/set");
+    expect(parseLocation("#/erfassen/suche/figur")).toEqual({
+      route: "capture",
+      search: "minifig",
+    });
+    expect(parseLocation("#/erfassen/suche/set/")).toEqual({ route: "capture", search: "legoSet" });
+  });
+
+  it("P7 Für Sonderteile und unbekannte Arten gibt es keine Suche", () => {
+    expect(parseLocation("#/erfassen/suche/sonderteil")).toEqual({ route: "showcase" });
+    expect(parseLocation("#/erfassen/suche/xyz")).toEqual({ route: "showcase" });
+  });
+
+  it("P7 Das Formular aus dem Katalog trägt die Nummer in der Adresse", () => {
+    const form = { type: "minifig", mode: "catalog", ref: "sw0194" } as const;
+    expect(formHash(form)).toBe("#/erfassen/figur/katalog/sw0194");
+    expect(parseLocation("#/erfassen/figur/katalog/sw0194")).toEqual({ route: "capture", form });
+    const set = { type: "legoSet", mode: "catalog", ref: "75372-1" } as const;
+    expect(parseLocation(formHash(set))).toEqual({ route: "capture", form: set });
+    const odd = { type: "minifig", mode: "catalog", ref: "fig-014/663" } as const;
+    expect(parseLocation(formHash(odd))).toEqual({ route: "capture", form: odd });
+  });
+
+  it("P7 Ohne Nummer oder für Sonderteile öffnet sich die Vitrine", () => {
+    expect(parseLocation("#/erfassen/sonderteil/katalog/x")).toEqual({ route: "showcase" });
+    expect(parseLocation("#/erfassen/figur/katalog/%E0%A4%A")).toEqual({ route: "showcase" });
+  });
+
+  it("P7 Die Schreibweise der Suche und des Katalogformulars ist die normale", () => {
+    expect(locationHash({ route: "capture", search: "minifig" })).toBe("#/erfassen/suche/figur");
+    const form = { type: "legoSet", mode: "catalog", ref: "75372-1" } as const;
+    expect(locationHash({ route: "capture", form })).toBe("#/erfassen/set/katalog/75372-1");
   });
 });
 

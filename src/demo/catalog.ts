@@ -1,0 +1,74 @@
+// A few catalog entries for the demo and the end-to-end tests (`FakeCatalog`), after the click
+// dummy (Suche.dc.html, Formular.dc.html). Not the real catalog: numbers and names are examples.
+
+import type { CatalogItem } from "../backend/catalog";
+
+const MN = "https://img.bricklink.com/ItemImage/MN/0/";
+
+export const DEMO_CATALOG: readonly CatalogItem[] = [
+  {
+    kind: "minifig",
+    number: "sw0194",
+    name: "Captain Rex",
+    year: 2012,
+    theme: "Star Wars – The Clone Wars",
+    imageUrl: `${MN}sw0194.png`,
+    sets: [{ number: "75372-1", name: "Clone Trooper & Battle Droid Battle Pack" }],
+  },
+  {
+    kind: "minifig",
+    number: "sw0631",
+    name: "Clone Trooper Phase II",
+    year: 2015,
+    theme: "Star Wars – The Clone Wars",
+    imageUrl: `${MN}sw0631.png`,
+    sets: [
+      { number: "75372-1", name: "Clone Trooper & Battle Droid Battle Pack" },
+      { number: "75345-1", name: "501st Clone Troopers Battle Pack" },
+    ],
+  },
+  {
+    kind: "minifig",
+    number: "sw0632",
+    name: "Clone Trooper Phase II, 501st",
+    year: 2015,
+    theme: "Star Wars – The Clone Wars",
+  },
+  {
+    kind: "minifig",
+    number: "sw0634",
+    name: "Clone Pilot",
+    year: 2015,
+    theme: "Star Wars – The Clone Wars",
+  },
+  {
+    kind: "minifig",
+    number: "sw0636",
+    name: "Clone Gunner",
+    year: 2015,
+    theme: "Star Wars – The Clone Wars",
+  },
+  {
+    kind: "legoSet",
+    number: "75372-1",
+    name: "Clone Trooper & Battle Droid Battle Pack",
+    year: 2024,
+    theme: "Star Wars – Battle Packs",
+    pieceCount: 215,
+    imageUrl: "https://img.bricklink.com/ItemImage/SN/0/75372-1.png",
+    figures: [
+      { number: "sw1306", name: "Clone Trooper, 332nd Company", quantity: 2 },
+      { number: "sw1307", name: "Battle Droid, Security", quantity: 2 },
+      { number: "sw1308", name: "Commander Bly", quantity: 1 },
+    ],
+  },
+  {
+    kind: "legoSet",
+    number: "75345-1",
+    name: "501st Clone Troopers Battle Pack",
+    year: 2022,
+    theme: "Star Wars – Battle Packs",
+    pieceCount: 119,
+    figures: [{ number: "sw1195", name: "Clone Trooper, 501st Legion", quantity: 4 }],
+  },
+];

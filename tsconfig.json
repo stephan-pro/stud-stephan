@@ -22,6 +22,7 @@
     "src",
     "tests",
     "supabase/tests",
+    "supabase/functions/_shared",
     "scripts/fake-server.ts",
     "vite.config.ts",
     "vitest.db.config.ts",

@@ -2,6 +2,7 @@
 // what is wrong with them, and the object that results. No DOM and no texts of the interface: an
 // error is a code that the page turns into words.
 
+import type { CatalogExtras } from "./catalog";
 import { parseMoney } from "./money";
 import { shortSetNumber } from "./showcase";
 import type {
@@ -381,6 +382,8 @@ export interface BuildContext {
   readonly sets: readonly LegoSet[];
   /** The object being edited: what the form does not show (diorama, catalog data …) stays. */
   readonly existing?: ShowcaseItem | undefined;
+  /** The catalog data of a new object made from a catalog entry (F2), kept without a field. */
+  readonly catalog?: CatalogExtras | undefined;
 }
 
 function trimmed(text: string): string | undefined {
@@ -411,6 +414,7 @@ export function buildItem(type: FormType, values: FormValues, context: BuildCont
   const source = trimmed(values.source);
   const note = trimmed(values.note);
   const purchaseCents = purchase === undefined ? undefined : parseMoney(purchase);
+  const catalogImageUrl = existing?.catalogImageUrl ?? context.catalog?.imageUrl;
 
   const base = {
     id: context.id,
@@ -435,7 +439,7 @@ export function buildItem(type: FormType, values: FormValues, context: BuildCont
                 : context.today,
           },
         }),
-    ...(existing?.catalogImageUrl ? { catalogImageUrl: existing.catalogImageUrl } : {}),
+    ...(catalogImageUrl ? { catalogImageUrl } : {}),
     ...(note ? { note } : {}),
   };
 
@@ -463,7 +467,7 @@ export function buildItem(type: FormType, values: FormValues, context: BuildCont
       ...base,
       type: "legoSet",
       status: values.status,
-      containedFigures: previous?.containedFigures ?? [],
+      containedFigures: previous?.containedFigures ?? [...(context.catalog?.figures ?? [])],
       ...(number ? { setNumber: number } : {}),
       ...(year ? { year: Number(year) } : {}),
       ...(pieceCount ? { pieceCount: Number(pieceCount) } : {}),

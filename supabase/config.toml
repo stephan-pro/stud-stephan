@@ -42,6 +42,14 @@ enabled = false
 [edge_runtime]
 enabled = false
 
+# The catalog functions (P7) check the sign-in themselves (`isSignedIn`), which also works with the
+# project's newer keys; the gateway's own check would turn those away.
+[functions.catalog]
+verify_jwt = false
+
+[functions.bricklink]
+verify_jwt = false
+
 [analytics]
 enabled = false
 

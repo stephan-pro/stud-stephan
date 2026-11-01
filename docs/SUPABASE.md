@@ -10,7 +10,7 @@ Stand: 31.10.2026 (Paket P4b). Für den Product Owner und spätere Sitzungen. Di
 | Projekt-URL `https://ohuqwiypmoqyuxsgouxw.supabase.co` und Publishable Key `sb_publishable_…` | GitHub-Repository-Variablen `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`; lokal `.env.local` (Vorlage `.env.example`) | ja (stehen später ohnehin in der App) |
 | Datenbank-Passwort | nur beim PO; `npx supabase link` / `db push` fragen es im eigenen Terminal ab | **nein** |
 | Secret Key / service_role | bleibt im Dashboard; ab P7 nutzen ihn nur die Edge Functions auf dem Server | **nein** |
-| Rebrickable- und BrickLink-Schlüssel | ab P7 nur als Supabase-Secrets (`npx supabase secrets set …`, PO im eigenen Terminal) | **nein** |
+| Rebrickable- und BrickLink-Schlüssel | nur als Supabase-Secrets (ab P7, `npm run deploy:functions`, PO im eigenen Terminal) und in `.env.local` | **nein** |
 | Tabellen, Regeln, Funktionen, Dateiablagen | `supabase/migrations/` im Repo, eingespielt mit `npx supabase db push` | ja |
 
 | Absender der Anmeldecodes | Gmail-Konto von Krümel (`kruemel.haushaltsapp@gmail.com`) per SMTP, eigenes App-Passwort „Stud Stephan“ | Adresse ja |
@@ -64,6 +64,14 @@ npx supabase db push
 | Migration | Inhalt | Im echten Projekt |
 |---|---|---|
 | `20261031120000_collection.sql` (P4a) | Tabellen, Zeilenschutz, Funktionen, Dateiablagen `photos` und `studio-files`, `ping` | eingespielt (31.10.2026); Security Advisor vom PO geprüft, Zugriff ohne Anmeldung von außen gesperrt (nur `ping`) |
+| `20261101120000_catalog.sql` (P7) | Tabellen `catalog_cache` und `catalog_usage` (nur für die Edge Functions, für die App gesperrt), Funktion `catalog_count_call` | offen (PO: im SQL Editor des Dashboards einspielen, siehe Bericht zu P7); die Datei darf mehrfach laufen |
+
+## Edge Functions (P7)
+
+- `catalog` (Suche und Katalogeintrag für Figuren und Sets) und `bricklink` (Katalogabfragen einzeln; P11 ergänzt Preise). Code: `supabase/functions/<name>/index.ts` (nur der Anschluss), Logik und Tests in `supabase/functions/_shared/` (laufen mit `npm run check`, ohne Internet).
+- Geheimnisse (nur auf dem Server, als Supabase-Secrets): `REBRICKABLE_API_KEY`, `BRICKLINK_CONSUMER_KEY`, `BRICKLINK_CONSUMER_SECRET`, `BRICKLINK_TOKEN_VALUE`, `BRICKLINK_TOKEN_SECRET`. `SUPABASE_URL` und `SUPABASE_SERVICE_ROLE_KEY` legt Supabase jeder Funktion selbst hinein; der Service-Role-Key bleibt dort.
+- Setzen und Bereitstellen (PO, eigenes Terminal, kein Datenbank-Passwort, kein Docker): `npx supabase login`, dann `npm run deploy:functions` (`scripts/deploy-functions.mjs` liest die fünf Werte aus `.env.local`, übergibt sie über eine kurzzeitige Datei und zeigt sie nie an).
+- Aufruf aus der App: `supabase.functions.invoke("catalog", …)` mit der Anmeldung des Nutzers; die Funktion fragt bei `…/auth/v1/user` nach, ob sie gültig ist.
 
 ## Kostenloser Tarif: Grenzen
 
@@ -77,5 +85,5 @@ npx supabase db push
 Alle Adressen beginnen mit `https://supabase.com/dashboard/project/ohuqwiypmoqyuxsgouxw`. Nur ansehen; keine Schlüssel oder Passwörter in Chat oder Bildschirmfotos.
 
 1. **Security Advisor:** `…/advisors/security` → „Refresh“. *Soll:* 0 Fehler. Warnungen und Hinweise: Text kopieren und Claude geben, nichts auf eigene Faust „beheben“.
-2. **Tabellen:** `…/editor`, Schema „public“. *Soll:* die acht Tabellen aus „Aufbau“, bei keiner der Hinweis „RLS disabled“.
+2. **Tabellen:** `…/editor`, Schema „public“. *Soll:* die acht Tabellen aus „Aufbau“ (ab P7 dazu `catalog_cache` und `catalog_usage`), bei keiner der Hinweis „RLS disabled“.
 3. **Dateiablagen:** `…/storage/buckets`. *Soll:* `photos` und `studio-files`, beide ohne „Public“.

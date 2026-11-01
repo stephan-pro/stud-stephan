@@ -1,0 +1,91 @@
+// The catalog as the app sees it (F2): official sets and minifigs by BrickLink number or by name,
+// answered by the Edge Function `catalog` (`supabase/functions/`). `SupabaseCatalog` is the real one,
+// `FakeCatalog` (`fakeCatalog.ts`) answers from a few example entries in the demo and the
+// end-to-end tests.
+
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type {
+  CatalogAnswer,
+  CatalogFailure,
+  CatalogHit,
+  CatalogItem,
+  CatalogKind,
+  CatalogRequest,
+} from "../../supabase/functions/_shared/catalogTypes";
+
+export type {
+  CatalogFailure,
+  CatalogFigureInfo,
+  CatalogHit,
+  CatalogItem,
+  CatalogKind,
+  CatalogSetInfo,
+} from "../../supabase/functions/_shared/catalogTypes";
+
+/**
+ * A catalog call failed. `failure` says why: `offline` = no answer (device or function not
+ * reachable), `not_found` = no such entry, `limit_reached` = BrickLink's day is used up,
+ * `unavailable` = a service behind the function failed.
+ */
+export class CatalogCallError extends Error {
+  constructor(
+    message: string,
+    readonly failure: CatalogFailure | "offline",
+  ) {
+    super(message);
+    this.name = "CatalogCallError";
+  }
+}
+
+export interface Catalog {
+  /** Entries matching a BrickLink/set number or a name; an empty list is "no match". */
+  search(kind: CatalogKind, query: string): Promise<CatalogHit[]>;
+  /** The full entry of a hit (`ref`), to fill a form from. */
+  item(kind: CatalogKind, ref: string): Promise<CatalogItem>;
+}
+
+const FAILURES: readonly CatalogFailure[] = [
+  "bad_request",
+  "not_signed_in",
+  "not_found",
+  "limit_reached",
+  "unavailable",
+];
+
+/** What a failed call of the function answered: the `failure` in its JSON body, if it has one. */
+async function failureOf(error: unknown): Promise<CatalogCallError> {
+  const context = (error as { context?: unknown } | null)?.context;
+  if (context instanceof Response) {
+    const body = (await context.json().catch(() => null)) as { failure?: unknown } | null;
+    const failure = FAILURES.find((candidate) => candidate === body?.failure);
+    return new CatalogCallError(`catalog: ${failure ?? context.status}`, failure ?? "unavailable");
+  }
+  return new CatalogCallError(`catalog: ${String(error)}`, "offline");
+}
+
+export class SupabaseCatalog implements Catalog {
+  constructor(private readonly client: Pick<SupabaseClient, "functions">) {}
+
+  async search(kind: CatalogKind, query: string): Promise<CatalogHit[]> {
+    const answer = await this.call({ op: "search", kind, query });
+    if (answer.op !== "search")
+      throw new CatalogCallError("catalog: falsche Antwort", "unavailable");
+    return answer.hits;
+  }
+
+  async item(kind: CatalogKind, ref: string): Promise<CatalogItem> {
+    const answer = await this.call({ op: "item", kind, ref });
+    if (answer.op !== "item") throw new CatalogCallError("catalog: falsche Antwort", "unavailable");
+    return answer.item;
+  }
+
+  private async call(request: CatalogRequest): Promise<CatalogAnswer> {
+    const { data, error } = await this.client.functions.invoke("catalog", { body: request });
+    if (error) throw await failureOf(error);
+    const answer = data as CatalogAnswer | null;
+    if (!answer || (answer.op !== "search" && answer.op !== "item")) {
+      throw new CatalogCallError("catalog: unlesbare Antwort", "unavailable");
+    }
+    return answer;
+  }
+}

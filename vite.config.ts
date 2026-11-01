@@ -23,7 +23,7 @@ export default defineConfig(({ mode, isPreview, isSsrBuild }) => {
       __FAKE_SERVER__: JSON.stringify(FAKE_SERVER),
     },
     test: {
-      include: ["src/**/*.test.ts"],
+      include: ["src/**/*.test.ts", "supabase/functions/**/*.test.ts"],
       // The tests of the design read tokens.css and app.css; other CSS stays empty in unit tests.
       css: { include: [/tokens\.css/, /app\.css/] },
       // No `passWithNoTests`: `npm run check` must fail if no unit tests are found.
@@ -35,6 +35,7 @@ export default defineConfig(({ mode, isPreview, isSsrBuild }) => {
           "src/demo/**/*.ts",
           "src/auth/**/*.ts",
           "src/backend/mode.ts",
+          "supabase/functions/_shared/**/*.ts",
           "src/files/**/*.ts",
           "src/ui/route.ts",
           "src/ui/labels.ts",
@@ -45,6 +46,8 @@ export default defineConfig(({ mode, isPreview, isSsrBuild }) => {
           "src/**/*.test.ts",
           "src/**/*.fixtures.ts",
           "src/**/*.contract.ts",
+          "supabase/**/*.test.ts",
+          "supabase/**/*.fixtures.ts",
         ],
         thresholds: {
           lines: 90,

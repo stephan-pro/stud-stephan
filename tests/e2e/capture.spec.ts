@@ -142,7 +142,7 @@ test.describe("Erfassen-Blatt (S7)", () => {
   });
 
   for (const [size, viewport] of SIZES) {
-    test(`P6 ${size}: „Was erfassen?“ dann „Wie?“, nur Manuell führt weiter, keine axe-Verstöße`, async ({
+    test(`P6 ${size}: „Was erfassen?“ dann „Wie?“, Manuell und Suche führen weiter, keine axe-Verstöße`, async ({
       page,
     }) => {
       await page.setViewportSize(viewport);
@@ -156,11 +156,15 @@ test.describe("Erfassen-Blatt (S7)", () => {
       await expect(figure).toHaveAttribute("aria-pressed", "true");
       await expect(sheet.getByRole("button", { name: TEXTS.capture.what.diorama })).toBeDisabled();
       await expect(sheet.getByRole("button", { name: TEXTS.capture.what.wish })).toBeDisabled();
-      for (const way of ["photo", "search", "link"] as const) {
+      for (const way of ["photo", "link"] as const) {
         await expect(
           sheet.getByRole("button", { name: new RegExp(TEXTS.capture.ways[way].title) }),
         ).toBeDisabled();
       }
+      // "Nummer oder Suche" works since P7 (figures and sets).
+      await expect(
+        sheet.getByRole("link", { name: new RegExp(TEXTS.capture.ways.search.title) }),
+      ).toHaveAttribute("href", "#/erfassen/suche/figur");
       await expectNoAccessibilityViolations(page);
 
       await sheet.getByRole("button", { name: TEXTS.capture.what.legoSet }).click();

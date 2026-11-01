@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "preact/hooks";
+import { type Catalog, CatalogCallError } from "../../backend/catalog";
 import { type Remote, RemoteError, saveItem } from "../../backend/remote";
+import { type CatalogForm, formFromCatalog } from "../../domain/catalog";
 import { withSavedItem } from "../../domain/collectionEdit";
 import { findItem } from "../../domain/details";
 import {
@@ -16,17 +18,19 @@ import {
   validateForm,
 } from "../../domain/forms";
 import { formatMoney } from "../../domain/money";
+import { shortSetNumber } from "../../domain/showcase";
 import type { Collection, ManufacturerKind, ModPart, ShowcaseItem } from "../../domain/types";
 import { modSpend } from "../../domain/value";
 import { Choice, FormCard, fieldId, TextField } from "../components/Fields";
 import { Icon } from "../components/Icon";
 import { ModSheet } from "../components/ModSheet";
 import { PhotoField } from "../components/PhotoField";
-import { detailHash, type FormRef, routeHash } from "../route";
+import { detailHash, type FormRef, formHash, routeHash, searchHash } from "../route";
 import { TEXTS } from "../texts";
 import type { LoadedCollection } from "../useCollection";
 
 const T = TEXTS.form;
+const CT = TEXTS.catalogForm;
 const PREFIX = "field";
 
 const MANUFACTURERS: readonly ManufacturerKind[] = ["lego", "bluebrixx", "other", "custom"];
@@ -64,7 +68,10 @@ function startOf(
   form: FormRef,
   collection: Collection,
 ): { values: FormValues; existing: ShowcaseItem | undefined } | undefined {
-  if (form.mode === "new") return { values: emptyForm(), existing: undefined };
+  // A catalog form starts from the entry, which `CatalogFormLoader` fetches first.
+  if (form.mode === "new" || form.mode === "catalog") {
+    return { values: emptyForm(), existing: undefined };
+  }
   const item = findItem(collection, form.type, form.id);
   if (!item) return undefined;
   if (form.mode === "copy") {
@@ -81,14 +88,18 @@ interface FormBodyProps {
   readonly start: { values: FormValues; existing: ShowcaseItem | undefined };
   readonly remote: Remote | undefined;
   readonly update: LoadedCollection["update"];
+  /** The catalog entry the form starts from (F2). */
+  readonly catalogForm?: CatalogForm | undefined;
 }
 
-/** Where "Abbrechen" leads: back to the object, or to the showcase. */
+/** Where "Abbrechen" leads: back to the object, to the search, or to the showcase. */
 function cancelHash(form: FormRef): string {
-  return form.mode === "new" ? routeHash("showcase") : detailHash({ type: form.type, id: form.id });
+  if (form.mode === "new") return routeHash("showcase");
+  if (form.mode === "catalog") return searchHash(form.type);
+  return detailHash({ type: form.type, id: form.id });
 }
 
-function FormBody({ form, collection, start, remote, update }: FormBodyProps) {
+function FormBody({ form, collection, start, remote, update, catalogForm }: FormBodyProps) {
   const { type } = form;
   const [values, setValues] = useState<FormValues>(start.values);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -120,7 +131,7 @@ function FormBody({ form, collection, start, remote, update }: FormBodyProps) {
     extra: {
       placeholder?: string;
       inputMode?: "decimal" | "numeric" | "url";
-      hint?: string;
+      hint?: string | undefined;
       rows?: number;
     } = {},
   ) => (
@@ -130,6 +141,12 @@ function FormBody({ form, collection, start, remote, update }: FormBodyProps) {
       value={values[field] as string}
       onInput={(value) => set({ [field]: value })}
       error={message(field)}
+      // Green as long as the value is the one the catalog gave.
+      prefilled={
+        catalogForm?.prefilled.includes(field) && values[field] === start.values[field]
+          ? CT.prefilledNote
+          : undefined
+      }
       {...extra}
     />
   );
@@ -157,6 +174,7 @@ function FormBody({ form, collection, start, remote, update }: FormBodyProps) {
       today: today(),
       sets: collection.sets,
       existing: start.existing,
+      catalog: catalogForm?.extras,
     });
     setSaving(true);
     setFailure(undefined);
@@ -179,7 +197,9 @@ function FormBody({ form, collection, start, remote, update }: FormBodyProps) {
       ? T.titleEdit(start.existing.name)
       : form.mode === "copy"
         ? T.titleCopy
-        : T.titleNew[type];
+        : form.mode === "catalog"
+          ? T.titleCatalog[form.type]
+          : T.titleNew[type];
 
   const saveMod = (part: ModPart) =>
     set({
@@ -201,6 +221,7 @@ function FormBody({ form, collection, start, remote, update }: FormBodyProps) {
         <span class="header-spacer" />
       </header>
 
+      {catalogForm && <p class="banner banner--catalog">{CT.banner}</p>}
       {summary > 0 && (
         <p class="banner banner--error" role="alert">
           {T.summary(summary)}
@@ -227,7 +248,10 @@ function FormBody({ form, collection, start, remote, update }: FormBodyProps) {
 
       <FormCard id="basics" title={T.sections.basics}>
         {text("name", T.fields.name)}
-        {shown.includes("number") && text("number", T.fields.number[type])}
+        {shown.includes("number") &&
+          text("number", T.fields.number[type], {
+            hint: catalogForm?.numberMissing ? CT.numberMissing : undefined,
+          })}
         <Choice
           legend={T.fields.manufacturer}
           options={MANUFACTURERS.map((value) => ({ value, label: T.manufacturers[value] }))}
@@ -290,7 +314,12 @@ function FormBody({ form, collection, start, remote, update }: FormBodyProps) {
           placeholder: T.fields.pricePlaceholder,
         })}
         {type === "minifig" &&
-          text("fromSet", T.fields.fromSet, { placeholder: T.fields.fromSetPlaceholder })}
+          text("fromSet", T.fields.fromSet, {
+            placeholder: T.fields.fromSetPlaceholder,
+            hint: catalogForm?.sets.length
+              ? CT.fromSetHint(catalogForm.sets.map((set) => shortSetNumber(set.number)))
+              : undefined,
+          })}
       </FormCard>
 
       <FormCard id="value" title={T.sections.value}>
@@ -390,15 +419,111 @@ function FormBody({ form, collection, start, remote, update }: FormBodyProps) {
   );
 }
 
+type CatalogLoad =
+  | { readonly status: "loading" }
+  | { readonly status: "failed"; readonly notFound: boolean }
+  | { readonly status: "ready"; readonly catalogForm: CatalogForm };
+
+/** Fetches the catalog entry of `#/erfassen/figur/katalog/<nummer>`, then shows the form filled. */
+function CatalogFormLoader({
+  form,
+  collection,
+  remote,
+  update,
+  catalog,
+}: {
+  readonly form: Extract<FormRef, { mode: "catalog" }>;
+  readonly collection: Collection;
+  readonly remote: Remote | undefined;
+  readonly update: LoadedCollection["update"];
+  readonly catalog: Catalog | undefined;
+}) {
+  const [load, setLoad] = useState<CatalogLoad>({ status: "loading" });
+  const [attempt, setAttempt] = useState(0);
+  const { type, ref } = form;
+
+  useEffect(() => {
+    let active = true;
+    setLoad({ status: "loading" });
+    const fetched = catalog
+      ? catalog.item(type, ref)
+      : Promise.reject(new CatalogCallError("Kein Katalog", "unavailable"));
+    fetched.then(
+      (item) => active && setLoad({ status: "ready", catalogForm: formFromCatalog(item) }),
+      (error: unknown) =>
+        active &&
+        setLoad({
+          status: "failed",
+          notFound: error instanceof CatalogCallError && error.failure === "not_found",
+        }),
+    );
+    return () => {
+      active = false;
+    };
+  }, [catalog, type, ref, attempt]);
+
+  if (load.status === "ready") {
+    return (
+      <FormBody
+        form={form}
+        collection={collection}
+        start={{ values: load.catalogForm.values, existing: undefined }}
+        remote={remote}
+        update={update}
+        catalogForm={load.catalogForm}
+      />
+    );
+  }
+  return (
+    <>
+      <header class="page-header">
+        <a class="icon-button back-link pressable" href={cancelHash(form)} aria-label={T.cancel}>
+          <Icon name="close" />
+        </a>
+      </header>
+      {load.status === "loading" ? (
+        <div class="skeleton" role="status" aria-busy="true" aria-label={CT.loading}>
+          <div class="skeleton__card" />
+          <div class="skeleton__card" />
+        </div>
+      ) : (
+        <section class="card" role="alert" aria-labelledby="catalog-failed-title">
+          <h1 class="card__title" id="catalog-failed-title" tabIndex={-1}>
+            {CT.failed.title}
+          </h1>
+          <p class="card__text">{load.notFound ? CT.failed.notFound : CT.failed.text}</p>
+          {!load.notFound && (
+            <button
+              type="button"
+              class="button button--secondary pressable"
+              onClick={() => setAttempt((count) => count + 1)}
+            >
+              {CT.failed.retry}
+            </button>
+          )}
+          <a
+            class="button button--secondary button--flat pressable"
+            href={formHash({ type, mode: "new" })}
+          >
+            {CT.failed.manual}
+          </a>
+        </section>
+      )}
+    </>
+  );
+}
+
 /** S8: the form to enter a figure, a set or a special part, or to change one (and `mods` of S8a). */
 export function FormPage({
   data,
   form,
   remote,
+  catalog,
 }: {
   readonly data: LoadedCollection;
   readonly form: FormRef;
   readonly remote: Remote | undefined;
+  readonly catalog?: Catalog | undefined;
 }) {
   const { state } = data;
   if (state.status !== "ready") {
@@ -426,6 +551,17 @@ export function FormPage({
           </section>
         )}
       </>
+    );
+  }
+  if (form.mode === "catalog") {
+    return (
+      <CatalogFormLoader
+        form={form}
+        collection={state.collection}
+        remote={remote}
+        update={data.update}
+        catalog={catalog}
+      />
     );
   }
   const start = startOf(form, state.collection);
