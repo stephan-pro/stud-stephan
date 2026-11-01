@@ -66,6 +66,7 @@ npx supabase db push
 | `20261031120000_collection.sql` (P4a) | Tabellen, Zeilenschutz, Funktionen, Dateiablagen `photos` und `studio-files`, `ping` | eingespielt (31.10.2026); Security Advisor vom PO geprüft, Zugriff ohne Anmeldung von außen gesperrt (nur `ping`) |
 | `20261101120000_catalog.sql` (P7) | Tabellen `catalog_cache` und `catalog_usage` (nur für die Edge Functions, für die App gesperrt), Funktion `catalog_count_call` | offen (PO: im SQL Editor des Dashboards einspielen, siehe Bericht zu P7); die Datei darf mehrfach laufen |
 | `20261102120000_price_run.sql` (P11) | Erweiterungen `pg_cron` und `pg_net`; Tabellen `price_runs` und `price_run_items` (Besitzer liest, nur die Funktionen schreiben); Warteschlange `price_run_begin/claim/finish/release`, Zähler `price_count_call`, Stand `price_run_status`; Aufruf der Funktion `price_run_call` (Geheimnis aus dem Vault); drei Cron-Jobs | offen (PO: zusammen mit der P7-Datei im SQL Editor einspielen, siehe Bericht zu P11); die Datei darf mehrfach laufen |
+| `20261102130000_event_trigger_rights.sql` (nach P11) | Nimmt `anon` und `authenticated` das Ausführungsrecht an Event-Trigger-Funktionen mit SECURITY DEFINER in `public` (betrifft `rls_auto_enable()` von „Enable automatic RLS“; Security-Advisor-Warnungen vom 01.11.2026) | offen (PO: im SQL Editor einspielen); die Datei darf mehrfach laufen |
 
 ## Edge Functions (P7)
 
@@ -93,6 +94,6 @@ npx supabase db push
 
 Alle Adressen beginnen mit `https://supabase.com/dashboard/project/ohuqwiypmoqyuxsgouxw`. Nur ansehen; keine Schlüssel oder Passwörter in Chat oder Bildschirmfotos.
 
-1. **Security Advisor:** `…/advisors/security` → „Refresh“. *Soll:* 0 Fehler. Warnungen und Hinweise: Text kopieren und Claude geben, nichts auf eigene Faust „beheben“.
+1. **Security Advisor:** `…/advisors/security` → „Refresh“. *Soll:* 0 Fehler. Warnungen und Hinweise: Text kopieren und Claude geben, nichts auf eigene Faust „beheben“. Bekannt und gewollt: „Leaked Password Protection Disabled“ (die App hat keine Passwörter, nur Codes per Mail; die Prüfung gibt es zudem erst im Pro-Plan).
 2. **Tabellen:** `…/editor`, Schema „public“. *Soll:* die acht Tabellen aus „Aufbau“ (ab P7 dazu `catalog_cache` und `catalog_usage`, ab P11 `price_runs` und `price_run_items`), bei keiner der Hinweis „RLS disabled“.
 3. **Dateiablagen:** `…/storage/buckets`. *Soll:* `photos` und `studio-files`, beide ohne „Public“.

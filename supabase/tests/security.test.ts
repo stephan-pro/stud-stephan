@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { beforeAll, describe, expect, it } from "vitest";
 import { aMinifig, aPrice } from "../../src/domain/fixtures";
@@ -302,6 +303,22 @@ describe("Datenbank", () => {
         "and has_function_privilege('anon', p.oid, 'execute') order by 1",
     );
     expect(functions).toEqual(["ping"]);
+  });
+
+  it("Event-Trigger-Funktionen mit SECURITY DEFINER sind ohne Anmeldung und angemeldet nicht ausführbar", () => {
+    // As Supabase's "Enable automatic RLS" puts `rls_auto_enable()` into the real project.
+    sql(
+      "create or replace function public.test_event_trigger() returns event_trigger " +
+        "language plpgsql security definer set search_path = '' as $$ begin end; $$; " +
+        "grant execute on function public.test_event_trigger() to anon, authenticated",
+    );
+    sql(readFileSync("supabase/migrations/20261102130000_event_trigger_rights.sql", "utf8"));
+    const rights = sql(
+      "select has_function_privilege('anon', 'public.test_event_trigger()', 'execute'), " +
+        "has_function_privilege('authenticated', 'public.test_event_trigger()', 'execute')",
+    );
+    sql("drop function public.test_event_trigger()");
+    expect(rights).toEqual(["f|f"]);
   });
 
   it("Beide Buckets sind privat und haben ihre Grenzen", () => {
