@@ -189,7 +189,7 @@ Tickets are written in English. Every acceptance criterion is at least one test,
 
 **Goal:** Browse the collection exactly as in the dummy.
 
-**Scope:** S1 (collection card, chips, sort, filter button, grid with markers `×3`, `Mod`, `Kein Diorama`, grouped copies), S1a filter sheet (themes in two levels: main theme with its subthemes, both selectable – PO decision 31.10.2026), S2 minifig detail, S3 set detail (contained figures with owned/missing), S4 special part detail, loading placeholders, empty state, offline banner. PC layout with 5–6 columns.
+**Scope:** S1 (collection card, chips, sort, filter button, grid with markers `×3`, `Mod`, `Kein Diorama`, grouped copies), S1a filter sheet (themes in two levels: main theme with its subthemes, both selectable – PO decision 31.10.2026), S2 minifig detail, S3 set detail (contained figures with owned/missing), S4 special part detail, loading placeholders, empty state, offline banner. PC layout with 5–6 columns. Photos in grid and detail via `Remote.signedUrl` (building blocks from P4c in `src/files/`); placeholder (tint + scribble) when an object has no photo (moved here from P4c).
 
 **Done when:** F5 (grouping), F11 and the detail content of F5/F7/F9 work against fake and real data; E2E with axe on every page and the filter sheet; phone (390 × 844) and PC screenshots match the dummy closely.
 
@@ -197,9 +197,9 @@ Tickets are written in English. Every acceptance criterion is at least one test,
 
 **Goal:** Everything can be entered and changed by hand.
 
-**Scope:** S7 capture sheet (what/how), S8 form for every object type (sections per type, prefilled fields highlighted), S8a mod part sheet, “Weiteres Exemplar anlegen”, edit, delete with confirmation and “Rückgängig” for a few seconds. Validation messages at the field, focus on first error.
+**Scope:** S7 capture sheet (what/how), S8 form for every object type (sections per type, prefilled fields highlighted), S8a mod part sheet, “Weiteres Exemplar anlegen”, edit, delete with confirmation and “Rückgängig” for a few seconds. Validation messages at the field, focus on first error. Photo UI in the forms (moved here from P4c): pick or take photos, resize with `resizePhoto`, upload with `uploadFile` (show steps and retry), show, delete; limits from `rules.ts` (20 photos per object).
 
-**Done when:** F4, F6 (incl. “Ausgaben für Mods” and value unchanged), F7, F9 forms work end to end; E2E with axe for every form state.
+**Done when:** F4, F6 (incl. “Ausgaben für Mods” and value unchanged), F7, F9 forms work end to end; E2E with axe for every form state. PO check on the live site: a real photo from his phone (portrait) is shown upright and ends up ≤ 400 KB (EXIF orientation was not tested with a real phone photo in P4c).
 
 ### P7 – Catalog (BrickLink numbers, Rebrickable search)
 
@@ -231,7 +231,7 @@ Tickets are written in English. Every acceptance criterion is at least one test,
 
 **Goal:** Dioramas with photos, Studio files and assigned figures.
 
-**Scope:** S5 list with “N Figuren ohne Diorama” banner, S6 detail, S6a assign sheet (multi-select, “steht in: …” with move confirmation), link figure ↔ diorama both ways.
+**Scope:** S5 list with “N Figuren ohne Diorama” banner, S6 detail, S6a assign sheet (multi-select, “steht in: …” with move confirmation), link figure ↔ diorama both ways. Photo and Studio file UI on the diorama (moved here from P4c): upload `.io` files with `uploadFile` and `studioFile.ts`, list, download byte-identical, delete; photos as in P6.
 
 **Done when:** all three F8 acceptance criteria are E2E tests and green.
 
@@ -318,7 +318,7 @@ Tickets are written in English. Every acceptance criterion is at least one test,
   - Fotos werden auf höchstens 1.600 px an der langen Seite verkleinert und als WebP (Ziel ≤ 300 KB) gespeichert; reicht die Qualitätsstufe nicht, sinkt erst die Qualität, dann die Größe (1.280, 1.024 px). Browser, die kein WebP schreiben können (Safari), speichern JPEG. Die Drehung aus den EXIF-Daten wendet der Browser beim Laden an.
   - Der Fortschritt beim Hochladen zeigt Schritte (Senden, Warten auf den nächsten Versuch, Fertig) statt Prozent: `fetch` meldet keine gesendeten Bytes. Bis zu 4 Versuche mit 1, 2, 4 Sekunden Pause; eine Ablehnung des Servers wird nicht wiederholt.
   - Speicherplatz: 1 GB zählt als 1.000.000.000 Bytes; die Anzeige in den Einstellungen rechnet in Schritten zu 1.000. Die Belegung wird beim Öffnen der Einstellungen aus dem Dateispeicher gelesen (keine neue Migration).
-  - Die Oberfläche zum Auswählen, Anzeigen und Löschen von Fotos und Studio-Dateien kommt mit den Seiten, die sie brauchen (P6 Fotos, P9 Dioramen); P4c liefert die Bausteine (`src/files/`, `Remote.signedUrl`) und die Speicheranzeige.
+  - Die Oberfläche zum Auswählen, Anzeigen und Löschen von Fotos und Studio-Dateien kommt mit den Seiten, die sie brauchen (P5 Anzeige und Platzhalter, P6 Fotos auswählen und löschen, P10 Dioramen mit Studio-Dateien); P4c liefert die Bausteine (`src/files/`, `Remote.signedUrl`) und die Speicheranzeige.
 
 ## 8. Abhängigkeiten
 
