@@ -78,6 +78,53 @@ test.describe("mit Beispielsammlung", () => {
     });
   }
 
+  test("P5 Nacharbeit: Kacheln mit Leerzeichen im Namen haben eine gültige Muster-Kennung und bleiben hell", async ({
+    page,
+  }) => {
+    await page.goto("#/vitrine");
+    const tile = page.locator(".tile", { hasText: "Commander Appo" });
+    await expect(tile).toBeVisible();
+    const fill = await tile.locator(".scribbles rect").first().getAttribute("fill");
+    const id = /^url\(#([A-Za-z0-9_-]+)\)$/.exec(fill ?? "")?.[1];
+    expect(id).toBeDefined();
+    await expect(tile.locator(`pattern[id="${id}"]`)).toHaveCount(1);
+    // Every pattern on the page has a unique id, so no tile paints with another one's pattern.
+    const ids = await page.locator("pattern").evaluateAll((all) => all.map((node) => node.id));
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  test("P5 Nacharbeit: PC-Layout der Vitrine wie im Dummy", async ({ page }) => {
+    await page.setViewportSize(PC);
+    await page.goto("#/vitrine");
+    const box = async (locator: ReturnType<Page["locator"]>) => {
+      const rect = await locator.boundingBox();
+      if (!rect) throw new Error("Element nicht sichtbar");
+      return rect;
+    };
+    const greeting = await box(heading(page));
+    const search = await box(page.getByRole("searchbox", { name: T.searchLabel }));
+    expect(
+      Math.abs(search.y + search.height / 2 - (greeting.y + greeting.height / 2)),
+    ).toBeLessThan(40);
+    expect(search.x).toBeGreaterThan(greeting.x + greeting.width);
+
+    const card = page.getByRole("region", { name: TEXTS.appName });
+    const amount = await box(card.locator(".collection-card__amount"));
+    const pills = await box(card.locator(".pills"));
+    expect(pills.x).toBeGreaterThan(amount.x + amount.width);
+    expect(Math.abs(pills.y + pills.height - (amount.y + amount.height))).toBeLessThan(30);
+
+    const chips = await box(page.locator(".controls .chips"));
+    const filter = await box(page.getByRole("button", { name: TEXTS.showcase.filterButton }));
+    expect(Math.abs(chips.y + chips.height / 2 - (filter.y + filter.height / 2))).toBeLessThan(20);
+    expect(filter.x).toBeGreaterThan(chips.x + chips.width);
+
+    // The sidebar reaches the bottom of the window, also after scrolling.
+    await page.mouse.wheel(0, 600);
+    const sidebar = await box(page.locator(".sidebar"));
+    expect(Math.round(sidebar.y + sidebar.height)).toBeGreaterThanOrEqual(PC.height - 16);
+  });
+
   test("P5 F11 Handy zwei Spalten, PC fünf bis sechs", async ({ page }) => {
     const columns = () =>
       page
@@ -191,9 +238,19 @@ test.describe("mit Beispielsammlung", () => {
 
       const sheet = page.getByRole("dialog", { name: TEXTS.filter.title });
       await expect(sheet).toBeVisible();
-      for (const chip of ["Star Wars", "The Clone Wars", "Ritter", "Ninjago", "Staffel 1"]) {
+      // Sub themes appear only once their main theme is chosen.
+      for (const chip of ["Star Wars", "Ritter", "Ninjago"]) {
         await expect(sheet.getByRole("button", { name: chip, exact: true })).toBeVisible();
       }
+      for (const chip of ["The Clone Wars", "Staffel 1"]) {
+        await expect(sheet.getByRole("button", { name: chip, exact: true })).toHaveCount(0);
+      }
+      await sheet.getByRole("button", { name: "Star Wars", exact: true }).click();
+      await sheet.getByRole("button", { name: "Ninjago", exact: true }).click();
+      for (const chip of ["The Clone Wars", "Staffel 1"]) {
+        await expect(sheet.getByRole("button", { name: chip, exact: true })).toBeVisible();
+      }
+      await sheet.getByRole("button", { name: "Ninjago", exact: true }).click();
       for (const group of [
         TEXTS.filter.theme,
         TEXTS.filter.manufacturer,
@@ -206,6 +263,7 @@ test.describe("mit Beispielsammlung", () => {
 
       // The sub theme takes only its own objects, the count on the button follows at once.
       await sheet.getByRole("button", { name: "The Clone Wars", exact: true }).click();
+      await sheet.getByRole("button", { name: "Star Wars", exact: true }).click();
       const clone = { themes: ["Star Wars – The Clone Wars"] };
       const count = expectedNames(clone).length;
       await sheet.getByRole("button", { name: TEXTS.filter.show(count) }).click();

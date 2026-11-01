@@ -166,69 +166,58 @@ export function ShowcasePage({ data, view, onView }: ShowcasePageProps) {
         </section>
       ) : (
         <>
-          <div class="search" data-open={view.searchOpen}>
-            <label class="visually-hidden" for="showcase-search">
-              {T.searchLabel}
-            </label>
-            <input
-              id="showcase-search"
-              class="field__input"
-              type="search"
-              placeholder={T.searchPlaceholder}
-              value={view.filter.query}
-              onInput={(event) => setFilter({ ...view.filter, query: event.currentTarget.value })}
-            />
-          </div>
-          <fieldset class="chips">
-            <legend class="visually-hidden">{T.typeGroup}</legend>
-            {TYPES.map((type) => (
+          <div class="controls">
+            <fieldset class="chips">
+              <legend class="visually-hidden">{T.typeGroup}</legend>
+              {TYPES.map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  class="chip pressable"
+                  aria-pressed={view.filter.type === type}
+                  onClick={() => setFilter({ ...view.filter, type })}
+                >
+                  {T.types[type]}
+                </button>
+              ))}
+            </fieldset>
+            <div class="toolbar">
+              <label class="sort">
+                <span class="visually-hidden">{T.sortLabel}</span>
+                <select
+                  class="sort__select"
+                  value={view.sort}
+                  onChange={(event) =>
+                    onView({ ...view, sort: event.currentTarget.value as ShowcaseSort })
+                  }
+                >
+                  {SORTS.map((sort) => (
+                    <option key={sort} value={sort}>
+                      {T.sorts[sort]}
+                    </option>
+                  ))}
+                </select>
+                <Icon name="chevron" size={16} strokeWidth={2.4} />
+              </label>
               <button
-                key={type}
                 type="button"
-                class="chip pressable"
-                aria-pressed={view.filter.type === type}
-                onClick={() => setFilter({ ...view.filter, type })}
+                class="chip chip--filter pressable"
+                aria-haspopup="dialog"
+                aria-label={activeFilters > 0 ? T.filterButtonActive(activeFilters) : undefined}
+                onClick={(event) => {
+                  opener.current = event.currentTarget;
+                  setFilterOpen(true);
+                }}
               >
-                {T.types[type]}
+                <Icon name="filter" size={18} />
+                {T.filterButton}
+                {activeFilters > 0 && (
+                  <span class="chip__count" aria-hidden="true">
+                    {activeFilters}
+                  </span>
+                )}
               </button>
-            ))}
-          </fieldset>
-          <div class="toolbar">
-            <label class="sort">
-              <span class="visually-hidden">{T.sortLabel}</span>
-              <select
-                class="sort__select"
-                value={view.sort}
-                onChange={(event) =>
-                  onView({ ...view, sort: event.currentTarget.value as ShowcaseSort })
-                }
-              >
-                {SORTS.map((sort) => (
-                  <option key={sort} value={sort}>
-                    {T.sorts[sort]}
-                  </option>
-                ))}
-              </select>
-              <Icon name="chevron" size={16} strokeWidth={2.4} />
-            </label>
-            <button
-              type="button"
-              class="chip chip--filter pressable"
-              aria-haspopup="dialog"
-              aria-label={activeFilters > 0 ? T.filterButtonActive(activeFilters) : undefined}
-              onClick={(event) => {
-                opener.current = event.currentTarget;
-                setFilterOpen(true);
-              }}
-            >
-              <Icon name="filter" size={18} />
-              {T.filterButton}
-              {activeFilters > 0 && (
-                <span class="chip__count" aria-hidden="true">
-                  {activeFilters}
-                </span>
-              )}
-            </button>
+            </div>
           </div>
           <p class="visually-hidden" role="status">
             {T.results(entries.length)}

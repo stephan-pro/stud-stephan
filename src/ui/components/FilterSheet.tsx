@@ -105,16 +105,21 @@ export function FilterSheet({ collection, filter, sort, onChange, onClose }: Fil
       {themes.length > 0 && (
         <fieldset class="filter-group">
           <legend class="filter-group__title">{T.theme}</legend>
-          {themes.map((group) => (
-            <div key={group.theme} class="filter-theme">
-              <div class="chips">{themeChip(group.theme, group.theme)}</div>
-              {group.subThemes.length > 0 && (
-                <div class="chips filter-theme__subs">
-                  {group.subThemes.map((sub) => themeChip(sub.theme, sub.name, true))}
-                </div>
-              )}
-            </div>
-          ))}
+          <div class="chips">{themes.map((group) => themeChip(group.theme, group.theme))}</div>
+          {themes
+            .filter(
+              (group) =>
+                group.subThemes.length > 0 &&
+                // A sub theme that is chosen stays visible even if its main theme is not.
+                (filter.themes.includes(group.theme) ||
+                  group.subThemes.some((sub) => filter.themes.includes(sub.theme))),
+            )
+            .map((group) => (
+              <fieldset key={group.theme} class="chips filter-theme__subs">
+                <legend class="visually-hidden">{group.theme}</legend>
+                {group.subThemes.map((sub) => themeChip(sub.theme, sub.name, true))}
+              </fieldset>
+            ))}
         </fieldset>
       )}
       <fieldset class="filter-group">

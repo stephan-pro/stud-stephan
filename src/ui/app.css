@@ -87,6 +87,7 @@ a {
 
 .page-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
@@ -486,7 +487,9 @@ a {
     top: var(--nav-inset);
     width: var(--sidebar-width);
     flex-shrink: 0;
-    min-height: calc(100vh - 2 * var(--nav-inset));
+    align-self: flex-start;
+    height: calc(100dvh - 2 * var(--nav-inset));
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
@@ -821,12 +824,49 @@ a {
 
 /* Search, chips, sort and filter */
 
+/* In the page header: below the greeting on the phone (opened by the button), on the PC to the
+   right of it. */
 .search {
+  position: relative;
   display: none;
+  flex-basis: 100%;
 }
 
 .search[data-open="true"] {
   display: block;
+}
+
+.search__input {
+  width: 100%;
+  height: var(--input-height);
+  padding: 0 var(--space-4) 0 calc(var(--space-4) * 2 + var(--space-3));
+  border: var(--border) solid var(--ink);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+}
+
+.search__input::placeholder {
+  color: var(--ink-muted);
+}
+
+.search__icon {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--space-3);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+/* Type chips, then sort and filter: stacked on the phone, in one row on the PC. */
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
 .chips {
@@ -997,11 +1037,52 @@ a {
 
   .search {
     display: block;
-    max-width: 420px;
+    flex: 0 1 360px;
   }
 
   .search-toggle {
     display: none;
+  }
+
+  .controls {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .controls .toolbar {
+    margin-left: auto;
+  }
+
+  /* Flat card: name, value and the pills at the bottom right next to the value. */
+  .collection-card__content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--space-4);
+    align-items: end;
+    padding: var(--space-4) var(--space-5);
+  }
+
+  .collection-card__rule {
+    display: none;
+  }
+
+  .collection-card__brand,
+  .collection-card__lead,
+  .collection-card__value {
+    grid-column: 1;
+  }
+
+  .collection-card__amount {
+    font-size: 48px;
+  }
+
+  .collection-card .pills {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    align-self: end;
+    justify-content: flex-end;
   }
 }
 
@@ -1176,14 +1257,13 @@ a {
   font-weight: 700;
 }
 
-.filter-theme {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
+/* The sub themes of a chosen main theme: indented below the main themes, side by side. */
 .filter-theme__subs {
   padding-left: var(--space-5);
+}
+
+.sheet__footer .button {
+  white-space: nowrap;
 }
 
 /* Detail pages (S2, S3, S4) */

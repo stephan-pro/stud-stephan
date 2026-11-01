@@ -91,6 +91,8 @@ function Shell({ session, remote, demo, onSignOut, focusOnMount }: ShellProps) {
     route === "showcase" && !detail && hasItems
       ? {
           open: view.searchOpen,
+          query: view.filter.query,
+          onQuery: (query: string) => setView({ ...view, filter: { ...view.filter, query } }),
           onToggle: () => {
             setView({ ...view, searchOpen: !view.searchOpen });
             if (!view.searchOpen) {

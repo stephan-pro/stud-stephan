@@ -6,7 +6,14 @@ import { Studs } from "./Studs";
 interface PageHeaderProps {
   readonly route: Route;
   /** Search button of the showcase on the phone (the PC has the search field open all the time). */
-  readonly search?: { readonly open: boolean; readonly onToggle: () => void } | undefined;
+  readonly search?:
+    | {
+        readonly open: boolean;
+        readonly onToggle: () => void;
+        readonly query: string;
+        readonly onQuery: (query: string) => void;
+      }
+    | undefined;
 }
 
 /**
@@ -43,6 +50,24 @@ export function PageHeader({ route, search }: PageHeaderProps) {
           >
             <Icon name={search.open ? "close" : "search"} />
           </button>
+        )}
+        {search && (
+          <div class="search" data-open={search.open}>
+            <label class="visually-hidden" for="showcase-search">
+              {TEXTS.showcase.searchLabel}
+            </label>
+            <input
+              id="showcase-search"
+              class="search__input"
+              type="search"
+              placeholder={TEXTS.showcase.searchPlaceholder}
+              value={search.query}
+              onInput={(event) => search.onQuery(event.currentTarget.value)}
+            />
+            <span class="search__icon" aria-hidden="true">
+              <Icon name="search" size={20} />
+            </span>
+          </div>
         )}
       </header>
     );

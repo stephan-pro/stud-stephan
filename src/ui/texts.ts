@@ -183,7 +183,7 @@ export const TEXTS = {
     modifiedOptions: { any: "Egal", yes: "Ja", no: "Nein" },
     withoutDiorama: "Nur Figuren ohne Diorama",
     reset: "Zurücksetzen",
-    show: (count: number) => (count === 1 ? "1 Ergebnis anzeigen" : `${count} Ergebnisse anzeigen`),
+    show: (count: number) => `${count} anzeigen`,
   },
   /** S2, S3 and S4 detail pages (P5). */
   detail: {
