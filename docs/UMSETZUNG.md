@@ -405,6 +405,7 @@ Tickets are written in English. Every acceptance criterion is at least one test,
   - **Karte „Preisabruf“** wie im Dummy: Letzter Lauf (mit „· von Hand“), Ergebnis („312 aktualisiert, 2 fehlgeschlagen“, dazu „N ohne Verkäufe“, während des Laufs „läuft: 40 von 312 abgefragt“, beim Tageslimit wann es weitergeht), Übersprungen („N ohne BrickLink-Nummer“), Fehlgeschlagen (Nummern), Nächster Lauf; darunter ein kurzer Hinweis und der Knopf. Die Karte „Datenquellen“ des Dummys kommt mit P14.
   - **Sonderteile** fragt der Abruf nicht ab: Ihre Nummer sagt nicht, welche Art BrickLink-Eintrag sie sind (Set, Teil, Gear). Sie behalten eigenen Wert oder Kaufpreis. (Ersetzt den Satz in P3, dass Sonderteile von LEGO einen Marktpreis bekommen.)
   - **Wert-Karte.** Zeigt beim Marktwert zusätzlich, aus wie vielen Verkäufen der Durchschnitt stammt („Stand vom … · BrickLink · Ø aus 97 Verkäufen“, Hinweis aus P2). Als Durchschnitt gilt wie in P2 `avg_price`, als Zahl `total_quantity` der „verkauft, letzte 6 Monate“-Antwort in EUR. Eine Setnummer ohne Variante („75372“) wird für BrickLink zu „75372-1“.
+  - **Wert-Karte wie im Dummy (PO, 01.11.2026):** Die Texte folgen jetzt `Figur.dc.html`: „Aktueller Wert (gebraucht)“, darunter „Kaufpreis 25,00 € · **+13,50 €**“ und „Neu wäre sie 52,00 € wert“ (bei Sets und Sonderteilen „… wäre es …“) als Zeilen statt der Kästchen aus P5, Wert in 42 px. Eigener Wert, Kaufpreis als Wert und „ohne Wert“ behalten ihre Überschriften und Hinweise.
 
 ## 8. Abhängigkeiten
 

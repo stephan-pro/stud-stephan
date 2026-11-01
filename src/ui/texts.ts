@@ -235,14 +235,16 @@ export const TEXTS = {
       text: "Dieses Objekt gibt es nicht (mehr) in deiner Sammlung.",
     },
     value: {
-      market: (condition: string) => `Marktwert, ${condition}`,
+      market: (condition: string) => `Aktueller Wert (${condition})`,
       manual: "Wert (selbst geschätzt)",
       purchase: "Kaufpreis als Wert",
       none: "Noch kein Wert",
       withoutValue: "ohne Wert",
       purchasePrice: "Kaufpreis",
-      difference: "Differenz",
-      otherCondition: (condition: string, price: string) => `${condition}: ${price}`,
+      /** "Neu wäre sie 52,00 € wert" (die Figur), "… wäre es …" (das Set, das Sonderteil). */
+      otherCondition: (condition: string, price: string, pronoun: string) =>
+        `${condition} wäre ${pronoun} ${price} wert`,
+      pronoun: { minifig: "sie", legoSet: "es", specialPart: "es" },
       asOfMarket: (date: string) => `Stand vom ${date} · BrickLink`,
       /** P11: how many sales the average stands on (few = uncertain). */
       asOfMarketSold: (date: string, sold: number) =>

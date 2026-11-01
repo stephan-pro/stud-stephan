@@ -1,7 +1,7 @@
 import { formatDate } from "../../domain/dates";
 import { formatMoney, formatMoneyDifference } from "../../domain/money";
 import type { PriceStep } from "../../domain/prices";
-import type { Cents, Condition } from "../../domain/types";
+import type { Cents, Condition, ShowcaseItem } from "../../domain/types";
 import type { Valuation } from "../../domain/value";
 import { TEXTS } from "../texts";
 import { Scribbles } from "./Scribbles";
@@ -41,6 +41,8 @@ function Sparkline({ steps }: { readonly steps: readonly PriceStep[] }) {
 }
 
 interface ValueCardProps {
+  /** Which object it is, for "Neu wäre sie / es … wert". */
+  readonly type: ShowcaseItem["type"];
   readonly valuation: Valuation;
   readonly condition: Condition;
   readonly purchasePrice?: Cents | undefined;
@@ -48,8 +50,18 @@ interface ValueCardProps {
   readonly id: string;
 }
 
-/** The value card of S2, S3 and S4: value, purchase price and difference, history, other condition. */
-export function ValueCard({ valuation, condition, purchasePrice, history, id }: ValueCardProps) {
+/**
+ * The value card of S2, S3 and S4 as in `Figur.dc.html`: value, purchase price and difference,
+ * the price in the other condition, history, "Stand vom …".
+ */
+export function ValueCard({
+  type,
+  valuation,
+  condition,
+  purchasePrice,
+  history,
+  id,
+}: ValueCardProps) {
   const T = TEXTS.detail.value;
   const label = {
     market: T.market(TEXTS.conditions[condition].toLowerCase()),
@@ -79,24 +91,25 @@ export function ValueCard({ valuation, condition, purchasePrice, history, id }: 
         <p class="value-card__value">
           {valuation.ownValueMissing ? T.withoutValue : formatMoney(valuation.cents)}
         </p>
-        {(purchasePrice !== undefined || other) && (
-          <ul class="pills">
-            {purchasePrice !== undefined && (
-              <li class="pill">
-                {T.purchasePrice} {formatMoney(purchasePrice)}
-              </li>
-            )}
+        {purchasePrice !== undefined && (
+          <p class="value-card__line">
+            {T.purchasePrice} {formatMoney(purchasePrice)}
             {valuation.difference !== undefined && (
-              <li class={valuation.difference > 0 ? "pill pill--positive" : "pill"}>
-                {T.difference} {formatMoneyDifference(valuation.difference)}
-              </li>
+              <>
+                {" · "}
+                <strong>{formatMoneyDifference(valuation.difference)}</strong>
+              </>
             )}
-            {other && (
-              <li class="pill">
-                {T.otherCondition(TEXTS.conditions[other.condition], formatMoney(other.cents))}
-              </li>
+          </p>
+        )}
+        {other && (
+          <p class="value-card__line">
+            {T.otherCondition(
+              TEXTS.conditions[other.condition],
+              formatMoney(other.cents),
+              T.pronoun[type],
             )}
-          </ul>
+          </p>
         )}
         <Sparkline steps={history} />
         {notes.map((note) => (

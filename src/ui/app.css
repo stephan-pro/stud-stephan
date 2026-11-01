@@ -823,7 +823,14 @@ a.button {
 }
 
 .value-card__value {
-  font-size: 46px;
+  font-size: 42px;
+}
+
+/* "Kaufpreis 25,00 € · +13,50 €", "Neu wäre sie 52,00 € wert" (Figur.dc.html) */
+.value-card__line {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .value-card__note {

@@ -108,6 +108,7 @@ function MinifigDetail({
       />
       <ValueCard
         id="value"
+        type="minifig"
         valuation={valuation}
         condition={minifig.condition}
         purchasePrice={minifig.purchasePrice}
@@ -232,6 +233,7 @@ function SetDetail({
       />
       <ValueCard
         id="value"
+        type="legoSet"
         valuation={valuation}
         condition={set.condition}
         purchasePrice={set.purchasePrice}
@@ -341,6 +343,7 @@ function SpecialPartDetail({
       />
       <ValueCard
         id="value"
+        type="specialPart"
         valuation={valueOfItem(part, collection.prices)}
         condition={part.condition}
         purchasePrice={part.purchasePrice}

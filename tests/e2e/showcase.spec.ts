@@ -351,9 +351,11 @@ test.describe("mit Beispielsammlung", () => {
       const valuation = valueOfItem(rex, DEMO.prices);
       const card = page.getByRole("region", { name: TEXTS.detail.value.market("gebraucht") });
       await expect(card).toContainText(formatMoney(valuation.cents));
-      await expect(card).toContainText(`Kaufpreis ${formatMoney(2500)}`);
-      await expect(card).toContainText("Differenz +13,50");
-      await expect(card).toContainText(`Neu: ${formatMoney(valuation.otherCondition?.cents ?? 0)}`);
+      // The lines of the value card as in Figur.dc.html.
+      await expect(card).toContainText(`Kaufpreis ${formatMoney(2500)} · +13,50`);
+      await expect(card).toContainText(
+        `Neu wäre sie ${formatMoney(valuation.otherCondition?.cents ?? 0)} wert`,
+      );
       await expect(card).toContainText("Stand vom 27.10.2026 · BrickLink");
       await expect(card.getByRole("img", { name: /Verlauf des Marktwerts/ })).toBeVisible();
 
@@ -415,9 +417,9 @@ test.describe("mit Beispielsammlung", () => {
       await expect(page.getByText(TEXTS.setStatus.figuresRemoved, { exact: true })).toBeVisible();
       await expect(page.getByText(TEXTS.conditions.used, { exact: true })).toBeVisible();
       const set = must(DEMO.sets[0]);
-      await expect(
-        page.getByRole("region", { name: TEXTS.detail.value.market("gebraucht") }),
-      ).toContainText(shownValue(set));
+      const value = page.getByRole("region", { name: TEXTS.detail.value.market("gebraucht") });
+      await expect(value).toContainText(shownValue(set));
+      await expect(value).toContainText(/Neu wäre es \d+,\d{2}\s€ wert/);
 
       // Two of the four figures are at hand: both Clone Troopers, not the Battle Droids.
       const figures = page.getByRole("region", { name: TEXTS.detail.set.figuresTitle });
