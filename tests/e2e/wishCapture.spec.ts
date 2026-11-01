@@ -2,7 +2,14 @@ import { expect, type Page, test } from "@playwright/test";
 import { DEMO_COLLECTION } from "../../src/demo/collection";
 import { MERLIN_LINK } from "../../src/demo/links";
 import { TEXTS } from "../../src/ui/texts";
-import { expectNoAccessibilityViolations, heading, PC, PHONE, signInDirectly } from "./helpers";
+import {
+  expectNoAccessibilityViolations,
+  heading,
+  PC,
+  PHONE,
+  signInDirectly,
+  wishEntry,
+} from "./helpers";
 
 // P15, gaps from P12: a wish straight from the capture sheet (number, search, link), and a set
 // received from the wishlist gets its contained figures like a set from the catalog.
@@ -101,7 +108,7 @@ test("P15 Wunsch per Link: Seite gelesen, Wunsch mit Name, Hersteller und Link",
   await expect(sheet.getByText("Burgtor mit Zugbrücke")).toBeVisible();
   await sheet.getByRole("button", { name: S.add }).click();
   await expect(page).toHaveURL(/#\/wunschliste$/);
-  await page.getByRole("button", { name: /Burgtor mit Zugbrücke/ }).click();
+  await wishEntry(page, "Burgtor mit Zugbrücke").click();
   await expect(page.getByRole("dialog", { name: S.titleEdit })).toBeVisible();
 });
 
@@ -117,7 +124,7 @@ test("P15 Ein erhaltenes Set aus der Wunschliste bekommt seine enthaltenen Figur
     .click();
   await wishSheet(page).getByRole("button", { name: S.add }).click();
 
-  await page.getByRole("button", { name: /Clone Trooper & Battle Droid Battle Pack/ }).click();
+  await wishEntry(page, "Clone Trooper & Battle Droid Battle Pack").click();
   await page
     .getByRole("dialog", { name: S.titleEdit })
     .getByRole("button", { name: S.received })

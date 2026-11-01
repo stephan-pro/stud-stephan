@@ -162,6 +162,9 @@ test.describe("Foto-Erkennung (S7a)", () => {
 
     await page.getByRole("link", { name: R.notFitting }).click();
     await expect(page).toHaveURL(/#\/erfassen\/suche\/figur$/);
+    // After a page change the app moves the focus to the heading a moment later; typing before
+    // that would lose the text (WebKit, under load).
+    await expect(heading(page)).toBeFocused();
     await page.getByRole("searchbox", { name: TEXTS.search.label }).fill("sw0194");
     await page.getByRole("link", { name: TEXTS.search.pick("Captain Rex") }).click();
     await expect(heading(page)).toHaveText(F.titleCatalog.minifig);

@@ -7,12 +7,13 @@ import { arrangeWishlist, type WishSort, type WishStatus, wishStatus } from "../
 import { Cover } from "../components/Cover";
 import { Icon } from "../components/Icon";
 import { Scribbles } from "../components/Scribbles";
+import { Sheet } from "../components/Sheet";
 import { Unready } from "../components/Unready";
 import { WishSheet } from "../components/WishSheet";
 import { formHash, routeHash, seriesHash } from "../route";
 import { TEXTS } from "../texts";
-import type { LoadedCollection } from "../useCollection";
-import { wishActions } from "../wishActions";
+import { type LoadedCollection, useWritable } from "../useCollection";
+import { type WishActions, wishActions } from "../wishActions";
 
 const T = TEXTS.wishlist;
 const SORTS: readonly WishSort[] = ["priority", "price", "name"];
@@ -77,9 +78,88 @@ function Prices({ wish, status }: { readonly wish: WishItem; readonly status: Wi
   );
 }
 
+/** The bin beside an entry; without a connection it is switched off (P15). */
+function RemoveButton({
+  wish,
+  onClick,
+}: {
+  readonly wish: WishItem;
+  readonly onClick: () => void;
+}) {
+  const writable = useWritable();
+  return (
+    <button
+      type="button"
+      class="icon-button wish-remove pressable"
+      aria-label={T.remove.button(wish.name)}
+      title={writable ? undefined : TEXTS.readOnlyShort}
+      disabled={!writable}
+      onClick={onClick}
+    >
+      <Icon name="trash" size={20} />
+    </button>
+  );
+}
+
+/** Asks before a wish is taken off the list; says so if the server refused. */
+function RemoveWishSheet({
+  wish,
+  actions,
+  onClose,
+}: {
+  readonly wish: WishItem;
+  readonly actions: WishActions;
+  readonly onClose: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const writable = useWritable();
+  return (
+    <Sheet
+      id="remove-wish"
+      title={T.remove.title(wish.name)}
+      closeLabel={T.remove.close}
+      onClose={onClose}
+      footer={(close) => (
+        <>
+          <button type="button" class="button button--secondary pressable" onClick={close}>
+            {T.remove.keep}
+          </button>
+          <button
+            type="button"
+            class="button button--danger pressable"
+            disabled={busy || !writable}
+            onClick={async () => {
+              setBusy(true);
+              setFailed(false);
+              try {
+                await actions.remove(wish.id);
+                close();
+              } catch {
+                setBusy(false);
+                setFailed(true);
+              }
+            }}
+          >
+            {busy ? T.remove.removing : T.remove.confirm}
+          </button>
+        </>
+      )}
+    >
+      <p class="card__text">{T.remove.text}</p>
+      {failed && (
+        <p class="banner banner--error" role="alert">
+          {T.remove.failed}
+        </p>
+      )}
+    </Sheet>
+  );
+}
+
 /**
  * S9: the wishes with the ones whose target price is reached on top (F14), sorted by priority,
- * price or name; a tap opens the wish sheet (S9a).
+ * price or name; a tap opens the wish sheet (S9a), the bin beside each entry removes it after a
+ * question.
  */
 export function WishlistPage({
   data,
@@ -90,6 +170,7 @@ export function WishlistPage({
 }) {
   const [sort, setSort] = useState<WishSort>("priority");
   const [openId, setOpenId] = useState<string | undefined>();
+  const [removeId, setRemoveId] = useState<string | undefined>();
   if (data.state.status !== "ready") {
     return (
       <>
@@ -101,6 +182,8 @@ export function WishlistPage({
   const { wishlist, prices } = data.state.collection;
   const { reached, others } = arrangeWishlist(wishlist, prices, sort);
   const open = wishlist.find((wish) => wish.id === openId);
+  const removing = wishlist.find((wish) => wish.id === removeId);
+  const actions = wishActions(remote, data.update);
 
   return (
     <>
@@ -121,37 +204,39 @@ export function WishlistPage({
           {reached.map((wish) => {
             const status = wishStatus(wish, prices);
             return (
-              <button
-                key={wish.id}
-                type="button"
-                class="wish-reached pressable"
-                onClick={() => setOpenId(wish.id)}
-              >
-                <Scribbles id={`reached-${wish.id}`} />
-                <span class="wish-reached__label">
-                  <Icon name="check" size={18} strokeWidth={3} />
-                  {T.reached}
-                </span>
-                <span class="wish-reached__row">
-                  <WishCover wish={wish} scribbleId={`wish-cover-${wish.id}`} />
-                  <span class="wish-row__text">
-                    <span class="wish-row__name">{wish.name}</span>
-                    <span class="tile__meta">
-                      {[
-                        subline(wish),
-                        wish.targetPrice === undefined
-                          ? ""
-                          : T.target(formatMoney(wish.targetPrice)),
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
+              <div key={wish.id} class="wish-item wish-item--reached">
+                <button
+                  type="button"
+                  class="wish-reached pressable"
+                  onClick={() => setOpenId(wish.id)}
+                >
+                  <Scribbles id={`reached-${wish.id}`} />
+                  <span class="wish-reached__label">
+                    <Icon name="check" size={18} strokeWidth={3} />
+                    {T.reached}
+                  </span>
+                  <span class="wish-reached__row">
+                    <WishCover wish={wish} scribbleId={`wish-cover-${wish.id}`} />
+                    <span class="wish-row__text">
+                      <span class="wish-row__name">{wish.name}</span>
+                      <span class="tile__meta">
+                        {[
+                          subline(wish),
+                          wish.targetPrice === undefined
+                            ? ""
+                            : T.target(formatMoney(wish.targetPrice)),
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
+                    </span>
+                    <span class="wish-row__amount">
+                      {status.marketPrice ? formatMoney(status.marketPrice.cents) : ""}
                     </span>
                   </span>
-                  <span class="wish-row__amount">
-                    {status.marketPrice ? formatMoney(status.marketPrice.cents) : ""}
-                  </span>
-                </span>
-              </button>
+                </button>
+                <RemoveButton wish={wish} onClick={() => setRemoveId(wish.id)} />
+              </div>
             );
           })}
           <div class="list-bar">
@@ -168,7 +253,7 @@ export function WishlistPage({
           {others.length > 0 && (
             <ul class="wish-list">
               {others.map((wish) => (
-                <li key={wish.id}>
+                <li key={wish.id} class="wish-item">
                   <button
                     type="button"
                     class="wish-row pressable"
@@ -184,6 +269,7 @@ export function WishlistPage({
                     </span>
                     <Prices wish={wish} status={wishStatus(wish, prices)} />
                   </button>
+                  <RemoveButton wish={wish} onClick={() => setRemoveId(wish.id)} />
                 </li>
               ))}
             </ul>
@@ -202,11 +288,19 @@ export function WishlistPage({
           initial={wishValuesOf(open)}
           existing={open}
           prices={prices}
-          actions={wishActions(remote, data.update)}
+          actions={actions}
           onClose={() => setOpenId(undefined)}
           onReceived={() => {
             location.hash = formHash({ type: open.type, mode: "wish", id: open.id });
           }}
+        />
+      )}
+      {removing && (
+        <RemoveWishSheet
+          key={removing.id}
+          wish={removing}
+          actions={actions}
+          onClose={() => setRemoveId(undefined)}
         />
       )}
     </>

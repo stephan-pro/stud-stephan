@@ -685,6 +685,17 @@ export const TEXTS = {
     fromSeries: (name: string) => `aus Reihe ${name}`,
     target: (price: string) => `Ziel ${price}`,
     noPrice: "kein Marktpreis",
+    /** The bin of each entry and its question. */
+    remove: {
+      button: (name: string) => `${name} von der Wunschliste entfernen`,
+      title: (name: string) => `„${name}“ entfernen?`,
+      text: "Der Wunsch verschwindet von der Wunschliste. Was schon in deiner Sammlung steht, bleibt.",
+      confirm: "Ja, entfernen",
+      keep: "Behalten",
+      close: "Schließen",
+      removing: "Wird entfernt …",
+      failed: "Das Entfernen hat nicht geklappt. Prüf die Verbindung und versuch es noch einmal.",
+    },
     empty: {
       title: "Deine Wunschliste ist noch leer",
       text: "Such unter „Reihen“ eine Reihe und setz fehlende Figuren mit einem Tipp auf die Wunschliste. Fehlende Figuren eines Sets legst du auch auf der Seite des Sets an.",

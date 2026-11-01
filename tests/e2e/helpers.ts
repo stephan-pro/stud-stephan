@@ -97,6 +97,17 @@ export function mainNavigation(page: Page): Locator {
   return page.getByRole("navigation", { name: "Hauptnavigation" });
 }
 
+/**
+ * The entry of a wish in the wishlist that opens its sheet (row or "Zielpreis erreicht" card), by its
+ * exact name; not the bin beside it.
+ */
+export function wishEntry(page: Page, name: string): Locator {
+  const exact = new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`);
+  return page
+    .locator(".wish-row, .wish-reached")
+    .filter({ has: page.locator(".wish-row__name").getByText(exact) });
+}
+
 export function heading(page: Page): Locator {
   return page.getByRole("heading", { level: 1 });
 }

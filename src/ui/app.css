@@ -1319,14 +1319,37 @@ a.button {
   overflow-y: auto;
 }
 
+/* Actions of a sheet never run out sideways: side by side while they fit, else on the next line;
+   the stacked layout puts each in full width (wish sheet: Speichern, Erhalten, Entfernen). */
 .sheet__footer {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-3);
+  min-width: 0;
 }
 
-.sheet__footer .button {
+.sheet__footer--row > *,
+.sheet__footer--row .button {
+  flex: 1 1 auto;
   width: auto;
-  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.sheet__footer--stack {
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+
+.sheet__footer--stack > *,
+.sheet__footer--stack .button {
+  flex: none;
+  width: 100%;
+  min-width: 0;
+}
+
+.sheet__footer--stack .button {
+  white-space: normal;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -1397,7 +1420,8 @@ a.button {
   padding-left: var(--space-5);
 }
 
-.sheet__footer .button {
+/* Side by side the labels stay on one line ("N anzeigen", PO 01.11.2026); stacked they may wrap. */
+.sheet__footer--row .button {
   white-space: nowrap;
 }
 
@@ -2590,7 +2614,6 @@ a.diorama-row .copy-row__name {
   width: 100%;
   padding: var(--space-3) 0;
   border: 0;
-  border-top: 1px solid var(--line);
   background: transparent;
   color: var(--ink);
   font: inherit;
@@ -2598,8 +2621,40 @@ a.diorama-row .copy-row__name {
   cursor: pointer;
 }
 
-.wish-list > li:first-child .wish-row {
-  border-top: 0;
+/* An entry: the row (opens the wish sheet) and its bin beside it. */
+.wish-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.wish-item > .wish-row,
+.wish-item > .wish-reached {
+  flex: 1;
+  min-width: 0;
+}
+
+.wish-list > .wish-item + .wish-item {
+  border-top: 1px solid var(--line);
+}
+
+.wish-remove {
+  flex: none;
+  width: var(--touch);
+  height: var(--touch);
+}
+
+/* "Zielpreis erreicht": the bin sits in the free top right corner of the card (beside the label),
+   so the card keeps the full width on a small phone. A sibling of the card, not inside its button. */
+.wish-item--reached {
+  position: relative;
+}
+
+.wish-item--reached > .wish-remove {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
 }
 
 .wish-row .cover--thumb {
@@ -2857,13 +2912,22 @@ a.diorama-row .copy-row__name {
   font-size: 22px;
 }
 
+/* Two answers side by side ("Ja, entfernen" / "Behalten"); on the next line when there is no room.
+   Also a fieldset, which would otherwise be at least as wide as its content. */
 .choice-row {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
 .choice-row .button {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: normal;
 }
 
 .plan-count {

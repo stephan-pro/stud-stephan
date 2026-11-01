@@ -112,6 +112,7 @@ export function WishSheet({
       title={existing ? T.titleEdit : T.titleNew}
       closeLabel={T.close}
       onClose={onClose}
+      footerLayout="stack"
       footer={() => (
         <>
           <button

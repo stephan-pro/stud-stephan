@@ -2,7 +2,14 @@ import { expect, type Page, test } from "@playwright/test";
 import { DEMO_COLLECTION } from "../../src/demo/collection";
 import type { Collection } from "../../src/domain/types";
 import { TEXTS } from "../../src/ui/texts";
-import { expectNoAccessibilityViolations, heading, PC, PHONE, signInDirectly } from "./helpers";
+import {
+  expectNoAccessibilityViolations,
+  heading,
+  PC,
+  PHONE,
+  signInDirectly,
+  wishEntry,
+} from "./helpers";
 
 // P12: the wishlist (S9) with its wish sheet (S9a), the series (S10) with the plan before creating
 // one, the series page (S10a) and the way from a missing figure to the wishlist. The example
@@ -70,7 +77,7 @@ for (const [size, viewport] of [
     }) => {
       await signInDirectly(page, undefined, DEMO_COLLECTION);
       await page.goto("#/wunschliste");
-      await page.getByRole("button", { name: /Ahsoka Tano/ }).click();
+      await wishEntry(page, "Ahsoka Tano").click();
       await expect(sheet(page).getByRole("heading", { name: S.titleEdit })).toBeVisible();
       await expect(sheet(page)).toContainText(
         /Marktpreis 41,00\s€ · Stand vom \d{2}\.\d{2}\.\d{4}/,
@@ -112,11 +119,11 @@ test("P12 F14 Ohne Zielpreis oder bei zu hohem Marktpreis gibt es keine Markieru
 }) => {
   await signInDirectly(page, undefined, DEMO_COLLECTION);
   await page.goto("#/wunschliste");
-  await page.getByRole("button", { name: /Commander Cody/ }).click();
+  await wishEntry(page, "Commander Cody").click();
   await sheet(page).getByLabel(S.targetPrice).fill("18,89");
   await sheet(page).getByRole("button", { name: S.save }).click();
   await expect(page.locator(".wish-reached")).toHaveCount(0);
-  await page.getByRole("button", { name: /Commander Cody/ }).click();
+  await wishEntry(page, "Commander Cody").click();
   await sheet(page).getByLabel(S.targetPrice).fill("");
   await sheet(page).getByRole("button", { name: S.save }).click();
   await expect(page.locator(".wish-reached")).toHaveCount(0);
@@ -128,7 +135,7 @@ test("P12 A6 „Erhalten“ öffnet das Formular aus dem Wunsch; nach dem Speich
 }) => {
   await signInDirectly(page, undefined, DEMO_COLLECTION);
   await page.goto("#/wunschliste");
-  await page.getByRole("button", { name: /Ahsoka Tano/ }).click();
+  await wishEntry(page, "Ahsoka Tano").click();
   await sheet(page).getByRole("button", { name: S.received }).click();
   await expect(page).toHaveURL(/#\/erfassen\/figur\/wunsch\/wish-ahsoka$/);
   await expect(heading(page)).toHaveText(TEXTS.form.titleWish.minifig);
@@ -148,7 +155,7 @@ test("P12 A6 „Erhalten“ öffnet das Formular aus dem Wunsch; nach dem Speich
 test("P12 Ein Wunsch lässt sich nach einer Rückfrage von der Liste entfernen", async ({ page }) => {
   await signInDirectly(page, undefined, DEMO_COLLECTION);
   await page.goto("#/wunschliste");
-  await page.getByRole("button", { name: /Battle Droid/ }).click();
+  await wishEntry(page, "Battle Droid").click();
   await sheet(page).getByRole("button", { name: S.remove }).click();
   await expect(sheet(page).getByRole("button", { name: S.removeKeep })).toBeVisible();
   await sheet(page).getByRole("button", { name: S.removeKeep }).click();

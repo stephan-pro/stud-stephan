@@ -9,6 +9,12 @@ interface SheetProps {
   readonly children: ComponentChildren;
   /** Actions below the content; `close` closes the sheet and gives the focus back. */
   readonly footer?: (close: () => void) => ComponentChildren;
+  /**
+   * `row` (default): side by side, as in the dummy, moving to the next line when there is no room.
+   * `stack`: one below the other in full width (more than two actions, e.g. the wish sheet).
+   * Either way nothing ever runs out of the sheet sideways.
+   */
+  readonly footerLayout?: "row" | "stack";
   readonly id: string;
 }
 
@@ -17,7 +23,15 @@ interface SheetProps {
  * panel at the right on the PC (CSS decides). The browser's own `<dialog>` brings the focus in, keeps
  * it inside, closes with Escape and puts it back where it was.
  */
-export function Sheet({ title, closeLabel, onClose, children, footer, id }: SheetProps) {
+export function Sheet({
+  title,
+  closeLabel,
+  onClose,
+  children,
+  footer,
+  footerLayout = "row",
+  id,
+}: SheetProps) {
   const dialog = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -53,7 +67,11 @@ export function Sheet({ title, closeLabel, onClose, children, footer, id }: Shee
           </button>
         </div>
         <div class="sheet__body">{children}</div>
-        {footer && <div class="sheet__footer">{footer(() => dialog.current?.close())}</div>}
+        {footer && (
+          <div class={`sheet__footer sheet__footer--${footerLayout}`}>
+            {footer(() => dialog.current?.close())}
+          </div>
+        )}
       </div>
     </dialog>
   );
