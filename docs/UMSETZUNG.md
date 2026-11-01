@@ -275,7 +275,7 @@ Tickets are written in English. Every acceptance criterion is at least one test,
 
 **Goal:** A finished app on phone and PC.
 
-**Scope:** manifest, icons (studs motif, no LEGO trademarks), service worker (offline read of the collection), install hint, PC layout check of every screen, open deviations from the dummy collected so far (P10: search icon in the diorama list, edit/delete as buttons at the bottom vs. icons at the top – decide once for all detail pages, “N Figuren zuordnen” button in `--pop` as in `Zuordnen.dc.html`; “Link einfügen” for dioramas only if the PO still wants it), `check:full`, `docs/GERAETETEST.md` checklist run by the PO on the Redmi and PC, `docs/WARTUNG.md`.
+**Scope:** manifest, icons (studs motif, no LEGO trademarks), service worker (offline read of the collection), install hint, PC layout check of every screen, open deviations from the dummy collected so far (P10: search icon in the diorama list, edit/delete as buttons at the bottom vs. icons at the top – decide once for all detail pages, “N Figuren zuordnen” button in `--pop` as in `Zuordnen.dc.html`; “Link einfügen” for dioramas only if the PO still wants it), open gaps from P12 (create a wish directly from the capture sheet via number, search or link; a set received from the wishlist gets its contained figures like a set from the catalog), `check:full`, `docs/GERAETETEST.md` checklist run by the PO on the Redmi and PC, `docs/WARTUNG.md`.
 
 **Done when:** installable on Android, offline showcase readable, device checklist ticked by the PO, version 1.0 tagged.
 
