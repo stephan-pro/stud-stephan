@@ -212,7 +212,7 @@ export function acquiredText(day: IsoDate | undefined): string {
   return match[3] === "01" ? `${match[2]}.${match[1]}` : `${match[3]}.${match[2]}.${match[1]}`;
 }
 
-function moneyText(cents: Cents | undefined): string {
+export function moneyText(cents: Cents | undefined): string {
   if (cents === undefined) return "";
   const euros = Math.floor(cents / 100);
   return `${euros},${String(cents % 100).padStart(2, "0")}`;
@@ -292,11 +292,11 @@ export function formForCopy(minifig: Minifig, sets: readonly LegoSet[] = []): Fo
   };
 }
 
-function tooLong(text: string, max: number): boolean {
+export function tooLong(text: string, max: number): boolean {
   return text.trim().length > max;
 }
 
-function wholeNumber(text: string, min: number, max: number): boolean {
+export function wholeNumber(text: string, min: number, max: number): boolean {
   return /^\d{1,9}$/.test(text.trim()) && Number(text) >= min && Number(text) <= max;
 }
 
@@ -386,7 +386,7 @@ export interface BuildContext {
   readonly catalog?: CatalogExtras | undefined;
 }
 
-function trimmed(text: string): string | undefined {
+export function trimmed(text: string): string | undefined {
   const value = text.trim();
   return value === "" ? undefined : value;
 }

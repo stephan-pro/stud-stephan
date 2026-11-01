@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  assignableFigures,
   assignToDiorama,
+  dioramaImages,
   figuresInDiorama,
   figuresToMove,
+  figuresToSave,
   figuresWithoutDiorama,
+  figureWithoutDiorama,
   removeDiorama,
   removeFromDiorama,
 } from "./dioramas";
@@ -66,6 +70,36 @@ describe("F8 Figuren in Dioramen", () => {
     const after = removeFromDiorama(start, ["guard"]);
     expect(figuresInDiorama(after, "kamino")).toEqual([]);
     expect(ids(figuresWithoutDiorama(after))).toEqual(["rex", "fives", "guard"]);
+  });
+
+  it("F8 Zuordnen: angeboten werden Figuren, die noch nicht im Diorama stehen, mit Suche und Filter", () => {
+    const offered = (dioramaId: string, onlyWithout: boolean, query = "") =>
+      ids(assignableFigures(start, dioramaId, { onlyWithout, query }));
+    expect(offered("umbara", true)).toEqual(["fives", "rex"]);
+    expect(ids(assignableFigures(start, "umbara", { onlyWithout: true, query: "" }))).not.toContain(
+      "guard",
+    );
+    expect(offered("umbara", false)).toEqual(["fives", "rex", "guard"]);
+    expect(offered("kamino", false)).toEqual(["fives", "rex"]);
+    expect(offered("umbara", false, "  FIVES ")).toEqual(["fives"]);
+    const numbered = aCollection({
+      dioramas: [umbara],
+      minifigs: [aMinifig({ id: "a", name: "Clone", bricklinkId: "sw0631" })],
+    });
+    expect(
+      ids(assignableFigures(numbered, "umbara", { onlyWithout: true, query: "SW06" })),
+    ).toEqual(["a"]);
+  });
+
+  it("F8 Zum Speichern: nur Figuren, die sich ändern, mit dem neuen Diorama", () => {
+    const toSave = figuresToSave(start, "kamino", ["rex", "guard", "gibt-es-nicht"]);
+    expect(toSave.map((minifig) => [minifig.id, minifig.dioramaId])).toEqual([["rex", "kamino"]]);
+    expect(rex).not.toHaveProperty("dioramaId");
+    expect(figureWithoutDiorama(guard)).not.toHaveProperty("dioramaId");
+    expect(dioramaImages(aDiorama({ photos: ["a.webp", "b.webp"] }))).toEqual([
+      { kind: "photo", path: "a.webp" },
+      { kind: "photo", path: "b.webp" },
+    ]);
   });
 
   it("F8 Die Änderungen lassen die alte Sammlung unverändert", () => {

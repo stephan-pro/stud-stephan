@@ -154,7 +154,8 @@ test.describe("Erfassen-Blatt (S7)", () => {
       // Figure is chosen to begin with.
       const figure = sheet.getByRole("button", { name: TEXTS.capture.what.minifig });
       await expect(figure).toHaveAttribute("aria-pressed", "true");
-      await expect(sheet.getByRole("button", { name: TEXTS.capture.what.diorama })).toBeDisabled();
+      // The diorama works since P10 (`dioramas.spec.ts`); only the wish is still to come.
+      await expect(sheet.getByRole("button", { name: TEXTS.capture.what.diorama })).toBeEnabled();
       await expect(sheet.getByRole("button", { name: TEXTS.capture.what.wish })).toBeDisabled();
       // "Nummer oder Suche" works since P7 (figures and sets), "Foto" since P8 (figures), "Link
       // einfügen" since P9 (all kinds).

@@ -1,24 +1,24 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Remote } from "../backend/remote";
 import { withoutObject, withRestored } from "../domain/collectionEdit";
-import type { Collection, ShowcaseItem } from "../domain/types";
+import type { Collection, RemovableObject } from "../domain/types";
 import type { LoadedCollection } from "./useCollection";
 
 /** How long "Rückgängig" is offered before the server really deletes (ms). */
 export const UNDO_MS = 8000;
 
 interface Pending {
-  readonly item: ShowcaseItem;
+  readonly item: RemovableObject;
   /** The collection from before the deletion, to put the links back on "Rückgängig". */
   readonly before: Collection;
 }
 
 export interface PendingRemoval {
   /** The object that is gone from the screen and can still be taken back. */
-  readonly pending: ShowcaseItem | undefined;
+  readonly pending: RemovableObject | undefined;
   /** The server refused or could not be reached when the deletion became final. */
   readonly failed: boolean;
-  readonly remove: (item: ShowcaseItem) => void;
+  readonly remove: (item: RemovableObject) => void;
   readonly undo: () => void;
 }
 

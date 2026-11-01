@@ -60,7 +60,7 @@ pg_cron (wöchentlich) ──► Edge Function „bricklink“ ──► BrickLi
 | P7 | Katalog (BrickLink-Nummern, Rebrickable-Suche) | Sonnet | Medium | ✅ 01.11.2026 (Prüfung mit sw0194 und 75372 vom PO bestätigt; „Stammt aus Set“ bleibt bei mehreren Sets leer, so gewollt) |
 | P8 | Fotoerkennung (Brickognize) | Sonnet | Medium | ✅ 01.11.2026 (Prüfung am Redmi durch den PO bestätigt) |
 | P9 | Erfassen per Link (Merlins Steine, Rebrickable, andere) | Sonnet | Medium | ✅ 01.11.2026 (Prüfung durch den PO bestätigt: Rebrickable und Custom-Shop mit Foto; bei Merlins Steine sperrt der Server das Bild, die Karte sagt es) |
-| P10 | Dioramen | Sonnet | Medium | offen |
+| P10 | Dioramen | Sonnet | Medium | umgesetzt 01.11.2026, wartet auf die Prüfung durch den PO (echte .io-Datei hoch- und herunterladen) |
 | P11 | Marktwerte und Wertentwicklung (BrickLink) | Opus | High | offen |
 | P12 | Wunschliste und Reihen | Sonnet | Medium | offen |
 | P13 | Dashboard | Sonnet | Medium | offen |
@@ -376,6 +376,16 @@ Tickets are written in English. Every acceptance criterion is at least one test,
   - **Nicht lesbar** (Seite antwortet nicht, zu groß, kein HTML, Adresse nicht erlaubt, Dienst gestört, offline): Hinweis mit Grund, „Noch einmal lesen“ (wo Warten helfen kann) und „Ohne Vorschau weiter – Link wird gespeichert“; das Formular öffnet sich dann leer bis auf den Link (F3). Ein Neuladen des Formulars liest den Link noch einmal; geht auch das nicht, ist es leer mit Link.
   - **Bilder anderer Seiten (PO-Test 01.11.2026):** Merlins Steine sendet `Cross-Origin-Resource-Policy: same-site`; der Browser zeigt sein Bild deshalb auf der App nicht an, obwohl die Adresse stimmt. Die Karte schreibt dann „gesperrt – nimm ein eigenes Foto“ statt „übernommen“. Das Bild herunterladen und selbst speichern wäre der einzige Weg und ist ausgeschlossen (siehe oben, Bilder werden nie abgerufen).
   - **Funktion** `link-preview` mit `npm run deploy:functions` bereitgestellt (ohne neuen Schlüssel). Demo und Tests nutzen Beispielseiten in `src/demo/links.ts`.
+
+- 01.11.2026 (P10, von Claude entschieden, vom PO änderbar):
+  - **Seiten.** Liste S5 `#/dioramen`, Detail S6 `#/dioramen/<id>`, Zuordnen S6a `#/dioramen/<id>/zuordnen` (eine eigene Seite statt Blatt, wie im Dummy: Schließen-Knopf, Suche, „Nur ohne Diorama“/„Alle“, Raster mit Mehrfachauswahl, unten „N Figuren zuordnen“), Bearbeiten `#/dioramen/<id>/bearbeiten`, neu `#/erfassen/diorama`. Im Erfassen-Blatt ist „Diorama“ frei; weil der Dummy nur Link und Manuell nennt, aber ein Diorama keine Katalogdaten hat, führt nur „Manuell“ weiter (ein Link kommt in das Feld „Links“ des Formulars). „Link einfügen“ mit Seitenvorschau gibt es für Dioramen nicht.
+  - **Banner** „N Figuren haben noch kein Diorama“ öffnet die Vitrine mit dem Filter „Nur Figuren ohne Diorama“. Die Suche oben rechts der Dummy-Liste fehlt (bei wenigen Dioramen unnötig).
+  - **Figur ↔ Diorama.** Auf der Seite einer Figur steht das Diorama mit Bild und Namen als Link zum Diorama; ohne Diorama gibt es „Einem Diorama zuordnen“ (Blatt mit der Liste der Dioramen), mit Diorama „Aus dem Diorama nehmen“. Zuordnen verschiebt eine Figur aus einem anderen Diorama erst nach Rückfrage („steht in: …“); dabei wird jede Figur einzeln gespeichert (die Zuordnung steht an der Figur), schlägt eine fehl, sagt die Seite es und behält sie ausgewählt.
+  - **Studio-Dateien.** Hochladen im Formular und auf der Detailseite („Datei hochladen“, speichert sofort), Herunterladen auf der Detailseite und im Formular, Entfernen nur im Formular (wirkt beim Speichern; der Server räumt die nicht mehr genannten Dateien weg). Es wird nur geprüft, dass der Name auf `.io` endet, die Datei nicht leer und höchstens 25 MB groß ist, höchstens 20 je Diorama; den Inhalt prüft die App nicht (Studio-Dateien sind ZIP-Archive, aber ein falscher Inhalt schadet nicht). Heruntergeladen werden die Bytes unverändert unter dem Namen, den die Datei beim Hochladen hatte. Dateien aus einem Formular, das ohne Speichern verlassen wird, werden wieder aus dem Speicher genommen.
+  - **Fotos** wie bei Figuren (`PhotoField`): erstes Foto = Titelbild, Liste und Detail zeigen es.
+  - **Löschen** wie in Abschnitt 7 festgelegt: erst Rückfrage („Das Diorama mit seinen Fotos und Studio-Dateien wird gelöscht. Die Figuren bleiben …“), dann 8 Sekunden „Rückgängig“; erst danach löscht der Server das Diorama samt Fotos und Studio-Dateien, die Figuren bleiben und gelten wieder als „ohne Diorama“.
+  - **Wert.** Ein Diorama hat das freiwillige Feld „Wert (selbst geschätzt)“ (F10: Eigenbauten haben keinen Marktpreis); die Gesamtwert-Rechnung dafür kommt mit P13.
+  - **Darstellung.** Wie im Dummy: Karten mit großem Bild, rosa Banner, runde Figurenbilder in der Detailseite, „Figuren zuordnen“ rosa. Bearbeiten und Löschen sind wie bei den anderen Detailseiten Symbole oben rechts (der Dummy hat sie unten als Knöpfe).
 
 ## 8. Abhängigkeiten
 

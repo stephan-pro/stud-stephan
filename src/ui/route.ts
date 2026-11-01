@@ -88,6 +88,20 @@ function isSearchType(type: DetailType | undefined): type is SearchType {
 }
 
 /**
+ * A page of the dioramas: the detail (S6, "#/dioramen/<id>"), assigning figures (S6a,
+ * "#/dioramen/<id>/zuordnen"), editing ("…/bearbeiten") and entering a new one ("#/erfassen/diorama",
+ * below "Erfassen").
+ */
+export type DioramaPage =
+  | { readonly kind: "detail"; readonly id: string }
+  | { readonly kind: "assign"; readonly id: string }
+  | { readonly kind: "edit"; readonly id: string }
+  | { readonly kind: "new" };
+
+const ASSIGN_PATH = "zuordnen";
+const DIORAMA_PATH = "diorama";
+
+/**
  * A page, a detail page below the showcase (which stays the current entry of the navigation), a
  * form (entering lies below "Erfassen", editing below the showcase) or the catalog search (S7b,
  * below "Erfassen").
@@ -101,6 +115,8 @@ export interface PageLocation {
   readonly photo?: true;
   /** Capture by link (S7c, "#/erfassen/link/set"), also below "Erfassen". */
   readonly link?: DetailType;
+  /** A page of the dioramas (P10). */
+  readonly diorama?: DioramaPage;
 }
 
 const PHOTO_PATH = "foto";
@@ -138,6 +154,17 @@ export function parseLocation(hash: string): PageLocation {
   }
   if (route === "capture" && segments.length === 2 && type) {
     return { route, form: { type, mode: "new" } };
+  }
+  if (route === "capture" && segments.length === 2 && second === DIORAMA_PATH) {
+    return { route, diorama: { kind: "new" } };
+  }
+  if (route === "dioramas" && (segments.length === 2 || segments.length === 3)) {
+    const id = decode(second ?? "");
+    if (!id) return { route: DEFAULT_ROUTE };
+    if (segments.length === 2) return { route, diorama: { kind: "detail", id } };
+    if (third === ASSIGN_PATH) return { route, diorama: { kind: "assign", id } };
+    if (third === EDIT_PATH) return { route, diorama: { kind: "edit", id } };
+    return { route: DEFAULT_ROUTE };
   }
   if (route === "capture" && segments.length === 2 && second === PHOTO_PATH) {
     return { route, photo: true };
@@ -230,8 +257,17 @@ export function linkHash(type: DetailType): string {
   return `${routeHash("capture")}/${LINK_PATH}/${DETAIL_PATHS[type]}`;
 }
 
+/** The link target of a diorama page, e.g. "#/dioramen/diorama-umbara/zuordnen". */
+export function dioramaHash(page: DioramaPage): string {
+  if (page.kind === "new") return `${routeHash("capture")}/${DIORAMA_PATH}`;
+  const base = `${routeHash("dioramas")}/${encodeURIComponent(page.id)}`;
+  if (page.kind === "assign") return `${base}/${ASSIGN_PATH}`;
+  return page.kind === "edit" ? `${base}/${EDIT_PATH}` : base;
+}
+
 /** The normal spelling of an address; differing spellings are rewritten to it. */
 export function locationHash(page: PageLocation): string {
+  if (page.diorama) return dioramaHash(page.diorama);
   if (page.form) return formHash(page.form);
   if (page.link) return linkHash(page.link);
   if (page.search) return searchHash(page.search);

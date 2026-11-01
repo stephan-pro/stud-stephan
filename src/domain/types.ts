@@ -198,3 +198,6 @@ export interface Collection {
 
 /** What the showcase shows (F11); dioramas have their own page. */
 export type ShowcaseItem = Minifig | LegoSet | SpecialPart;
+
+/** What can be deleted with a way back (P6, P10). */
+export type RemovableObject = ShowcaseItem | Diorama;

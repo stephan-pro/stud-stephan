@@ -4,7 +4,7 @@ import type { Catalog } from "../backend/catalog";
 import type { LinkPreviewer } from "../backend/linkPreview";
 import type { Recognizer } from "../backend/recognition";
 import type { Remote } from "../backend/remote";
-import type { Collection, ShowcaseItem } from "../domain/types";
+import type { Collection, RemovableObject } from "../domain/types";
 import { CaptureLink } from "./captureLink";
 import { CapturePhoto } from "./capturePhoto";
 import { AccountCard } from "./components/AccountCard";
@@ -14,7 +14,11 @@ import { PhoneNavigation, Sidebar } from "./components/Navigation";
 import { PageHeader } from "./components/PageHeader";
 import { StorageCard } from "./components/StorageCard";
 import { Toast } from "./components/Toast";
+import { AssignPage } from "./pages/AssignPage";
 import { DetailPage, detailName } from "./pages/DetailPage";
+import { DioramaDetailPage, dioramaName } from "./pages/DioramaDetailPage";
+import { DioramaFormPage } from "./pages/DioramaFormPage";
+import { DioramasPage } from "./pages/DioramasPage";
 import { FormPage } from "./pages/FormPage";
 import { LinkPage } from "./pages/LinkPage";
 import { PhotoPage } from "./pages/PhotoPage";
@@ -83,15 +87,28 @@ function Shell({
   const online = useOnline();
   const firstPage = useRef(true);
   const removal = usePendingRemoval(remote, data);
-  const { route, detail, form, search: catalogSearch, photo, link } = page;
+  const { route, detail, form, search: catalogSearch, photo, link, diorama } = page;
   const address = locationHash(page);
-  const name = detail ? detailName(data, detail) : undefined;
+  const name = detail
+    ? detailName(data, detail)
+    : diorama && diorama.kind !== "new"
+      ? dioramaName(data, diorama.id)
+      : undefined;
 
-  /** Deleting shows the showcase at once; the server hears of it when "Rückgängig" ran out. */
-  const remove = (item: ShowcaseItem) => {
-    history.replaceState(null, "", routeHash("showcase"));
+  /**
+   * Deleting shows the list at once (the showcase, or the dioramas); the server hears of it when
+   * "Rückgängig" ran out.
+   */
+  const remove = (item: RemovableObject) => {
+    history.replaceState(null, "", routeHash(item.type === "diorama" ? "dioramas" : "showcase"));
     setPage(currentLocation());
     removal.remove(item);
+  };
+
+  /** The banner of the dioramas: the showcase, filtered to the figures that stand in none. */
+  const showWithoutDiorama = () => {
+    setView({ ...view, filter: { ...view.filter, withoutDiorama: true } });
+    location.hash = routeHash("showcase");
   };
 
   useEffect(() => {
@@ -158,13 +175,32 @@ function Shell({
           {TEXTS.skipLink}
         </button>
         <Sidebar current={route} />
-        <main class={`page page--${route}${form ? " page--form" : ""}`}>
+        <main
+          class={`page page--${route}${form || (diorama && diorama.kind !== "detail") ? " page--form" : ""}`}
+        >
           {!online && (
             <p class="banner" role="status">
               {TEXTS.offline}
             </p>
           )}
-          {form ? (
+          {diorama ? (
+            <div class="detail">
+              {diorama.kind === "detail" && (
+                <DioramaDetailPage data={data} id={diorama.id} remote={remote} onRemove={remove} />
+              )}
+              {diorama.kind === "assign" && (
+                <AssignPage data={data} id={diorama.id} remote={remote} />
+              )}
+              {(diorama.kind === "new" || diorama.kind === "edit") && (
+                <DioramaFormPage
+                  key={address}
+                  data={data}
+                  editing={diorama.kind === "edit" ? diorama.id : undefined}
+                  remote={remote}
+                />
+              )}
+            </div>
+          ) : form ? (
             <div class="detail">
               <FormPage
                 key={address}
@@ -189,7 +225,7 @@ function Shell({
             </div>
           ) : detail ? (
             <div class="detail">
-              <DetailPage data={data} detail={detail} onRemove={remove} />
+              <DetailPage data={data} detail={detail} remote={remote} onRemove={remove} />
             </div>
           ) : (
             <>
@@ -202,7 +238,12 @@ function Shell({
               )}
               {route === "settings" && <AccountCard email={session.email} onSignOut={onSignOut} />}
               {route === "settings" && remote !== undefined && <StorageCard remote={remote} />}
-              {route !== "showcase" && route !== "capture" && <ComingSoon route={route} />}
+              {route === "dioramas" && (
+                <DioramasPage data={data} onShowWithoutDiorama={showWithoutDiorama} />
+              )}
+              {route !== "showcase" && route !== "capture" && route !== "dioramas" && (
+                <ComingSoon route={route} />
+              )}
             </>
           )}
         </main>
@@ -214,9 +255,12 @@ function Shell({
           />
         )}
         {removal.failed && <Toast message={TEXTS.remove.failed} />}
-        {route !== "settings" && !form && !catalogSearch && !photo && !link && (
-          <PhoneNavigation current={route} />
-        )}
+        {route !== "settings" &&
+          !form &&
+          !catalogSearch &&
+          !photo &&
+          !link &&
+          (!diorama || diorama.kind === "detail") && <PhoneNavigation current={route} />}
       </div>
     </PhotoSourceContext.Provider>
   );

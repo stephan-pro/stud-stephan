@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
 import type { FormType } from "../../domain/forms";
-import { formHash, linkHash, photoHash, searchHash } from "../route";
+import { dioramaHash, formHash, linkHash, photoHash, searchHash } from "../route";
 import { TEXTS } from "../texts";
 import { Icon, type IconName } from "./Icon";
 import { Sheet } from "./Sheet";
@@ -18,9 +18,14 @@ const WHAT: readonly { readonly value: What; readonly icon: IconName }[] = [
   { value: "wish", icon: "wishlist" },
 ];
 
-/** What a form exists for (the diorama comes with P10, the wish with P12). */
+/** What a form exists for (the wish comes with P12); the diorama has a form of its own. */
 function formType(what: What): FormType | undefined {
   return what === "minifig" || what === "legoSet" || what === "specialPart" ? what : undefined;
+}
+
+/** Whether something can be captured at all: the three kinds of the showcase and the diorama. */
+function capturable(what: What): boolean {
+  return formType(what) !== undefined || what === "diorama";
 }
 
 const WAYS: readonly {
@@ -35,7 +40,12 @@ const WAYS: readonly {
 ];
 
 /** Where a way leads for the kind of thing, or nothing while it does not work yet. */
-function wayHref(way: keyof typeof T.ways, type: FormType | undefined): string | undefined {
+function wayHref(
+  way: keyof typeof T.ways,
+  type: FormType | undefined,
+  diorama: boolean,
+): string | undefined {
+  if (diorama) return way === "manual" ? dioramaHash({ kind: "new" }) : undefined;
   if (type === undefined) return undefined;
   if (way === "manual") return formHash({ type, mode: "new" });
   if (way === "link") return linkHash(type);
@@ -63,7 +73,7 @@ export function CaptureSheet({ onClose }: { readonly onClose: () => void }) {
               type="button"
               class="what pressable"
               aria-pressed={what === entry.value}
-              disabled={formType(entry.value) === undefined}
+              disabled={!capturable(entry.value)}
               onClick={() => setWhat(entry.value)}
             >
               <Icon name={entry.icon} size={24} />
@@ -77,14 +87,16 @@ export function CaptureSheet({ onClose }: { readonly onClose: () => void }) {
       <ul class="ways">
         {WAYS.map((way) => {
           const text = T.ways[way.value];
-          const href = wayHref(way.value, type);
+          const href = wayHref(way.value, type, what === "diorama");
           const hint = href
             ? text.text
-            : way.value === "search" && type
-              ? T.noCatalogForParts
-              : way.value === "photo" && type
-                ? T.onlyFigures
-                : T.soon;
+            : what === "diorama"
+              ? T.onlyManual
+              : way.value === "search" && type
+                ? T.noCatalogForParts
+                : way.value === "photo" && type
+                  ? T.onlyFigures
+                  : T.soon;
           const body = (
             <>
               <span class={`way__icon way__icon--${way.tint}`}>

@@ -1,4 +1,4 @@
-import type { ShowcaseItem } from "../../domain/types";
+import type { RemovableObject } from "../../domain/types";
 import { TEXTS } from "../texts";
 import { Sheet } from "./Sheet";
 
@@ -10,7 +10,7 @@ export function RemoveSheet({
   onConfirm,
   onClose,
 }: {
-  readonly item: ShowcaseItem;
+  readonly item: RemovableObject;
   readonly onConfirm: () => void;
   readonly onClose: () => void;
 }) {

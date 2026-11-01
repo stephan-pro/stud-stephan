@@ -1,4 +1,5 @@
 import { useState } from "preact/hooks";
+import type { Remote } from "../../backend/remote";
 import { formatMonth } from "../../domain/dates";
 import {
   dioramaOf,
@@ -16,6 +17,7 @@ import { modSpend, valueOfItem } from "../../domain/value";
 import { CopyRow } from "../components/CopyRow";
 import { Cover } from "../components/Cover";
 import { BackBar, NoteAndLinks, originRows, Rows, Section } from "../components/DetailParts";
+import { FigureDiorama } from "../components/FigureDiorama";
 import { Gallery } from "../components/Gallery";
 import { Icon } from "../components/Icon";
 import { RemoveSheet } from "../components/RemoveSheet";
@@ -28,7 +30,7 @@ import type { LoadedCollection } from "../useCollection";
 const T = TEXTS.detail;
 
 /** Name, meta line and chips under the gallery. */
-function Title({
+export function Title({
   name,
   meta,
   chips,
@@ -57,9 +59,13 @@ function Title({
 function MinifigDetail({
   minifig,
   collection,
+  remote,
+  update,
 }: {
   readonly minifig: Minifig;
   readonly collection: Collection;
+  readonly remote: Remote | undefined;
+  readonly update: LoadedCollection["update"];
 }) {
   const valuation = valueOfItem(minifig, collection.prices);
   const set = ownSetOf(collection, minifig);
@@ -112,22 +118,13 @@ function MinifigDetail({
           <Rows rows={rows} />
         </Section>
       )}
-      <Section id="diorama" title={T.diorama.title}>
-        {diorama ? (
-          <div class="diorama-row">
-            <Cover
-              image={diorama.photos[0] ? { kind: "photo", path: diorama.photos[0] } : undefined}
-              alt=""
-              tintKey={diorama.id}
-              scribbleId={`diorama-${diorama.id}`}
-              variant="small"
-            />
-            <span class="copy-row__name">{diorama.name}</span>
-          </div>
-        ) : (
-          <p class="card__text">{T.diorama.none}</p>
-        )}
-      </Section>
+      <FigureDiorama
+        minifig={minifig}
+        diorama={diorama}
+        collection={collection}
+        remote={remote}
+        update={update}
+      />
       {minifig.mods.length > 0 && (
         <Section
           id="mods"
@@ -402,10 +399,12 @@ function Actions({
 export function DetailPage({
   data,
   detail,
+  remote,
   onRemove,
 }: {
   readonly data: LoadedCollection;
   readonly detail: DetailRef;
+  readonly remote: Remote | undefined;
   /** Called when the person has confirmed deleting the object. */
   readonly onRemove: (item: ShowcaseItem) => void;
 }) {
@@ -445,7 +444,14 @@ export function DetailPage({
           onClose={() => setAsking(false)}
         />
       )}
-      {item?.type === "minifig" && <MinifigDetail minifig={item} collection={state.collection} />}
+      {item?.type === "minifig" && (
+        <MinifigDetail
+          minifig={item}
+          collection={state.collection}
+          remote={remote}
+          update={data.update}
+        />
+      )}
       {item?.type === "legoSet" && <SetDetail set={item} collection={state.collection} />}
       {item?.type === "specialPart" && (
         <SpecialPartDetail part={item} collection={state.collection} />

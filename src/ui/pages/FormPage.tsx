@@ -29,6 +29,7 @@ import { Choice, FormCard, fieldId, TextField } from "../components/Fields";
 import { Icon } from "../components/Icon";
 import { ModSheet } from "../components/ModSheet";
 import { PhotoField } from "../components/PhotoField";
+import { newId, today } from "../ids";
 import {
   detailHash,
   type FormRef,
@@ -46,20 +47,6 @@ const CT = TEXTS.catalogForm;
 const PREFIX = "field";
 
 const MANUFACTURERS: readonly ManufacturerKind[] = ["lego", "bluebrixx", "other", "custom"];
-
-/** A short id with no characters storage would refuse: "minifig-lq3x8k2f". */
-function newId(prefix: string): string {
-  const random = Math.floor(Math.random() * 36 ** 6).toString(36);
-  return `${prefix}-${Date.now().toString(36)}${random}`;
-}
-
-/** Today as "YYYY-MM-DD" in the device's time zone. */
-function today(): string {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${now.getFullYear()}-${month}-${day}`;
-}
 
 function focusField(field: FieldKey): void {
   document.getElementById(fieldId(PREFIX, field))?.focus();

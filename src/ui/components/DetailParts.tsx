@@ -6,14 +6,18 @@ import { TEXTS } from "../texts";
 import { Icon } from "./Icon";
 
 /** The row at the top of a detail page: back to the showcase, and at the right the actions. */
-export function BackBar({ children }: { readonly children?: ComponentChildren }) {
+export function BackBar({
+  children,
+  href = routeHash("showcase"),
+  label = TEXTS.detail.back,
+}: {
+  readonly children?: ComponentChildren;
+  readonly href?: string;
+  readonly label?: string;
+}) {
   return (
     <header class="page-header">
-      <a
-        class="icon-button back-link pressable"
-        href={routeHash("showcase")}
-        aria-label={TEXTS.detail.back}
-      >
+      <a class="icon-button back-link pressable" href={href} aria-label={label}>
         <Icon name="back" />
       </a>
       {children && <div class="page-header__actions">{children}</div>}
@@ -65,7 +69,7 @@ export function Rows({
 }
 
 /** Notes and links of an object, the same on every detail page. */
-export function NoteAndLinks({ item }: { readonly item: ShowcaseItem }) {
+export function NoteAndLinks({ item }: { readonly item: Pick<ShowcaseItem, "links" | "note"> }) {
   const links = item.links.filter((link) => link.trim() !== "");
   return (
     <>

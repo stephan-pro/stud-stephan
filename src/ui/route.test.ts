@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_ROUTE,
   detailHash,
+  dioramaHash,
   documentTitle,
   formHash,
   linkHash,
@@ -240,6 +241,41 @@ describe("P9 Adressen des Erfassens per Link", () => {
     expect(parseLocation("#/erfassen/set/katalog/75372-1/x/y")).toEqual({ route: "showcase" });
     expect(parseLocation("#/erfassen/sonderteil/katalog/x/link/y")).toEqual({ route: "showcase" });
     expect(parseLocation("#/vitrine/link/set")).toEqual({ route: "showcase" });
+  });
+});
+
+describe("P10 Adressen der Dioramen", () => {
+  it.each([
+    ["#/dioramen/diorama-umbara", { kind: "detail", id: "diorama-umbara" }],
+    ["#/dioramen/diorama-umbara/zuordnen", { kind: "assign", id: "diorama-umbara" }],
+    ["#/dioramen/diorama-umbara/bearbeiten", { kind: "edit", id: "diorama-umbara" }],
+    ["#/dioramen/a%20b/", { kind: "detail", id: "a b" }],
+  ] as const)("P10 %s öffnet die Seite des Dioramas", (hash, diorama) => {
+    expect(parseLocation(hash)).toEqual({ route: "dioramas", diorama });
+    expect(locationHash(parseLocation(hash))).toBe(hash.replace("a%20b/", "a%20b"));
+  });
+
+  it("P10 Ein neues Diorama liegt unter Erfassen: #/erfassen/diorama", () => {
+    expect(parseLocation("#/erfassen/diorama")).toEqual({
+      route: "capture",
+      diorama: { kind: "new" },
+    });
+    expect(dioramaHash({ kind: "new" })).toBe("#/erfassen/diorama");
+    expect(parseRoute("#/erfassen/diorama")).toBe("capture");
+  });
+
+  it("P10 Die Adresse eines Dioramas zählt zu den Dioramen", () => {
+    expect(parseRoute("#/dioramen/diorama-umbara")).toBe("dioramas");
+    expect(parseRoute("#/dioramen/diorama-umbara/zuordnen")).toBe("dioramas");
+  });
+
+  it.each([
+    "#/dioramen/x/mehr",
+    "#/dioramen/x/zuordnen/mehr",
+    "#/dioramen/%E0%A4%A",
+    "#/erfassen/diorama/x",
+  ])("P10 Die unvollständige Adresse %s öffnet die Vitrine", (hash) => {
+    expect(parseLocation(hash)).toEqual({ route: "showcase" });
   });
 });
 
