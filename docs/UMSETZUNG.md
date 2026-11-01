@@ -63,7 +63,7 @@ pg_cron (wöchentlich) ──► Edge Function „bricklink“ ──► BrickLi
 | P10 | Dioramen | Sonnet | Medium | ✅ 01.11.2026 (Prüfung durch den PO bestätigt: echte .io-Datei hoch- und heruntergeladen; dazu der Bild-Abruf über link-preview) |
 | P11 | Marktwerte und Wertentwicklung (BrickLink) | Opus | High | ✅ 02.11.2026 (vom PO bestätigt: „Jetzt aktualisieren“ mit 1 aktualisiert, 0 fehlgeschlagen, Wert-Karte mit „Stand vom …“ und erster Montagslauf in S12) |
 | P12 | Wunschliste und Reihen | Sonnet | Medium | ✅ 01.11.2026 |
-| P13 | Dashboard | Sonnet | Medium | offen |
+| P13 | Dashboard | Sonnet | Medium | ✅ 01.11.2026 (Prüfung mit der echten Sammlung durch den PO offen) |
 | P14 | Einstellungen und Datensicherung | Sonnet | Medium | offen |
 | P15 | PWA, PC-Feinschliff, Gerätetest, Version 1.0 | Opus | High | offen |
 
@@ -420,6 +420,13 @@ Tickets are written in English. Every acceptance criterion is at least one test,
   - **Noch nicht dabei:** Einen Wunsch direkt aus dem Erfassen-Blatt (Nummer, Suche, Link) anzulegen; „Wunsch“ bleibt dort ausgegraut mit dem Hinweis, wo man Wünsche anlegt.
 
 - 01.11.2026 (P12-Nacharbeit, Vorgabe des PO: Bilder werden nicht mehr abgeschnitten): Gespeichert wird immer das ganze Bild, nur die Anzeige ändert sich (`Cover.tsx`, `app.css`). **Katalogbilder** überall `object-fit: contain` auf `--surface` (weiß) mit etwas Innenabstand. **Eigene Fotos** auf der Detailseite (`cover--hero`, Galerie) `contain` auf der Platzhalter-Tönung; in Kacheln und kleinen Bildern (Reihen, Sets, Dioramen, Listen) weiter `cover`, aber `object-position: center top`, damit der Kopf drin bleibt. Test `tests/e2e/pictures.spec.ts` (Hoch- und Querformat, Handy und PC).
+
+- 01.11.2026 (P13, Dashboard S11 `#/dashboard`, Vorgaben des PO):
+  - **Verlauf des Gesamtwerts** entsteht nur aus den Preisständen des Preisabrufs (P11): ein Punkt je Abruftag, nichts dazwischen, nichts erfunden (`domain/valueHistory.ts`). Pro Stichtag zählen nur Objekte, die an dem Tag schon in der Sammlung waren (Kaufdatum, sonst Tag des Anlegens), jedes mit dem Wert, der an dem Tag galt: Marktwert, sonst eigener Wert (erst ab dem Tag, an dem er eingetragen wurde), sonst Kaufpreis. Dioramen zählen mit ihrem eigenen Wert. Ein Objekt, das neu dazukommt, hebt die Linie also auch (so vorgegeben).
+  - **Zeitraum** 3 Monate · 1 Jahr (Voreinstellung) · Gesamt. Reichen die Preise nicht so weit zurück, zeigt das Dashboard „Verlauf ab …“ und die Veränderung „seit …“; mit nur einem Preisstand gibt es keine Linie, sondern den Hinweis auf den ersten Preisstand; ohne Preisstände einen Hinweis auf den Preisabruf. Ein Punkt für heute entsteht nur, wenn sich die Sammlung seit dem letzten Abruf geändert hat. Das Diagramm ist ein eigenes SVG (`role="img"`, Beschreibung mit Anfang, Ende, Richtung, höchstem und niedrigstem Wert), keine neue Abhängigkeit.
+  - **„+2,5 % Woche“** in der Sammlungskarte der Vitrine mit derselben Rechnung: Wert heute gegen Wert vor 7 Tagen; ohne Preisstand von vor 7 Tagen oder früher (oder bei 0 € damals) erscheint nichts.
+  - **Nach Thema** zeigt das Unterthema (PO-Entscheidung 31.10.2026), ein Thema ohne Unterthema unter seinem Namen; die fünf größten, der Rest als „Sonstige“, Objekte ohne Thema als „Ohne Thema“. Prozent beziehen sich auf Figuren, Sets und Sonderteile.
+  - **Am wertvollsten:** die 10 wertvollsten Figuren (jedes Exemplar für sich), Sets und Sonderteile, ohne Stücke mit 0 €; Dioramen stehen nicht darin (die Detailseiten S2 bis S4 sind das Ziel). **„Ohne Diorama“** öffnet die Vitrine mit dem Filter, wie das Banner der Dioramen.
 
 ## 8. Abhängigkeiten
 

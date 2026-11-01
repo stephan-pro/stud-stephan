@@ -95,6 +95,65 @@ export const TEXTS = {
     failed: "Der Speicherplatz konnte gerade nicht gelesen werden.",
     retry: "Noch einmal versuchen",
   },
+  /** S11 dashboard (P13). */
+  dashboard: {
+    periodGroup: "Zeitraum",
+    periods: { threeMonths: "3 Monate", year: "1 Jahr", all: "Gesamt" },
+    value: "Gesamtwert",
+    /** The badge on the value: how the value changed over the period shown. */
+    changeIn: { threeMonths: "in 3 Monaten", year: "in 12 Monaten", all: "seit Beginn" },
+    changeSince: (date: string) => `seit ${date}`,
+    chartTitle: "Verlauf des Gesamtwerts",
+    chart: (
+      from: string,
+      to: string,
+      first: string,
+      last: string,
+      direction: "up" | "down" | "same",
+      high: string,
+      highDate: string,
+      low: string,
+      lowDate: string,
+      count: number,
+    ) =>
+      `Gesamtwert vom ${from} bis ${to}, ${count} Preisstände: von ${first} auf ${last}, ${
+        { up: "gestiegen", down: "gefallen", same: "gleich geblieben" }[direction]
+      }. Höchster Wert ${high} am ${highDate}, niedrigster Wert ${low} am ${lowDate}.`,
+    historyFrom: (date: string) => `Verlauf ab ${date}`,
+    historyFirst: (date: string) =>
+      `Erster Preisstand am ${date}. Die Linie entsteht mit dem nächsten Preisabruf.`,
+    historyNone:
+      "Noch kein Verlauf. Er entsteht aus den wöchentlichen Preisabrufen (Einstellungen → Preisabruf).",
+    tiles: {
+      purchase: "Kaufsumme",
+      difference: "Wertdifferenz",
+      mods: "Ausgaben für Mods",
+      modsNote: "zählt nicht zum Wert",
+      withoutValue: "Ohne Wert",
+      withoutValueNote: "Objekte",
+    },
+    kinds: {
+      title: "Nach Objektart",
+      figures: (count: number) => (count === 1 ? "1 Figur" : `${count} Figuren`),
+      sets: (count: number) => (count === 1 ? "1 Set" : `${count} Sets`),
+      dioramas: (count: number) => (count === 1 ? "1 Diorama" : `${count} Dioramen`),
+      specialParts: (count: number) => (count === 1 ? "1 Sonderteil" : `${count} Sonderteile`),
+    },
+    themes: {
+      title: "Nach Thema",
+      none: "Ohne Thema",
+      rest: "Sonstige",
+      share: (name: string, percent: number) => `${name}: ${percent} %`,
+      empty: "Sobald deine Figuren und Sets ein Thema haben, siehst du hier die Verteilung.",
+    },
+    top: {
+      title: "Am wertvollsten",
+      empty: "Noch kein Stück mit Wert.",
+    },
+    withoutDiorama: "ohne Diorama",
+    footer: (date: string) => `Preise Stand vom ${date} · Quelle BrickLink`,
+    footerNone: "Noch keine Preise abgerufen · Quelle BrickLink",
+  },
   /** The price run card in the settings (S12, P11). */
   priceRun: {
     title: "Preisabruf",
@@ -166,6 +225,7 @@ export const TEXTS = {
     card: {
       lead: "Deine Sammlung ist",
       worth: "wert",
+      week: (change: string) => `${change} Woche`,
       figures: (count: number) => (count === 1 ? "1 Figur" : `${count} Figuren`),
       sets: (count: number) => (count === 1 ? "1 Set" : `${count} Sets`),
       dioramas: (count: number) => (count === 1 ? "1 Diorama" : `${count} Dioramen`),

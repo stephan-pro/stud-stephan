@@ -47,6 +47,12 @@ export function formatDateTime(time: Timestamp): string {
   return Number.isNaN(date.getTime()) ? time : GERMAN_TIME.format(date);
 }
 
+/** "2026-10-27" → "Okt 2026": the marks under the chart of the dashboard. */
+export function formatMonthShort(day: IsoDate): string {
+  const found = parts(day);
+  return found ? `${MONTHS[found.month - 1]?.slice(0, 3)} ${found.year}` : day;
+}
+
 /** "2025-03-14" → "März 2025" ("Erworben"); text that is no day stays as it is. */
 export function formatMonth(day: IsoDate): string {
   const found = parts(day);

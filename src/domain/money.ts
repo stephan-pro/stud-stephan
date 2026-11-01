@@ -25,6 +25,20 @@ export function formatMoneyWhole(cents: Cents): string {
   return `${sign}${withThousands(euros)}${SPACE}€`;
 }
 
+/** A difference in whole euros with its sign: 61200 → "+612 €", −150 → "−2 €". */
+export function formatMoneyWholeDifference(cents: Cents): string {
+  const text = formatMoneyWhole(cents);
+  return Math.round(cents / 100) > 0 ? `+${text}` : text;
+}
+
+/** A change in percent with its sign and one decimal: 2.54 → "+2,5 %", −1.2 → "−1,2 %". */
+export function formatPercentChange(percent: number): string {
+  const rounded = Math.round(percent * 10) / 10;
+  const text = `${String(Math.abs(rounded).toFixed(1)).replace(".", ",")}${SPACE}%`;
+  if (rounded > 0) return `+${text}`;
+  return rounded < 0 ? `${MINUS}${text}` : text;
+}
+
 /** The most an amount typed into a form may be (1 million euros); more is surely a typo. */
 export const MAX_CENTS: Cents = 100_000_000;
 

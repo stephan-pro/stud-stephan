@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "preact/hooks";
-import { formatMoneyWhole } from "../../domain/money";
+import { formatMoneyWhole, formatPercentChange } from "../../domain/money";
 import {
   activeFilterCount,
   type CopyGroup,
@@ -13,12 +13,14 @@ import {
 } from "../../domain/showcase";
 import { totals } from "../../domain/totals";
 import type { Collection } from "../../domain/types";
+import { weeklyChange } from "../../domain/valueHistory";
 import { CopyRow } from "../components/CopyRow";
 import { FilterSheet } from "../components/FilterSheet";
 import { Icon } from "../components/Icon";
 import { Scribbles } from "../components/Scribbles";
 import { Sheet } from "../components/Sheet";
 import { Tile } from "../components/Tile";
+import { today } from "../ids";
 import { routeHash } from "../route";
 import { TEXTS } from "../texts";
 import type { LoadedCollection } from "../useCollection";
@@ -39,13 +41,22 @@ const SORTS: readonly ShowcaseSort[] = ["recent", "name", "value"];
 function CollectionCard({ collection }: { readonly collection: Collection }) {
   const T = TEXTS.showcase.card;
   const { value, counts } = totals(collection);
+  const week = weeklyChange(collection, today());
   return (
     <section class="collection-card" aria-labelledby="collection-card-title">
       <Scribbles id="collection-card-scribbles" />
       <div class="collection-card__content">
-        <h2 class="collection-card__brand" id="collection-card-title">
-          {TEXTS.appName}
-        </h2>
+        <div class="collection-card__top">
+          <h2 class="collection-card__brand" id="collection-card-title">
+            {TEXTS.appName}
+          </h2>
+          {week && (
+            <span class="badge">
+              <Icon name={week.percent < 0 ? "trendDown" : "trendUp"} size={14} strokeWidth={3} />
+              {T.week(formatPercentChange(week.percent))}
+            </span>
+          )}
+        </div>
         <hr class="collection-card__rule" />
         <p class="collection-card__lead">{T.lead}</p>
         <p class="collection-card__value">

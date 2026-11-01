@@ -19,7 +19,9 @@ import { PageHeader } from "./components/PageHeader";
 import { PriceRunCard } from "./components/PriceRunCard";
 import { StorageCard } from "./components/StorageCard";
 import { Toast } from "./components/Toast";
+import { today } from "./ids";
 import { AssignPage } from "./pages/AssignPage";
+import { DashboardPage } from "./pages/DashboardPage";
 import { DetailPage, detailName } from "./pages/DetailPage";
 import { DioramaDetailPage, dioramaName } from "./pages/DioramaDetailPage";
 import { DioramaFormPage } from "./pages/DioramaFormPage";
@@ -276,10 +278,14 @@ function Shell({
                 ) : (
                   <WishlistPage data={data} remote={remote} />
                 ))}
-              {route !== "showcase" &&
-                route !== "capture" &&
-                route !== "dioramas" &&
-                route !== "wishlist" && <ComingSoon route={route} />}
+              {route === "dashboard" && (
+                <DashboardPage
+                  data={data}
+                  today={today()}
+                  onShowWithoutDiorama={showWithoutDiorama}
+                />
+              )}
+              {route === "settings" && <ComingSoon route={route} />}
             </>
           )}
         </main>

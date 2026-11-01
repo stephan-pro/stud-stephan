@@ -96,6 +96,8 @@ const PATHS = {
   next: <path d="M9 5l7 7-7 7" />,
   download: <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />,
   upload: <path d="M12 20V9M7 14l5-5 5 5M5 4h14" />,
+  trendUp: <path d="M7 17L17 7M9 7h8v8" />,
+  trendDown: <path d="M7 7l10 10M9 17h8V9" />,
   star: <path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" />,
 } as const;
 
