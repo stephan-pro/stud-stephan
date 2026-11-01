@@ -25,6 +25,31 @@ export function formatMoneyWhole(cents: Cents): string {
   return `${sign}${withThousands(euros)}${SPACE}€`;
 }
 
+/** The most an amount typed into a form may be (1 million euros); more is surely a typo. */
+export const MAX_CENTS: Cents = 100_000_000;
+
+/**
+ * What a person types for an amount, as whole cents: "25", "25,5", "25,00 €", "1.240,50", "25.50".
+ * Nothing (an empty text), a negative amount, more than two decimals or any other text is
+ * `undefined`. A dot with exactly three digits behind it is a thousands dot ("1.240" = 1240 €).
+ */
+export function parseMoney(text: string): Cents | undefined {
+  const cleaned = text.replace(/[\s €]|EUR/gi, "");
+  let normal: string;
+  if (cleaned.includes(",")) {
+    if (!/^\d{1,3}(\.\d{3})*,\d{1,2}$|^\d+,\d{1,2}$/.test(cleaned)) return undefined;
+    normal = cleaned.replace(/\./g, "").replace(",", ".");
+  } else if (/^\d{1,3}(\.\d{3})+$/.test(cleaned)) {
+    normal = cleaned.replace(/\./g, "");
+  } else if (/^\d+(\.\d{1,2})?$/.test(cleaned)) {
+    normal = cleaned;
+  } else {
+    return undefined;
+  }
+  const cents = Math.round(Number(normal) * 100);
+  return cents <= MAX_CENTS ? cents : undefined;
+}
+
 /** A difference always with its sign: 1350 → "+13,50 €", −101 → "−1,01 €", 0 → "0,00 €". */
 export function formatMoneyDifference(cents: Cents): string {
   return Math.round(cents) > 0 ? `+${formatMoney(cents)}` : formatMoney(cents);

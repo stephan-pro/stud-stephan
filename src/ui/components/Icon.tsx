@@ -47,6 +47,48 @@ const PATHS = {
     </>
   ),
   close: <path d="M6 6l12 12M18 6L6 18" />,
+  check: <path d="M5 12l5 5 9-10" />,
+  edit: <path d="M4 20l4-1 11-11-3-3L5 16z" />,
+  trash: <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />,
+  copy: (
+    <>
+      <rect x="9" y="9" width="11" height="11" rx="2" />
+      <path d="M5 15V6a2 2 0 0 1 2-2h9" />
+    </>
+  ),
+  camera: (
+    <>
+      <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
+      <circle cx="12" cy="13" r="3.5" />
+    </>
+  ),
+  figure: (
+    <>
+      <circle cx="12" cy="7" r="4" />
+      <path d="M5 21v-3a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v3" />
+    </>
+  ),
+  box: (
+    <>
+      <rect x="3" y="7" width="18" height="13" rx="2" />
+      <path d="M8 7V4h8v3" />
+    </>
+  ),
+  coin: (
+    <>
+      <circle cx="12" cy="12" r="8" />
+      <circle cx="12" cy="12" r="4" />
+    </>
+  ),
+  number: <path d="M5 9h14M5 15h14M10 4L8 20M16 4l-2 16" />,
+  link: (
+    <>
+      <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" />
+      <path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
+    </>
+  ),
+  next: <path d="M9 5l7 7-7 7" />,
+  star: <path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" />,
 } as const;
 
 export type IconName = keyof typeof PATHS;

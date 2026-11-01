@@ -52,10 +52,30 @@ export const DETAIL_PATHS: Readonly<Record<DetailType, string>> = {
   specialPart: "sonderteil",
 };
 
-/** A page, or a detail page below the showcase (which stays the current entry of the navigation). */
+/** Part of the address for each form: "#/erfassen/figur" (new), "…/figur/kopie/<id>" (copy). */
+export const FORM_PATHS: Readonly<Record<DetailType, string>> = DETAIL_PATHS;
+
+/** Part of the address of the edit form below a detail page: "#/vitrine/figur/<id>/bearbeiten". */
+export const EDIT_PATH = "bearbeiten";
+const COPY_PATH = "kopie";
+
+/**
+ * A form (S8): `new` enters an object, `copy` enters another copy of the figure `id`, `edit`
+ * changes the object `id`.
+ */
+export type FormRef =
+  | { readonly type: DetailType; readonly mode: "new" }
+  | { readonly type: DetailType; readonly mode: "copy"; readonly id: string }
+  | { readonly type: DetailType; readonly mode: "edit"; readonly id: string };
+
+/**
+ * A page, a detail page below the showcase (which stays the current entry of the navigation) or a
+ * form: entering lies below "Erfassen", editing below the showcase.
+ */
 export interface PageLocation {
   readonly route: Route;
   readonly detail?: DetailRef;
+  readonly form?: FormRef;
 }
 
 function decode(segment: string): string | undefined {
@@ -66,17 +86,34 @@ function decode(segment: string): string | undefined {
   }
 }
 
+function typeOf(path: string | undefined): DetailType | undefined {
+  return (Object.keys(DETAIL_PATHS) as DetailType[]).find(
+    (candidate) => DETAIL_PATHS[candidate] === path,
+  );
+}
+
 /** Reads `location.hash` (e.g. "#/dioramen"); anything unknown is the start page. */
 export function parseLocation(hash: string): PageLocation {
   const segments = hash.replace(/^#\/?/, "").replace(/\/+$/, "").split("/");
-  const [first, kind, rawId] = segments;
+  const [first, second, third, fourth] = segments;
   const route = ROUTES.find((candidate) => ROUTE_PATHS[candidate] === first);
+  const type = typeOf(second);
   if (route === "showcase" && segments.length === 3) {
-    const type = (Object.keys(DETAIL_PATHS) as DetailType[]).find(
-      (candidate) => DETAIL_PATHS[candidate] === kind,
-    );
-    const id = decode(rawId ?? "");
+    const id = decode(third ?? "");
     if (type && id) return { route, detail: { type, id } };
+    return { route: DEFAULT_ROUTE };
+  }
+  if (route === "showcase" && segments.length === 4 && fourth === EDIT_PATH) {
+    const id = decode(third ?? "");
+    if (type && id) return { route, form: { type, mode: "edit", id } };
+    return { route: DEFAULT_ROUTE };
+  }
+  if (route === "capture" && segments.length === 2 && type) {
+    return { route, form: { type, mode: "new" } };
+  }
+  if (route === "capture" && segments.length === 4 && type === "minifig" && third === COPY_PATH) {
+    const id = decode(fourth ?? "");
+    if (id) return { route, form: { type, mode: "copy", id } };
     return { route: DEFAULT_ROUTE };
   }
   return { route: segments.length === 1 && route ? route : DEFAULT_ROUTE };
@@ -97,8 +134,19 @@ export function detailHash(detail: DetailRef): string {
   return `${routeHash("showcase")}/${DETAIL_PATHS[detail.type]}/${encodeURIComponent(detail.id)}`;
 }
 
+/** The link target of a form, e.g. "#/erfassen/figur" or "#/vitrine/figur/minifig-rex/bearbeiten". */
+export function formHash(form: FormRef): string {
+  const type = FORM_PATHS[form.type];
+  if (form.mode === "new") return `${routeHash("capture")}/${type}`;
+  const id = encodeURIComponent(form.id);
+  return form.mode === "copy"
+    ? `${routeHash("capture")}/${type}/${COPY_PATH}/${id}`
+    : `${routeHash("showcase")}/${type}/${id}/${EDIT_PATH}`;
+}
+
 /** The normal spelling of an address; differing spellings are rewritten to it. */
 export function locationHash(page: PageLocation): string {
+  if (page.form) return formHash(page.form);
   return page.detail ? detailHash(page.detail) : routeHash(page.route);
 }
 

@@ -5,8 +5,8 @@ import { routeHash } from "../route";
 import { TEXTS } from "../texts";
 import { Icon } from "./Icon";
 
-/** The row at the top of a detail page: back to the showcase. */
-export function BackBar() {
+/** The row at the top of a detail page: back to the showcase, and at the right the actions. */
+export function BackBar({ children }: { readonly children?: ComponentChildren }) {
   return (
     <header class="page-header">
       <a
@@ -16,6 +16,7 @@ export function BackBar() {
       >
         <Icon name="back" />
       </a>
+      {children && <div class="page-header__actions">{children}</div>}
     </header>
   );
 }

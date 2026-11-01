@@ -1,3 +1,4 @@
+import { useState } from "preact/hooks";
 import { formatMonth } from "../../domain/dates";
 import {
   dioramaOf,
@@ -10,15 +11,17 @@ import {
 import { formatMoney } from "../../domain/money";
 import { priceHistory } from "../../domain/prices";
 import { galleryImages, shortSetNumber } from "../../domain/showcase";
-import type { Collection, LegoSet, Minifig, SpecialPart } from "../../domain/types";
+import type { Collection, LegoSet, Minifig, ShowcaseItem, SpecialPart } from "../../domain/types";
 import { modSpend, valueOfItem } from "../../domain/value";
 import { CopyRow } from "../components/CopyRow";
 import { Cover } from "../components/Cover";
 import { BackBar, NoteAndLinks, originRows, Rows, Section } from "../components/DetailParts";
 import { Gallery } from "../components/Gallery";
+import { Icon } from "../components/Icon";
+import { RemoveSheet } from "../components/RemoveSheet";
 import { ValueCard } from "../components/ValueCard";
 import { manufacturerLabel, safeUrl } from "../labels";
-import { type DetailRef, detailHash, routeHash } from "../route";
+import { type DetailRef, detailHash, formHash, routeHash } from "../route";
 import { TEXTS } from "../texts";
 import type { LoadedCollection } from "../useCollection";
 
@@ -361,15 +364,53 @@ export function detailName(data: LoadedCollection, detail: DetailRef): string | 
     : undefined;
 }
 
+/** Edit, another copy (figures only) and delete: icon buttons at the top right (S2, S3, S4). */
+function Actions({
+  item,
+  onRemove,
+}: {
+  readonly item: ShowcaseItem;
+  readonly onRemove: () => void;
+}) {
+  const A = TEXTS.actions;
+  return (
+    <>
+      <a
+        class="icon-button pressable"
+        href={formHash({ type: item.type, mode: "edit", id: item.id })}
+        aria-label={A.edit}
+      >
+        <Icon name="edit" />
+      </a>
+      {item.type === "minifig" && (
+        <a
+          class="icon-button pressable"
+          href={formHash({ type: "minifig", mode: "copy", id: item.id })}
+          aria-label={A.copy}
+        >
+          <Icon name="copy" />
+        </a>
+      )}
+      <button type="button" class="icon-button pressable" aria-label={A.remove} onClick={onRemove}>
+        <Icon name="trash" />
+      </button>
+    </>
+  );
+}
+
 /** S2, S3 and S4: the detail page of a figure, a set or a special part. */
 export function DetailPage({
   data,
   detail,
+  onRemove,
 }: {
   readonly data: LoadedCollection;
   readonly detail: DetailRef;
+  /** Called when the person has confirmed deleting the object. */
+  readonly onRemove: (item: ShowcaseItem) => void;
 }) {
   const { state } = data;
+  const [asking, setAsking] = useState(false);
   if (state.status !== "ready") {
     return (
       <>
@@ -396,7 +437,14 @@ export function DetailPage({
   const item = findItem(state.collection, detail.type, detail.id);
   return (
     <>
-      <BackBar />
+      <BackBar>{item && <Actions item={item} onRemove={() => setAsking(true)} />}</BackBar>
+      {item && asking && (
+        <RemoveSheet
+          item={item}
+          onConfirm={() => onRemove(item)}
+          onClose={() => setAsking(false)}
+        />
+      )}
       {item?.type === "minifig" && <MinifigDetail minifig={item} collection={state.collection} />}
       {item?.type === "legoSet" && <SetDetail set={item} collection={state.collection} />}
       {item?.type === "specialPart" && (

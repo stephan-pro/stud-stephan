@@ -11,11 +11,16 @@ export interface LoadedCollection {
   readonly state: CollectionState;
   /** Asks the server again after a failure. */
   readonly retry: () => void;
+  /**
+   * Shows a change the app has made (saved or deleted an object) without asking the server again.
+   * Nothing happens while the collection is not loaded.
+   */
+  readonly update: (change: (collection: Collection) => Collection) => void;
 }
 
 /**
- * The collection of the signed-in person, read once from the server (P6 will keep it up to date
- * when something is saved). The demo has no server and shows its example data at once.
+ * The collection of the signed-in person, read once from the server and kept up to date by the
+ * app's own changes (`update`). The demo shows its example data at once and never loads.
  */
 export function useCollection(
   remote: Pick<Remote, "load"> | undefined,
@@ -27,7 +32,7 @@ export function useCollection(
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    if (!remote) return;
+    if (!remote || demo) return;
     let active = true;
     setState({ status: "loading" });
     remote.load().then(
@@ -37,9 +42,18 @@ export function useCollection(
     return () => {
       active = false;
     };
-  }, [remote, attempt]);
+  }, [remote, demo, attempt]);
 
-  return { state, retry: () => setAttempt((count) => count + 1) };
+  return {
+    state,
+    retry: () => setAttempt((count) => count + 1),
+    update: (change) =>
+      setState((current) =>
+        current.status === "ready"
+          ? { status: "ready", collection: change(current.collection) }
+          : current,
+      ),
+  };
 }
 
 /** Whether the device says it has a connection (changes with the browser's online and offline events). */

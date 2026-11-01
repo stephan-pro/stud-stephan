@@ -3,7 +3,7 @@
 // of the end-to-end tests) and `SupabaseRemote` (the real one). They all follow the same rules
 // (`rules.ts`), and one series of contract tests (`remote.contract.ts`) runs against each.
 
-import type { Collection, Id, PricePoint } from "../domain/types";
+import type { Collection, Id, PricePoint, ShowcaseItem } from "../domain/types";
 import type { Bucket, ObjectKind, ObjectOfKind, RefusalReason, StoredFile } from "./rules";
 
 export type { Bucket, ObjectKind, ObjectOfKind, RefusalReason, StoredFile };
@@ -63,6 +63,13 @@ export interface Remote {
   signedUrl(bucket: Bucket, path: string): Promise<string>;
   /** Bytes of all the person's files (photos and Studio files). */
   storageUsage(): Promise<number>;
+}
+
+/** Saves an object of the showcase, whichever kind it is. */
+export function saveItem(remote: Pick<Remote, "save">, item: ShowcaseItem): Promise<void> {
+  if (item.type === "minifig") return remote.save("minifig", item);
+  if (item.type === "legoSet") return remote.save("legoSet", item);
+  return remote.save("specialPart", item);
 }
 
 /** Removes files an object no longer lists; a failure leaves the file behind, nothing else. */

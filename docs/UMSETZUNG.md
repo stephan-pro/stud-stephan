@@ -56,7 +56,7 @@ pg_cron (wöchentlich) ──► Edge Function „bricklink“ ──► BrickLi
 | P4b | Anmeldung per Code (nur Stephan) | Opus | High | ✅ 01.11.2026 |
 | P4c | Fotos und Studio-Dateien hochladen | Sonnet | Medium | ✅ 01.11.2026 |
 | P5 | Vitrine, Filter, Detailseiten | Sonnet | Medium | ✅ 01.11.2026 |
-| P6 | Manuell erfassen, bearbeiten, löschen, Mods | Sonnet | Medium | offen |
+| P6 | Manuell erfassen, bearbeiten, löschen, Mods | Sonnet | Medium | ✅ 01.11.2026 (Foto vom Redmi: PO-Prüfung offen) |
 | P7 | Katalog (BrickLink-Nummern, Rebrickable-Suche) | Sonnet | Medium | offen |
 | P8 | Fotoerkennung (Brickognize) | Sonnet | Medium | offen |
 | P9 | Erfassen per Link (Merlins Steine, Rebrickable, andere) | Sonnet | Medium | offen |
@@ -329,6 +329,16 @@ Tickets are written in English. Every acceptance criterion is at least one test,
   - Handy: Die Lupe öffnet das Suchfeld; am PC steht es immer da (wie im PC-Dummy).
   - Noch nicht dabei, weil das Paket es bringt: „+2,5 % Woche“ in der Sammlungskarte (Verlauf des Gesamtwerts, P13), „Bearbeiten“, „Weiteres Exemplar anlegen“ und „Löschen“ (P6), Diorama verlinken und „Einem Diorama zuordnen“ (P10), „＋ Wunschliste“ bei fehlenden Figuren eines Sets (P12). Ein Diorama steht auf der Figur mit Namen und Bild, noch ohne Link.
   - Neuer Design-Wert: `--line` (#E1E4EA) für die Trennlinien in Listen, in `DESIGN.md` und `tokens.css` eingetragen.
+
+- 01.11.2026 (P6, von Claude entschieden, vom PO änderbar):
+  - **Erfassen (S7):** Nur „Manuell“ führt weiter (Figur, Set, Sonderteil). Foto, Nummer/Suche und Link sowie die Arten Diorama und Wunsch sind sichtbar, aber ausgegraut mit „Kommt bald“ (P7, P8, P10, P12). Adressen: `#/erfassen/figur|set|sonderteil` (neu), `#/erfassen/figur/kopie/<id>` (weiteres Exemplar, nur Figuren), `#/vitrine/figur|set|sonderteil/<id>/bearbeiten` (bearbeiten).
+  - **Formular (S8):** Der Fehler steht am Feld, oben steht „N Angaben stimmen noch nicht“, der Fokus geht auf das erste falsche Feld. Der Abschnitt „Wert“ (selbst geschätzt) steht bei allen drei Arten, mit dem Hinweis auf die Reihenfolge Marktpreis → eigener Wert → Kaufpreis. „Erworben am“ nimmt „MM.JJJJ“ oder „TT.MM.JJJJ“; ein genauer Tag geht beim Bearbeiten nicht verloren. „Stammt aus Set“ verknüpft das eigene Set, dessen Nummer (mit oder ohne „-1“) passt. Beim Bearbeiten bleiben, was das Formular nicht zeigt: Diorama, Katalogbild, enthaltene Figuren eines Sets, Anlegezeit und der Tag eines unveränderten geschätzten Werts. Nach dem Speichern ersetzt die Detailseite das Formular im Verlauf („Zurück“ führt nicht ins alte Formular).
+  - **Weiteres Exemplar:** übernimmt Name, Nummer, Hersteller, Thema und „Stammt aus Set“; Zustand (neu), Quelle, Preis, Fotos, Mods und Notiz bleiben leer.
+  - **Fotos im Formular:** Ein Tipp auf die Kamera-Fläche öffnet die Auswahl des Geräts (am Handy Kamera oder Galerie), mehrere Fotos auf einmal sind möglich. Jedes wird mit `resizePhoto` verkleinert und mit `uploadFile` hochgeladen (Schritte „Wird verkleinert“, „Wird hochgeladen (Versuch 2 von 4)“, bei Fehlschlag „Noch einmal versuchen“ / „Verwerfen“). Statt Ziehen gibt es pro Foto einen Stern-Knopf „zum Titelbild machen“ (erstes Foto = Titelbild). Ein im Formular hochgeladenes, aber nie gespeichertes Foto wird bei „Abbrechen“, beim Verlassen der Seite oder beim Entfernen wieder aus dem Dateispeicher gelöscht.
+  - **Mod-Teile (S8a):** Position und Beschreibung sind Pflicht, Preis, Link, Anbieter und Verbleib freiwillig. Teile lassen sich im Formular antippen (ändern) und entfernen; die Summe „Ausgaben für Mods“ erscheint schon im Formular und zählt nie zum Wert.
+  - **Löschen:** erst eine Rückfrage, dann verschwindet das Objekt sofort und eine Leiste bietet 8 Sekunden lang „Rückgängig“. Der Server wird erst nach diesen 8 Sekunden gefragt (oder wenn die App in den Hintergrund geht oder ein zweites Objekt gelöscht wird); „Rückgängig“ löscht deshalb nichts, auch keine Fotos. Scheitert das endgültige Löschen, kommt das Objekt zurück und die App sagt es. Schließt man den Tab innerhalb der 8 Sekunden, bleibt das Objekt erhalten.
+  - **Demo:** `npm run demo` speichert, bearbeitet und löscht jetzt im Speicher (ein Neuladen setzt zurück); Fotos lassen sich dort nicht anzeigen.
+  - **Kleiner Fehler behoben:** Wechselte die Adresse zwischen dem ersten Zeichnen und dem Anhängen des Adress-Lauschers, blieb die alte Seite stehen; die App liest die Adresse jetzt nach dem Anhängen noch einmal.
 
 ## 8. Abhängigkeiten
 

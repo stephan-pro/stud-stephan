@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Auth, Session } from "../auth/auth";
 import type { Remote } from "../backend/remote";
-import type { Collection } from "../domain/types";
+import type { Collection, ShowcaseItem } from "../domain/types";
 import { AccountCard } from "./components/AccountCard";
+import { CaptureSheet } from "./components/CaptureSheet";
 import { ComingSoon } from "./components/ComingSoon";
 import { PhoneNavigation, Sidebar } from "./components/Navigation";
 import { PageHeader } from "./components/PageHeader";
 import { StorageCard } from "./components/StorageCard";
+import { Toast } from "./components/Toast";
 import { DetailPage, detailName } from "./pages/DetailPage";
+import { FormPage } from "./pages/FormPage";
 import { INITIAL_VIEW, ShowcasePage, type ShowcaseView } from "./pages/ShowcasePage";
 import { SignInPage } from "./pages/SignInPage";
 import { PhotoSourceContext } from "./photos";
@@ -21,6 +24,7 @@ import {
 } from "./route";
 import { TEXTS } from "./texts";
 import { useCollection, useOnline } from "./useCollection";
+import { usePendingRemoval } from "./usePendingRemoval";
 
 /** The page of the current address; an empty or unknown address is rewritten to the start page. */
 function currentLocation(): PageLocation {
@@ -38,7 +42,7 @@ function focusHeading(): void {
 
 interface ShellProps {
   readonly session: Session;
-  /** The server's files and data; missing in the demo (no server). */
+  /** The server's files and data; in the demo a store in memory. */
   readonly remote?: Remote | undefined;
   /** The example collection of the demo (no server). */
   readonly demo?: Collection | undefined;
@@ -55,13 +59,23 @@ function Shell({ session, remote, demo, onSignOut, focusOnMount }: ShellProps) {
   const data = useCollection(remote, demo);
   const online = useOnline();
   const firstPage = useRef(true);
-  const { route, detail } = page;
+  const removal = usePendingRemoval(remote, data);
+  const { route, detail, form } = page;
   const address = locationHash(page);
   const name = detail ? detailName(data, detail) : undefined;
+
+  /** Deleting shows the showcase at once; the server hears of it when "Rückgängig" ran out. */
+  const remove = (item: ShowcaseItem) => {
+    history.replaceState(null, "", routeHash("showcase"));
+    setPage(currentLocation());
+    removal.remove(item);
+  };
 
   useEffect(() => {
     const onHashChange = () => setPage(currentLocation());
     addEventListener("hashchange", onHashChange);
+    // The address may have changed between the first render and this listener.
+    onHashChange();
     return () => removeEventListener("hashchange", onHashChange);
   }, []);
 
@@ -110,27 +124,44 @@ function Shell({ session, remote, demo, onSignOut, focusOnMount }: ShellProps) {
           {TEXTS.skipLink}
         </button>
         <Sidebar current={route} />
-        <main class={`page page--${route}`}>
+        <main class={`page page--${route}${form ? " page--form" : ""}`}>
           {!online && (
             <p class="banner" role="status">
               {TEXTS.offline}
             </p>
           )}
-          {detail ? (
+          {form ? (
             <div class="detail">
-              <DetailPage data={data} detail={detail} />
+              <FormPage key={address} data={data} form={form} remote={remote} />
+            </div>
+          ) : detail ? (
+            <div class="detail">
+              <DetailPage data={data} detail={detail} onRemove={remove} />
             </div>
           ) : (
             <>
               <PageHeader route={route} search={search} />
-              {route === "showcase" && <ShowcasePage data={data} view={view} onView={setView} />}
+              {(route === "showcase" || route === "capture") && (
+                <ShowcasePage data={data} view={view} onView={setView} />
+              )}
+              {route === "capture" && (
+                <CaptureSheet onClose={() => (location.hash = routeHash("showcase"))} />
+              )}
               {route === "settings" && <AccountCard email={session.email} onSignOut={onSignOut} />}
               {route === "settings" && remote !== undefined && <StorageCard remote={remote} />}
-              {route !== "showcase" && <ComingSoon route={route} />}
+              {route !== "showcase" && route !== "capture" && <ComingSoon route={route} />}
             </>
           )}
         </main>
-        {route !== "settings" && <PhoneNavigation current={route} />}
+        {removal.pending && (
+          <Toast
+            message={TEXTS.remove.done(removal.pending.name)}
+            action={TEXTS.remove.undo}
+            onAction={removal.undo}
+          />
+        )}
+        {removal.failed && <Toast message={TEXTS.remove.failed} />}
+        {route !== "settings" && !form && <PhoneNavigation current={route} />}
       </div>
     </PhotoSourceContext.Provider>
   );
@@ -175,7 +206,9 @@ export function App({
     };
   }, [auth]);
 
-  if (auth === null) return <Shell session={DEMO_SESSION} demo={demo} focusOnMount={false} />;
+  if (auth === null) {
+    return <Shell session={DEMO_SESSION} remote={remote} demo={demo} focusOnMount={false} />;
+  }
   if (session === undefined) return null;
   if (session === null) {
     return (

@@ -9,6 +9,8 @@ import { FakeHttpAuth, fakeAuthToken } from "./auth/fakeHttpAuth";
 import { SupabaseAuth } from "./auth/supabaseAuth";
 import { createSupabaseClient } from "./auth/supabaseClient";
 import { createFakeHttpRemote } from "./backend/fakeHttpRemote";
+import { FakeRemote } from "./backend/fakeRemote";
+import { FakeStore } from "./backend/fakeStore";
 import type { Remote } from "./backend/remote";
 import { SupabaseRemote } from "./backend/supabaseRemote";
 import { DEMO_COLLECTION } from "./demo/collection";
@@ -42,11 +44,17 @@ const root = document.getElementById("app");
 if (!root) {
   throw new Error("Element #app fehlt in index.html");
 }
+/** The demo has no server: what is entered lives in memory until the page is closed. */
+function createDemoRemote(): Remote {
+  const store = new FakeStore();
+  return new FakeRemote(store, store.createUser());
+}
+
 const backend = createBackend();
 render(
   <App
     auth={backend?.auth ?? null}
-    remote={backend?.remote}
+    remote={backend?.remote ?? (__BACKEND__ === "demo" ? createDemoRemote() : undefined)}
     demo={__BACKEND__ === "demo" ? DEMO_COLLECTION : undefined}
   />,
   root,

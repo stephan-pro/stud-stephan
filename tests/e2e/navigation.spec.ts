@@ -73,6 +73,10 @@ test.describe("Handy", () => {
       );
       if (entry.name !== "Erfassen") {
         await expect(nav.getByRole("link", { name: entry.name })).toHaveText(entry.name);
+      } else {
+        // Capturing opens a sheet that blocks the page; Escape closes it.
+        await expect(page.getByRole("dialog")).toBeVisible();
+        await page.keyboard.press("Escape");
       }
     }
   });
@@ -146,6 +150,11 @@ test.describe("PC", () => {
         "aria-current",
         "page",
       );
+      // Capturing opens a sheet that blocks the page; Escape closes it.
+      if (entry.name === "Erfassen") {
+        await expect(page.getByRole("dialog")).toBeVisible();
+        await page.keyboard.press("Escape");
+      }
     }
   });
 });

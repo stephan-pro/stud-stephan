@@ -1500,3 +1500,443 @@ a {
     height: 360px;
   }
 }
+
+/* Forms, capture sheet, photos and the undo message (P6) */
+
+.page-header__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.banner--error {
+  background: var(--surface);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.button--danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--on-ink);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.icon-button--small {
+  width: var(--touch);
+  height: var(--touch);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Cancel, title and an equal spacer stay in one row; a long name wraps inside the title. */
+.form .page-header {
+  flex-wrap: nowrap;
+}
+
+.form .page-title {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The form has no bottom bar: its own save bar sticks to the bottom of the window. */
+.page--form {
+  padding-bottom: 0;
+}
+
+.form-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 0 calc(-1 * var(--page-gutter));
+  padding: var(--space-3) var(--page-gutter) var(--space-5);
+  background: var(--surface);
+  border-top: var(--border) solid var(--ink);
+}
+
+.form-card {
+  gap: var(--space-3);
+}
+
+.field__optional {
+  font-weight: 400;
+  color: var(--ink-muted);
+}
+
+.field__hint {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
+.field__input--area {
+  height: auto;
+  min-height: calc(3 * var(--input-height));
+  padding: var(--space-3);
+  resize: vertical;
+}
+
+.choice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.choice > legend {
+  padding: 0;
+}
+
+.segmented {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: var(--border) solid var(--ink);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+}
+
+.segmented__option {
+  flex: 1;
+  height: var(--touch);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.segmented__option[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+/* Photos of a form: 84 px tiles in a row, the last one the dashed add button */
+
+.photo-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.photo-slot {
+  position: relative;
+  width: 84px;
+  height: 84px;
+}
+
+.cover--thumb {
+  width: 84px;
+  height: 84px;
+  border: var(--border) solid var(--ink);
+  border-radius: var(--radius-input);
+}
+
+.photo-slot__badge {
+  position: absolute;
+  left: var(--space-1);
+  bottom: var(--space-1);
+  padding: 0 var(--space-2);
+  border: var(--border) solid var(--ink);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.photo-slot__actions {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.photo-slot__button {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: var(--border) solid var(--ink);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.photo-add {
+  width: 84px;
+  height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--border) dashed var(--ink);
+  border-radius: var(--radius-input);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.photo-add:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.photo-slot--job {
+  width: auto;
+  min-width: 84px;
+  max-width: 100%;
+}
+
+.photo-job {
+  min-height: 84px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: var(--border) solid var(--ink);
+  border-radius: var(--radius-input);
+  background: var(--bg);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.photo-job__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.photo-job__button {
+  min-height: var(--touch);
+  padding: 0 var(--space-3);
+  border: var(--border) solid var(--ink);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Swapped parts in the form of a figure */
+
+.mod-edit-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mod-edit {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.mod-edit__main {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: var(--space-2) 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* S7: what and how */
+
+.what-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.what {
+  min-height: 84px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: var(--border) solid var(--ink);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.what[aria-pressed="true"] {
+  background: var(--pop);
+}
+
+.what:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.card__title--small {
+  font-size: 20px;
+}
+
+.ways {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.way {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: var(--border) solid var(--ink);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.way:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.way__icon {
+  width: var(--touch);
+  height: var(--touch);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--border) solid var(--ink);
+  border-radius: var(--radius-input);
+}
+
+.way__icon--blue {
+  background: var(--tint-blue);
+}
+
+.way__icon--accent {
+  background: var(--accent);
+}
+
+.way__icon--mint {
+  background: var(--tint-mint);
+}
+
+.way__icon--lilac {
+  background: var(--tint-lilac);
+}
+
+.way__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.way__title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.way__hint {
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+/* "… ist gelöscht. Rückgängig" */
+
+.toast {
+  position: fixed;
+  left: var(--page-gutter);
+  right: var(--page-gutter);
+  bottom: var(--nav-clearance);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--nav);
+  color: var(--on-nav);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.toast__text {
+  min-width: 0;
+}
+
+.toast__action {
+  min-height: var(--touch);
+  padding: 0 var(--space-4);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--pop);
+  color: var(--nav);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.toast__action:focus-visible {
+  outline-color: var(--focus-on-nav);
+}
+
+@media (min-width: 900px) {
+  .toast {
+    left: calc(var(--sidebar-width) + 3 * var(--nav-inset));
+    right: auto;
+    bottom: var(--space-6);
+    max-width: 480px;
+  }
+
+  .form-bar {
+    margin-right: 0;
+    margin-left: 0;
+    padding-right: 0;
+    padding-left: 0;
+    border: 0;
+    background: var(--bg);
+  }
+}

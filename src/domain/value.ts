@@ -70,6 +70,6 @@ export function isModified(minifig: Minifig): boolean {
 }
 
 /** "Ausgaben für Mods" of one figure; never part of its value (F6). */
-export function modSpend(minifig: Minifig): Cents {
+export function modSpend(minifig: Pick<Minifig, "mods">): Cents {
   return minifig.mods.reduce((sum, part) => sum + (part.price ?? 0), 0);
 }

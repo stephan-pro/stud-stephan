@@ -3,6 +3,7 @@ import {
   DEFAULT_ROUTE,
   detailHash,
   documentTitle,
+  formHash,
   locationHash,
   PHONE_NAVIGATION,
   parseLocation,
@@ -92,6 +93,53 @@ describe("P5 Adressen der Detailseiten", () => {
 
   it("P5 Der Titel einer Detailseite ist der Name des Objekts", () => {
     expect(documentTitle("showcase", "Captain Rex")).toBe("Captain Rex – Stud Stephan");
+  });
+});
+
+describe("P6 Adressen der Formulare", () => {
+  it.each([
+    ["minifig", "figur"],
+    ["legoSet", "set"],
+    ["specialPart", "sonderteil"],
+  ] as const)("P6 Neu erfassen: #/erfassen/%2$s öffnet das Formular für %1$s", (type, path) => {
+    const form = { type, mode: "new" } as const;
+    expect(formHash(form)).toBe(`#/erfassen/${path}`);
+    expect(parseLocation(formHash(form))).toEqual({ route: "capture", form });
+  });
+
+  it("P6 Bearbeiten liegt unter der Vitrine und kennt das Objekt", () => {
+    const form = { type: "legoSet", mode: "edit", id: "set 1/ä" } as const;
+    expect(formHash(form)).toBe("#/vitrine/set/set%201%2F%C3%A4/bearbeiten");
+    expect(parseLocation(formHash(form))).toEqual({ route: "showcase", form });
+    expect(parseRoute(formHash(form))).toBe("showcase");
+  });
+
+  it("P6 Ein weiteres Exemplar gibt es nur für Figuren", () => {
+    const form = { type: "minifig", mode: "copy", id: "minifig-rex" } as const;
+    expect(formHash(form)).toBe("#/erfassen/figur/kopie/minifig-rex");
+    expect(parseLocation(formHash(form))).toEqual({ route: "capture", form });
+    expect(parseLocation("#/erfassen/set/kopie/x")).toEqual({ route: "showcase" });
+  });
+
+  it("P6 Die Seite „Erfassen“ ohne Art öffnet die Auswahl", () => {
+    expect(parseLocation("#/erfassen")).toEqual({ route: "capture" });
+    expect(locationHash({ route: "capture" })).toBe("#/erfassen");
+    expect(locationHash(parseLocation("#/erfassen/figur/"))).toBe("#/erfassen/figur");
+  });
+
+  it.each([
+    "#/erfassen/gibtsnicht",
+    "#/erfassen/figur/kopie",
+    "#/erfassen/figur/kopie/",
+    "#/erfassen/figur/kopie/a/b",
+    "#/erfassen/figur/etwas/a",
+    "#/vitrine/figur/abc/bearbeiten/mehr",
+    "#/vitrine/figur/abc/loeschen",
+    "#/vitrine/figur/%E0%A4%A/bearbeiten",
+    "#/dioramen/figur/abc/bearbeiten",
+    "#/erfassen/figur/kopie/%E0%A4%A",
+  ])("P6 Die unvollständige Adresse %s öffnet die Vitrine", (hash) => {
+    expect(parseLocation(hash)).toEqual({ route: "showcase" });
   });
 });
 
