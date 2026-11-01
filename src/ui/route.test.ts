@@ -17,6 +17,7 @@ import {
   routeLabel,
   SIDEBAR_NAVIGATION,
   searchHash,
+  seriesHash,
 } from "./route";
 import { TEXTS } from "./texts";
 
@@ -303,5 +304,40 @@ describe("P1 Navigation", () => {
 
   it("P1 Der Titel im Browser-Tab nennt Seite und App", () => {
     expect(documentTitle("dioramas")).toBe("Dioramen – Stud Stephan");
+  });
+});
+
+describe("P12 Wunschliste und Reihen", () => {
+  it("P12 Die Reihen liegen unter der Wunschliste: Liste und eine Reihe", () => {
+    expect(parseLocation("#/wunschliste/reihen")).toEqual({
+      route: "wishlist",
+      series: { kind: "list" },
+    });
+    expect(parseLocation("#/wunschliste/reihen/7")).toEqual({
+      route: "wishlist",
+      series: { kind: "detail", id: 7 },
+    });
+    expect(seriesHash({ kind: "detail", id: 7 })).toBe("#/wunschliste/reihen/7");
+    expect(locationHash(parseLocation("#/wunschliste/reihen/"))).toBe("#/wunschliste/reihen");
+  });
+
+  it("P12 Eine Reihe mit unlesbarer Nummer führt zur Startseite", () => {
+    for (const hash of [
+      "#/wunschliste/reihen/x",
+      "#/wunschliste/reihen/0",
+      "#/wunschliste/reihen/-2",
+    ]) {
+      expect(parseLocation(hash), hash).toEqual({ route: "showcase" });
+    }
+  });
+
+  it("P12 „Erhalten“ öffnet das Formular aus dem Wunsch, nur für Figuren und Sets", () => {
+    const form = { type: "minifig", mode: "wish", id: "wish-cody" } as const;
+    expect(formHash(form)).toBe("#/erfassen/figur/wunsch/wish-cody");
+    expect(parseLocation("#/erfassen/figur/wunsch/wish-cody")).toEqual({ route: "capture", form });
+    expect(parseLocation("#/erfassen/set/wunsch/w")).toMatchObject({
+      form: { type: "legoSet", mode: "wish", id: "w" },
+    });
+    expect(parseLocation("#/erfassen/sonderteil/wunsch/w")).toEqual({ route: "showcase" });
   });
 });

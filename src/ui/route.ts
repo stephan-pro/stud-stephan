@@ -75,7 +75,9 @@ export type FormRef =
   /** A form started from a pasted address (F3): filled from the page again, or empty but for the link. */
   | { readonly type: DetailType; readonly mode: "link"; readonly link: string }
   | { readonly type: DetailType; readonly mode: "copy"; readonly id: string }
-  | { readonly type: DetailType; readonly mode: "edit"; readonly id: string };
+  | { readonly type: DetailType; readonly mode: "edit"; readonly id: string }
+  /** "Erhalten" (F14): the form filled from the wish `id`; saving it takes the wish off the list. */
+  | { readonly type: "minifig" | "legoSet"; readonly mode: "wish"; readonly id: string };
 
 /** The kinds the catalog knows (S7b): figures and sets. */
 export type SearchType = "minifig" | "legoSet";
@@ -102,6 +104,17 @@ const ASSIGN_PATH = "zuordnen";
 const DIORAMA_PATH = "diorama";
 
 /**
+ * A page of the series (P12): "Meine Reihen" with the theme search (S10, "#/wunschliste/reihen")
+ * and one series (S10a, "#/wunschliste/reihen/<id>"). Both belong to the wishlist.
+ */
+export type SeriesPage =
+  | { readonly kind: "list" }
+  | { readonly kind: "detail"; readonly id: number };
+
+const SERIES_PATH = "reihen";
+const WISH_PATH = "wunsch";
+
+/**
  * A page, a detail page below the showcase (which stays the current entry of the navigation), a
  * form (entering lies below "Erfassen", editing below the showcase) or the catalog search (S7b,
  * below "Erfassen").
@@ -117,6 +130,8 @@ export interface PageLocation {
   readonly link?: DetailType;
   /** A page of the dioramas (P10). */
   readonly diorama?: DioramaPage;
+  /** A page of the series (P12), below the wishlist. */
+  readonly series?: SeriesPage;
 }
 
 const PHOTO_PATH = "foto";
@@ -164,6 +179,24 @@ export function parseLocation(hash: string): PageLocation {
     if (segments.length === 2) return { route, diorama: { kind: "detail", id } };
     if (third === ASSIGN_PATH) return { route, diorama: { kind: "assign", id } };
     if (third === EDIT_PATH) return { route, diorama: { kind: "edit", id } };
+    return { route: DEFAULT_ROUTE };
+  }
+  if (route === "wishlist" && second === SERIES_PATH && segments.length === 2) {
+    return { route, series: { kind: "list" } };
+  }
+  if (route === "wishlist" && second === SERIES_PATH && segments.length === 3) {
+    const id = Number(decode(third ?? ""));
+    if (Number.isSafeInteger(id) && id > 0) return { route, series: { kind: "detail", id } };
+    return { route: DEFAULT_ROUTE };
+  }
+  if (
+    route === "capture" &&
+    segments.length === 4 &&
+    third === WISH_PATH &&
+    (type === "minifig" || type === "legoSet")
+  ) {
+    const id = decode(fourth ?? "");
+    if (id) return { route, form: { type, mode: "wish", id } };
     return { route: DEFAULT_ROUTE };
   }
   if (route === "capture" && segments.length === 2 && second === PHOTO_PATH) {
@@ -237,6 +270,7 @@ export function formHash(form: FormRef): string {
     return `${routeHash("capture")}/${type}/${LINK_PATH}/${encodeURIComponent(form.link)}`;
   }
   const id = encodeURIComponent(form.id);
+  if (form.mode === "wish") return `${routeHash("capture")}/${type}/${WISH_PATH}/${id}`;
   return form.mode === "copy"
     ? `${routeHash("capture")}/${type}/${COPY_PATH}/${id}`
     : `${routeHash("showcase")}/${type}/${id}/${EDIT_PATH}`;
@@ -265,8 +299,15 @@ export function dioramaHash(page: DioramaPage): string {
   return page.kind === "edit" ? `${base}/${EDIT_PATH}` : base;
 }
 
+/** The link target of a page of the series, e.g. "#/wunschliste/reihen/7". */
+export function seriesHash(page: SeriesPage): string {
+  const base = `${routeHash("wishlist")}/${SERIES_PATH}`;
+  return page.kind === "detail" ? `${base}/${page.id}` : base;
+}
+
 /** The normal spelling of an address; differing spellings are rewritten to it. */
 export function locationHash(page: PageLocation): string {
+  if (page.series) return seriesHash(page.series);
   if (page.diorama) return dioramaHash(page.diorama);
   if (page.form) return formHash(page.form);
   if (page.link) return linkHash(page.link);

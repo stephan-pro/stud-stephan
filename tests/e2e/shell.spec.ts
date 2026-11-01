@@ -17,14 +17,9 @@ test.beforeEach(async ({ page }) => {
 });
 
 // The showcase has its content since P5 (`showcase.spec.ts`), capturing since P6 (`capture.spec.ts`),
-// the dioramas since P10 (`dioramas.spec.ts`); the others still say what will come.
+// the dioramas since P10 (`dioramas.spec.ts`), the wishlist since P12 (`wishlist.spec.ts`); the
+// others still say what will come.
 const PAGES = [
-  {
-    hash: "#/wunschliste",
-    heading: "Wunschliste",
-    tab: "Wunschliste",
-    text: TEXTS.routes.wishlist,
-  },
   { hash: "#/dashboard", heading: "Dashboard", tab: "Dashboard", text: TEXTS.routes.dashboard },
   {
     hash: "#/einstellungen",

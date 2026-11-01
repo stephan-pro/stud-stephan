@@ -30,6 +30,33 @@ function matches(figure: CatalogFigure, other: { bricklinkId?: string }): boolea
   return id !== undefined && id === normalized(other.bricklinkId);
 }
 
+/** The filter of the series page (S10a): everything, what is missing (also wished) or what is there. */
+export type SeriesFilter = "all" | "missing" | "present";
+
+export function filterSeries(
+  figures: readonly SeriesFigure[],
+  filter: SeriesFilter,
+): SeriesFigure[] {
+  if (filter === "all") return [...figures];
+  return figures.filter(({ status }) => (status === "present") === (filter === "present"));
+}
+
+/** The figures a build found as the catalog figures `seriesProgress` takes. */
+export function catalogFiguresOf(
+  found: readonly { number: string; name: string; imageUrl?: string }[],
+): CatalogFigure[] {
+  return found.map((figure) => ({
+    name: figure.name,
+    bricklinkId: figure.number,
+    ...(figure.imageUrl ? { imageUrl: figure.imageUrl } : {}),
+  }));
+}
+
+/** Share of the series that is present, whole percent (the bar's width). */
+export function seriesPercent(progress: Pick<SeriesProgress, "present" | "total">): number {
+  return progress.total === 0 ? 0 : Math.round((progress.present / progress.total) * 100);
+}
+
 /** A figure that is owned counts as present, even if another copy is wished. */
 export function seriesProgress(
   catalogFigures: readonly CatalogFigure[],

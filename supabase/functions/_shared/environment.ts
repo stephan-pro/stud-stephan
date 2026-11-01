@@ -20,6 +20,8 @@ import type { PriceRunDeps } from "./priceRunService.ts";
 import { supabasePriceRunStore } from "./priceRunStore.ts";
 import { createRebrickable } from "./rebrickableClient.ts";
 import type { Resolve } from "./safeFetch.ts";
+import type { SeriesDeps } from "./seriesService.ts";
+import { supabaseSeriesStore } from "./seriesStore.ts";
 
 /** BrickLink allows 5,000 calls a day; the rest is left for the price run (P11). */
 export const BRICKLINK_DAILY_CAP = 4500;
@@ -118,6 +120,28 @@ function priceRunOf(env: Environment, send: Fetch, now: () => Date): PriceRunDep
   return bricklink ? { store, bricklink, now } : undefined;
 }
 
+/**
+ * Building a series (P12) needs the database (its queue and the cache), Rebrickable for the sets
+ * of a theme and BrickLink for the figures of a set; its BrickLink calls count on the catalog's
+ * share of the day, so a big build leaves the price run its own share.
+ */
+function seriesOf(env: Environment, send: Fetch, now: () => Date): SeriesDeps | undefined {
+  const url = env("SUPABASE_URL");
+  const serviceRoleKey = env("SUPABASE_SERVICE_ROLE_KEY");
+  const key = env("REBRICKABLE_API_KEY");
+  if (!url || !serviceRoleKey || !key) return undefined;
+  const cache = supabaseStore({ url, serviceRoleKey }, send);
+  const bricklink = bricklinkOf(env, send, catalogCount(cache), now);
+  if (!bricklink) return undefined;
+  return {
+    store: supabaseSeriesStore({ url, serviceRoleKey }, send),
+    cache,
+    rebrickable: createRebrickable({ fetch: send, key }),
+    bricklink,
+    now,
+  };
+}
+
 export function bricklinkHandlerDeps(
   env: Environment,
   send: Fetch,
@@ -138,6 +162,7 @@ export function bricklinkHandlerDeps(
     user,
     client: () => bricklinkOf(env, send, catalogCount(storeOf(env, send)), now),
     priceRun: () => priceRunOf(env, send, now),
+    series: () => seriesOf(env, send, now),
     runSecret: env("PRICE_RUN_SECRET"),
   };
 }

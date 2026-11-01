@@ -12,8 +12,21 @@ import {
 import { formatMoney } from "../../domain/money";
 import { priceHistory } from "../../domain/prices";
 import { galleryImages, shortSetNumber } from "../../domain/showcase";
-import type { Collection, LegoSet, Minifig, ShowcaseItem, SpecialPart } from "../../domain/types";
+import type {
+  CatalogFigure,
+  Collection,
+  LegoSet,
+  Minifig,
+  ShowcaseItem,
+  SpecialPart,
+} from "../../domain/types";
 import { modSpend, valueOfItem } from "../../domain/value";
+import {
+  newWishValues,
+  wishForFigure,
+  wishSourceOfFigure,
+  wishValuesOf,
+} from "../../domain/wishForm";
 import { CopyRow } from "../components/CopyRow";
 import { Cover } from "../components/Cover";
 import { BackBar, NoteAndLinks, originRows, Rows, Section } from "../components/DetailParts";
@@ -22,10 +35,12 @@ import { Gallery } from "../components/Gallery";
 import { Icon } from "../components/Icon";
 import { RemoveSheet } from "../components/RemoveSheet";
 import { ValueCard } from "../components/ValueCard";
+import { WishSheet } from "../components/WishSheet";
 import { manufacturerLabel, safeUrl } from "../labels";
 import { type DetailRef, detailHash, formHash, routeHash } from "../route";
 import { TEXTS } from "../texts";
 import type { LoadedCollection } from "../useCollection";
+import { wishActions } from "../wishActions";
 
 const T = TEXTS.detail;
 
@@ -191,10 +206,17 @@ function MinifigDetail({
 function SetDetail({
   set,
   collection,
+  remote,
+  update,
 }: {
   readonly set: LegoSet;
   readonly collection: Collection;
+  readonly remote: Remote | undefined;
+  readonly update: LoadedCollection["update"];
 }) {
+  /** The missing figure whose wish sheet is open (F13: from a figure of the set to the wishlist). */
+  const [wishing, setWishing] = useState<CatalogFigure | undefined>();
+  const wishingWish = wishing ? wishForFigure(collection.wishlist, wishing.bricklinkId) : undefined;
   const valuation = valueOfItem(set, collection.prices);
   const figures = setFigures(collection, set);
   const progress = setFigureProgress(figures);
@@ -288,7 +310,25 @@ function SetDetail({
                       {body}
                     </a>
                   ) : (
-                    <div class="figure-tile figure-tile--missing">{body}</div>
+                    <div class="figure-tile figure-tile--missing">
+                      {body}
+                      {figure.bricklinkId && (
+                        <button
+                          type="button"
+                          class="chip chip--small pressable"
+                          aria-label={
+                            wishForFigure(collection.wishlist, figure.bricklinkId)
+                              ? `${figure.name}: ${TEXTS.wishSheet.titleEdit}`
+                              : T.set.addWishLabel(figure.name)
+                          }
+                          onClick={() => setWishing(figure)}
+                        >
+                          {wishForFigure(collection.wishlist, figure.bricklinkId)
+                            ? TEXTS.wishSheet.titleEdit
+                            : T.set.addWish}
+                        </button>
+                      )}
+                    </div>
                   )}
                 </li>
               );
@@ -307,6 +347,23 @@ function SetDetail({
         </Section>
       )}
       <NoteAndLinks item={set} />
+      {wishing && (
+        <WishSheet
+          source={wishSourceOfFigure(wishing, { theme: set.theme })}
+          initial={wishingWish ? wishValuesOf(wishingWish) : newWishValues("minifig")}
+          existing={wishingWish}
+          prices={collection.prices}
+          actions={wishActions(remote, update)}
+          onClose={() => setWishing(undefined)}
+          onReceived={
+            wishingWish
+              ? () => {
+                  location.hash = formHash({ type: "minifig", mode: "wish", id: wishingWish.id });
+                }
+              : undefined
+          }
+        />
+      )}
     </>
   );
 }
@@ -455,7 +512,9 @@ export function DetailPage({
           update={data.update}
         />
       )}
-      {item?.type === "legoSet" && <SetDetail set={item} collection={state.collection} />}
+      {item?.type === "legoSet" && (
+        <SetDetail set={item} collection={state.collection} remote={remote} update={data.update} />
+      )}
       {item?.type === "specialPart" && (
         <SpecialPartDetail part={item} collection={state.collection} />
       )}

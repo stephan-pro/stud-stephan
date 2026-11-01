@@ -6,6 +6,7 @@ import type { LinkPreviewer } from "../backend/linkPreview";
 import type { PriceRunner } from "../backend/priceRun";
 import type { Recognizer } from "../backend/recognition";
 import type { Remote } from "../backend/remote";
+import type { SeriesBuilder } from "../backend/seriesBuilder";
 import { recordPriceRun } from "../domain/prices";
 import type { Collection, RemovableObject } from "../domain/types";
 import { CaptureLink } from "./captureLink";
@@ -27,8 +28,11 @@ import { FormPage } from "./pages/FormPage";
 import { LinkPage } from "./pages/LinkPage";
 import { PhotoPage } from "./pages/PhotoPage";
 import { SearchPage } from "./pages/SearchPage";
+import { SeriesDetailPage } from "./pages/SeriesDetailPage";
+import { SeriesPage } from "./pages/SeriesPage";
 import { INITIAL_VIEW, ShowcasePage, type ShowcaseView } from "./pages/ShowcasePage";
 import { SignInPage } from "./pages/SignInPage";
+import { WishlistPage } from "./pages/WishlistPage";
 import { PhotoSourceContext } from "./photos";
 import {
   DEFAULT_ROUTE,
@@ -68,6 +72,8 @@ interface ShellProps {
   readonly previewer?: LinkPreviewer | undefined;
   /** The price run (P11): its state and "Jetzt aktualisieren"; the demo makes its own. */
   readonly priceRunner?: PriceRunner | undefined;
+  /** Themes and the figures of series (P12). */
+  readonly seriesBuilder?: SeriesBuilder | undefined;
   /** The example collection of the demo (no server). */
   readonly demo?: Collection | undefined;
   /** Missing in the demo (no sign-in). */
@@ -84,6 +90,7 @@ function Shell({
   recognizer,
   previewer,
   priceRunner,
+  seriesBuilder,
   demo,
   onSignOut,
   focusOnMount,
@@ -95,7 +102,7 @@ function Shell({
   const online = useOnline();
   const firstPage = useRef(true);
   const removal = usePendingRemoval(remote, data);
-  const { route, detail, form, search: catalogSearch, photo, link, diorama } = page;
+  const { route, detail, form, search: catalogSearch, photo, link, diorama, series } = page;
   const address = locationHash(page);
   const name = detail
     ? detailName(data, detail)
@@ -208,6 +215,16 @@ function Shell({
                 />
               )}
             </div>
+          ) : series?.kind === "detail" ? (
+            <div class="detail">
+              <SeriesDetailPage
+                key={address}
+                id={series.id}
+                data={data}
+                builder={seriesBuilder}
+                remote={remote}
+              />
+            </div>
           ) : form ? (
             <div class="detail">
               <FormPage
@@ -253,9 +270,16 @@ function Shell({
               {route === "dioramas" && (
                 <DioramasPage data={data} onShowWithoutDiorama={showWithoutDiorama} />
               )}
-              {route !== "showcase" && route !== "capture" && route !== "dioramas" && (
-                <ComingSoon route={route} />
-              )}
+              {route === "wishlist" &&
+                (series ? (
+                  <SeriesPage data={data} builder={seriesBuilder} />
+                ) : (
+                  <WishlistPage data={data} remote={remote} />
+                ))}
+              {route !== "showcase" &&
+                route !== "capture" &&
+                route !== "dioramas" &&
+                route !== "wishlist" && <ComingSoon route={route} />}
             </>
           )}
         </main>
@@ -328,6 +352,7 @@ export function App({
   recognizer,
   previewer,
   priceRunner,
+  seriesBuilder,
   demo,
 }: {
   readonly auth: Auth | null;
@@ -336,6 +361,7 @@ export function App({
   readonly recognizer?: Recognizer | undefined;
   readonly previewer?: LinkPreviewer | undefined;
   readonly priceRunner?: PriceRunner | undefined;
+  readonly seriesBuilder?: SeriesBuilder | undefined;
   /** The example collection; only the demo has one. */
   readonly demo?: Collection | undefined;
 }) {
@@ -369,6 +395,7 @@ export function App({
         recognizer={recognizer}
         previewer={previewer}
         priceRunner={priceRunner}
+        seriesBuilder={seriesBuilder}
         demo={demo}
         focusOnMount={false}
       />
@@ -404,6 +431,7 @@ export function App({
       recognizer={recognizer}
       previewer={previewer}
       priceRunner={priceRunner}
+      seriesBuilder={seriesBuilder}
       onSignOut={() => void signOut()}
       focusOnMount={changed.current}
     />

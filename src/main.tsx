@@ -15,16 +15,19 @@ import { FakeLinkPreviewer, type LinkControl } from "./backend/fakeLinkPreviewer
 import { FakePriceRunner, type PriceRunControl } from "./backend/fakePriceRun";
 import { FakeRecognizer, type RecognitionControl } from "./backend/fakeRecognizer";
 import { FakeRemote } from "./backend/fakeRemote";
+import { FakeSeriesBuilder, type SeriesControl } from "./backend/fakeSeriesBuilder";
 import { FakeStore } from "./backend/fakeStore";
 import { type LinkPreviewer, SupabaseLinkPreviewer } from "./backend/linkPreview";
 import { type PriceRunner, SupabasePriceRunner } from "./backend/priceRun";
 import { type Recognizer, SupabaseRecognizer } from "./backend/recognition";
 import type { Remote } from "./backend/remote";
+import { type SeriesBuilder, SupabaseSeriesBuilder } from "./backend/seriesBuilder";
 import { SupabaseRemote } from "./backend/supabaseRemote";
 import { DEMO_CATALOG } from "./demo/catalog";
 import { DEMO_COLLECTION } from "./demo/collection";
 import { DEMO_LINK_PAGES } from "./demo/links";
 import { DEMO_SUGGESTIONS } from "./demo/recognition";
+import { DEMO_SERIES_CATALOG } from "./demo/series";
 import { App } from "./ui/App";
 
 /** Lets an end-to-end test make the example catalog fail: `localStorage["stud-stephan-fake:catalog-failure"]`. */
@@ -82,6 +85,18 @@ function fakePriceRunControl(): PriceRunControl {
   }
 }
 
+/** Lets an end-to-end test steer the example series: `localStorage["stud-stephan-fake:series-control"]`. */
+function fakeSeriesControl(): SeriesControl {
+  try {
+    const value = localStorage.getItem("stud-stephan-fake:series-control");
+    return value === "offline" || value === "unavailable" || value === "limit_reached"
+      ? value
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Sign-in and data of the server this build runs on (`src/backend/mode.ts`); none in the demo. */
 function createBackend(): {
   auth: Auth;
@@ -90,6 +105,7 @@ function createBackend(): {
   recognizer: Recognizer;
   previewer: LinkPreviewer;
   priceRunner: PriceRunner;
+  seriesBuilder: SeriesBuilder;
 } | null {
   if (__BACKEND__ === "demo") return null;
   if (__BACKEND__ === "fake") {
@@ -109,6 +125,10 @@ function createBackend(): {
         control: fakePriceRunControl,
         storage: localStorage,
       }),
+      seriesBuilder: new FakeSeriesBuilder(DEMO_SERIES_CATALOG, {
+        control: fakeSeriesControl,
+        storage: localStorage,
+      }),
     };
   }
   // `vite.config.ts` stops the build if one of the two values is missing.
@@ -124,6 +144,7 @@ function createBackend(): {
     recognizer: new SupabaseRecognizer(client),
     previewer: new SupabaseLinkPreviewer(client),
     priceRunner: new SupabasePriceRunner(client),
+    seriesBuilder: new SupabaseSeriesBuilder(client),
   };
 }
 
@@ -154,6 +175,10 @@ render(
       (__BACKEND__ === "demo" ? new FakeLinkPreviewer(DEMO_LINK_PAGES, fakeLink) : undefined)
     }
     priceRunner={backend?.priceRunner}
+    seriesBuilder={
+      backend?.seriesBuilder ??
+      (__BACKEND__ === "demo" ? new FakeSeriesBuilder(DEMO_SERIES_CATALOG) : undefined)
+    }
     demo={__BACKEND__ === "demo" ? DEMO_COLLECTION : undefined}
   />,
   root,

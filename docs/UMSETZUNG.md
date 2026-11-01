@@ -62,7 +62,7 @@ pg_cron (wöchentlich) ──► Edge Function „bricklink“ ──► BrickLi
 | P9 | Erfassen per Link (Merlins Steine, Rebrickable, andere) | Sonnet | Medium | ✅ 01.11.2026 (Prüfung durch den PO bestätigt: Rebrickable und Custom-Shop mit Foto; bei Merlins Steine sperrt der Server das Bild, die Karte sagt es) |
 | P10 | Dioramen | Sonnet | Medium | ✅ 01.11.2026 (Prüfung durch den PO bestätigt: echte .io-Datei hoch- und heruntergeladen; dazu der Bild-Abruf über link-preview) |
 | P11 | Marktwerte und Wertentwicklung (BrickLink) | Opus | High | ✅ 02.11.2026 (vom PO bestätigt: „Jetzt aktualisieren“ mit 1 aktualisiert, 0 fehlgeschlagen, Wert-Karte mit „Stand vom …“ und erster Montagslauf in S12) |
-| P12 | Wunschliste und Reihen | Sonnet | Medium | offen |
+| P12 | Wunschliste und Reihen | Sonnet | Medium | Code und Tests fertig (01.11.2026 abends), Formatierung, Push und PO-Test offen |
 | P13 | Dashboard | Sonnet | Medium | offen |
 | P14 | Einstellungen und Datensicherung | Sonnet | Medium | offen |
 | P15 | PWA, PC-Feinschliff, Gerätetest, Version 1.0 | Opus | High | offen |
@@ -406,6 +406,18 @@ Tickets are written in English. Every acceptance criterion is at least one test,
   - **Sonderteile** fragt der Abruf nicht ab: Ihre Nummer sagt nicht, welche Art BrickLink-Eintrag sie sind (Set, Teil, Gear). Sie behalten eigenen Wert oder Kaufpreis. (Ersetzt den Satz in P3, dass Sonderteile von LEGO einen Marktpreis bekommen.)
   - **Wert-Karte.** Zeigt beim Marktwert zusätzlich, aus wie vielen Verkäufen der Durchschnitt stammt („Stand vom … · BrickLink · Ø aus 97 Verkäufen“, Hinweis aus P2). Als Durchschnitt gilt wie in P2 `avg_price`, als Zahl `total_quantity` der „verkauft, letzte 6 Monate“-Antwort in EUR. Eine Setnummer ohne Variante („75372“) wird für BrickLink zu „75372-1“.
   - **Wert-Karte wie im Dummy (PO, 01.11.2026):** Die Texte folgen jetzt `Figur.dc.html`: „Aktueller Wert (gebraucht)“, darunter „Kaufpreis 25,00 € · **+13,50 €**“ und „Neu wäre sie 52,00 € wert“ (bei Sets und Sonderteilen „… wäre es …“) als Zeilen statt der Kästchen aus P5, Wert in 42 px. Eigener Wert, Kaufpreis als Wert und „ohne Wert“ behalten ihre Überschriften und Hinweise.
+
+- 01.11.2026 (P12, Vorgaben des PO: Unterthemen, Plan mit Warnung, Tageslimit, Preisstände, „+ Wunschliste“; Rest von Claude entschieden, vom PO änderbar):
+  - **Reihen bauen auf Unterthemen auf.** Angeboten werden Rebrickable-Themen unterhalb eines Hauptthemas und Themen ohne Unterthemen („Star Wars – The Clone Wars“, „Collectible Minifigures – The LEGO Batman Movie Series“), nie ein Hauptthema mit Unterthemen. Die Suche nimmt jedes Wort des Namens (englische Namen); „Sammelserie“, „Sammelfiguren“ zählen als „collectible“. Ein Thema umfasst die Sets seiner Unterthemen (bis 25 Themen).
+  - **Vor dem Anlegen** (Blatt „Reihe anlegen“): „N Sets – dafür sind N BrickLink-Abfragen nötig“. Über **300 Sets** warnt die App (Knopf „Trotzdem anlegen“), über **1.000** legt sie die Reihe nicht an. Die Mengen stehen in `seriesTypes.ts` (`SERIES_WARNING_SETS`, `SERIES_MAX_SETS`).
+  - **Aufbau** wie der Preisabruf eine Warteschlange in der Datenbank (Migration `20261103120000_series.sql`: `series_builds`, `series_build_sets`, Funktionen `series_*`, Tabellen für die App gesperrt). Ein Set = eine BrickLink-Abfrage (`subsets`), gezählt auf dem Zähler des Katalogs (Grenze 4.500 am Tag, der Rest bleibt dem Preisabruf). Die Figuren eines Sets werden 30 Tage zwischengespeichert (`series:figures:<Set>`), Sets und Themen ebenso. Ist das Tageslimit erreicht, bekommt die Reihe eine Pause bis 00:05 UTC und macht danach von selbst weiter; der Cron-Job alle 5 Minuten ruft die Funktion auch dann, wenn nur eine Reihe offen ist (`price_run_continue` ersetzt). Die geöffnete Reihenseite arbeitet zusätzlich in Portionen (20 s je Aufruf). Ein Set, das BrickLink nicht kennt, zählt als fehlgeschlagen (Hinweis auf der Seite); gestörter Dienst: 3 Versuche.
+  - **Ablauf der Funktion:** Aufrufe `{op: "series", action: search | plan | start | work | list | get | remove}` in der Funktion `bricklink`, mit Anmeldung. Der Cron-Aufruf arbeitet Preisabruf und Reihen im selben Aufruf ab.
+  - **Meine Reihen** (S10): zuletzt geöffnete zuerst, Fortschritt „34 / 52“ aus den Figuren der Reihe und der Sammlung; das Lesen für die Liste zählt nicht als „geöffnet“. Reihen lassen sich löschen (Figuren und Wünsche bleiben).
+  - **Reihe im Detail** (S10a): Filter Alle · Fehlen (auch Gewünschte) · Vorhanden; vorhanden → Figur, fehlt/gewünscht → Wunschblatt. Eine Figur, die schon da ist, bleibt „vorhanden“ (P3).
+  - **Wunschliste** (S9): „Zielpreis erreicht“ (Marktpreis ≤ Zielpreis, Stand aus dem Preisabruf P11, der die Wunschliste schon abfragt) steht oben, danach die Liste nach Priorität, Preis oder Name (ein Knopf wechselt). Die Lupe der Dummy-Seite fehlt (wenige Einträge). Das Wunschblatt (S9a) ist ein Blatt wie die anderen; „Entfernen“ fragt noch einmal nach.
+  - **„Erhalten“** öffnet `#/erfassen/figur|set/wunsch/<id>` mit grünen Feldern aus dem Wunsch; mit dem Speichern verschwindet der Wunsch. Ein erhaltenes Set hat danach noch keine enthaltenen Figuren (die kommen nur aus dem Katalog).
+  - **„+ Wunschliste“** bei einer fehlenden Figur eines Sets (S3, nur mit BrickLink-Nummer) und in einer Reihe öffnet dasselbe Blatt mit Priorität „mittel“, Zustand „gebraucht“ (Sets: „neu“).
+  - **Noch nicht dabei:** Einen Wunsch direkt aus dem Erfassen-Blatt (Nummer, Suche, Link) anzulegen; „Wunsch“ bleibt dort ausgegraut mit dem Hinweis, wo man Wünsche anlegt.
 
 ## 8. Abhängigkeiten
 

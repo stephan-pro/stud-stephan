@@ -28,7 +28,16 @@ export interface RebrickableTheme {
   parentId?: number;
 }
 
+/** A node of the theme tree with its id (the full list, P12). */
+export interface RebrickableThemeNode extends RebrickableTheme {
+  id: number;
+}
+
 export interface RebrickableClient {
+  /** All themes of the tree, in one list (a few hundred; read page by page). */
+  themes(): Promise<RebrickableThemeNode[]>;
+  /** The sets of exactly this theme (not of its sub themes): number and name. */
+  setsOfTheme(themeId: number): Promise<{ number: string; name: string }[]>;
   searchSets(query: string): Promise<RebrickableSet[]>;
   searchMinifigs(query: string): Promise<RebrickableMinifig[]>;
   set(number: string): Promise<RebrickableSet>;
@@ -46,6 +55,8 @@ export interface RebrickableOptions {
 }
 
 const HITS = "8";
+/** Pages read of one list at most (1,000 entries each): all themes and the biggest theme fit. */
+const MAX_PAGES = 5;
 
 function parseSet(raw: unknown): RebrickableSet | undefined {
   if (!isRecord(raw)) return undefined;
@@ -119,7 +130,39 @@ export function createRebrickable(options: RebrickableOptions): RebrickableClien
 
   const results = (body: unknown): unknown[] => (isRecord(body) ? list(body.results) : []);
 
+  /** Every page of a list, 1,000 entries each; a page limit stops a runaway answer. */
+  async function allPages(path: string, query: Record<string, string>): Promise<unknown[]> {
+    const rows: unknown[] = [];
+    for (let page = 1; page <= MAX_PAGES; page++) {
+      const body = await get(path, { ...query, page_size: "1000", page: String(page) });
+      rows.push(...results(body));
+      if (!isRecord(body) || str(body.next) === undefined) return rows;
+    }
+    return rows;
+  }
+
   return {
+    async themes() {
+      const nodes: RebrickableThemeNode[] = [];
+      for (const raw of await allPages("/themes/", {})) {
+        if (!isRecord(raw)) continue;
+        const id = num(raw.id);
+        const name = str(raw.name);
+        if (id === undefined || name === undefined) continue;
+        const parentId = num(raw.parent_id);
+        nodes.push(parentId ? { id, name, parentId } : { id, name });
+      }
+      return nodes;
+    },
+
+    async setsOfTheme(themeId) {
+      const rows = await allPages("/sets/", { theme_id: String(themeId), ordering: "set_num" });
+      return rows.flatMap((raw) => {
+        const set = parseSet(raw);
+        return set ? [{ number: set.number, name: set.name }] : [];
+      });
+    },
+
     async searchSets(query) {
       const body = await get("/sets/", { search: query, page_size: HITS });
       return results(body).flatMap((raw) => parseSet(raw) ?? []);

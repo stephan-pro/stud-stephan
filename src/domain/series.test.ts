@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { aMinifig, aWish } from "./fixtures";
-import { seriesProgress } from "./series";
+import { catalogFiguresOf, filterSeries, seriesPercent, seriesProgress } from "./series";
 import type { CatalogFigure } from "./types";
 
 const SERIES: CatalogFigure[] = [
@@ -22,6 +22,37 @@ const wishes = [
   aWish({ bricklinkId: "sw0219", type: "legoSet" }),
   aWish({ bricklinkId: "sw0194" }),
 ];
+
+describe("F13 Reihe anzeigen", () => {
+  const progress = seriesProgress(SERIES, owned, wishes);
+
+  it("F13 Filter „Fehlen“ zeigt auch die gewünschten, „Vorhanden“ nur die eigenen", () => {
+    expect(filterSeries(progress.figures, "missing").map((f) => f.figure.name)).toEqual([
+      "Commander Cody",
+      "Plo Koon",
+      "Ahsoka Tano",
+    ]);
+    expect(filterSeries(progress.figures, "present")).toHaveLength(2);
+    expect(filterSeries(progress.figures, "all")).toHaveLength(5);
+  });
+
+  it("F13 Die Figuren eines Aufbaus werden zu Katalogfiguren mit BrickLink-Nummer", () => {
+    expect(
+      catalogFiguresOf([
+        { number: "sw1", name: "A", imageUrl: "https://i" },
+        { number: "sw2", name: "B" },
+      ]),
+    ).toEqual([
+      { name: "A", bricklinkId: "sw1", imageUrl: "https://i" },
+      { name: "B", bricklinkId: "sw2" },
+    ]);
+  });
+
+  it("F13 Der Balken zeigt den Anteil in ganzen Prozent, bei leerer Reihe 0", () => {
+    expect(seriesPercent(progress)).toBe(40);
+    expect(seriesPercent({ present: 0, total: 0 })).toBe(0);
+  });
+});
 
 describe("F13 Fehlende Figuren", () => {
   const progress = seriesProgress(SERIES, owned, wishes);

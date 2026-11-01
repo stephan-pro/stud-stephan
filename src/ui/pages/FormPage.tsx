@@ -3,7 +3,7 @@ import { type Catalog, CatalogCallError } from "../../backend/catalog";
 import type { LinkPreviewer, PageFields } from "../../backend/linkPreview";
 import { type Remote, RemoteError, saveItem } from "../../backend/remote";
 import { type CatalogForm, formFromCatalog } from "../../domain/catalog";
-import { withSavedItem } from "../../domain/collectionEdit";
+import { withoutObject, withSavedItem } from "../../domain/collectionEdit";
 import { findItem } from "../../domain/details";
 import {
   buildItem,
@@ -21,8 +21,15 @@ import {
 import { formFromLink, hasFields } from "../../domain/linkForm";
 import { formatMoney } from "../../domain/money";
 import { shortSetNumber } from "../../domain/showcase";
-import type { Collection, ManufacturerKind, ModPart, ShowcaseItem } from "../../domain/types";
+import type {
+  Collection,
+  ManufacturerKind,
+  ModPart,
+  ShowcaseItem,
+  WishItem,
+} from "../../domain/types";
 import { modSpend } from "../../domain/value";
+import { formFromWish } from "../../domain/wishForm";
 import { resizePhoto } from "../../files/browserPhoto";
 import { uploadFile } from "../../files/upload";
 import { CaptureLink } from "../captureLink";
@@ -73,6 +80,8 @@ function startOf(
   if (form.mode === "new" || form.mode === "catalog" || form.mode === "link") {
     return { values: emptyForm(), existing: undefined };
   }
+  // A form from a wish starts from the wish (`FormPage` handles it).
+  if (form.mode === "wish") return undefined;
   const item = findItem(collection, form.type, form.id);
   if (!item) return undefined;
   if (form.mode === "copy") {
@@ -156,6 +165,8 @@ interface FormBodyProps {
   readonly catalogForm?: CatalogForm | undefined;
   /** A hint above the form, e.g. that a pasted link could not be read. */
   readonly notice?: string | undefined;
+  /** The wish this form fulfils (F14): saving the object takes it off the wishlist. */
+  readonly fromWish?: WishItem | undefined;
 }
 
 /** Where "Abbrechen" leads: back to the object, to the search, or to the showcase. */
@@ -163,6 +174,7 @@ function cancelHash(form: FormRef): string {
   // With a photo taken for the recognition the person comes back to its suggestions.
   if (CapturePhoto.peek() && form.mode === "catalog" && form.type === "minifig") return photoHash();
   if (form.mode === "new") return routeHash("showcase");
+  if (form.mode === "wish") return routeHash("wishlist");
   // A form reached from a pasted link goes back to where the link was pasted.
   if (form.mode === "link" || (form.mode === "catalog" && form.link)) return linkHash(form.type);
   if (form.mode === "catalog") return searchHash(form.type);
@@ -179,6 +191,7 @@ function FormBody({
   notice,
   linkImage,
   imageSource,
+  fromWish,
 }: FormBodyProps) {
   const { type } = form;
   // The person may decline the page's picture; where it was sent already, a retry reuses it.
@@ -235,7 +248,9 @@ function FormBody({
         catalogForm?.prefilled.includes(field) && values[field] === start.values[field]
           ? catalogForm.origin === "link"
             ? CT.linkPrefilledNote
-            : CT.prefilledNote
+            : catalogForm.origin === "wish"
+              ? CT.wishPrefilledNote
+              : CT.prefilledNote
           : undefined
       }
       {...extra}
@@ -316,6 +331,15 @@ function FormBody({
     // What the server has now is what was saved; nothing is left to clean up.
     unsaved.clear();
     update((current) => withSavedItem(current, item));
+    // The wish is fulfilled; if taking it off fails it stays on the list, where it can be removed.
+    if (fromWish) {
+      try {
+        await remote.remove("wishItem", fromWish.id);
+        update((current) => withoutObject(current, "wishItem", fromWish.id));
+      } catch {
+        // Nothing to undo: the object is saved.
+      }
+    }
     // Replace the form in the history, so "Zurück" does not return to a stale form.
     location.replace(detailHash({ type, id }));
   };
@@ -325,9 +349,11 @@ function FormBody({
       ? T.titleEdit(start.existing.name)
       : form.mode === "copy"
         ? T.titleCopy
-        : form.mode === "catalog"
-          ? T.titleCatalog[form.type]
-          : T.titleNew[type];
+        : form.mode === "wish"
+          ? T.titleWish[form.type]
+          : form.mode === "catalog"
+            ? T.titleCatalog[form.type]
+            : T.titleNew[type];
 
   const saveMod = (part: ModPart) =>
     set({
@@ -351,7 +377,11 @@ function FormBody({
 
       {catalogForm && catalogForm.prefilled.length > 0 && (
         <p class="banner banner--catalog">
-          {catalogForm.origin === "link" ? CT.linkBanner : CT.banner}
+          {catalogForm.origin === "link"
+            ? CT.linkBanner
+            : catalogForm.origin === "wish"
+              ? CT.wishBanner
+              : CT.banner}
         </p>
       )}
       {notice && <p class="banner">{notice}</p>}
@@ -812,6 +842,23 @@ export function FormPage({
         previewer={previewer}
       />
     );
+  }
+  if (form.mode === "wish") {
+    const wish = state.collection.wishlist.find((candidate) => candidate.id === form.id);
+    if (wish) {
+      const wishForm = formFromWish(wish);
+      return (
+        <FormBody
+          form={form}
+          collection={state.collection}
+          start={{ values: wishForm.values, existing: undefined }}
+          remote={remote}
+          update={data.update}
+          catalogForm={wishForm}
+          fromWish={wish}
+        />
+      );
+    }
   }
   const start = startOf(form, state.collection);
   if (!start) {

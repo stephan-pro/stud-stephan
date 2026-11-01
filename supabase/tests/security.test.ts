@@ -24,6 +24,8 @@ const CATALOG_TABLES = ["catalog_cache", "catalog_usage"] as const;
 
 /** The queue of the price run (P11): the owner reads, only its functions write (`priceRun.test.ts`). */
 const PRICE_RUN_TABLES = ["price_run_items", "price_runs"] as const;
+/** The queue that builds the series (P12): closed to the app, open to the service role only. */
+const SERIES_TABLES = ["series_build_sets", "series_builds"] as const;
 
 const bytes = new Uint8Array([1, 2, 3, 4, 5]);
 
@@ -253,7 +255,9 @@ describe("Datenbank", () => {
         "from pg_class c where c.relnamespace = 'public'::regnamespace and c.relkind = 'r' order by 1",
     );
     expect(tables).toEqual(
-      [...TABLES, ...CATALOG_TABLES, ...PRICE_RUN_TABLES].sort().map((table) => `${table}|t|f`),
+      [...TABLES, ...CATALOG_TABLES, ...PRICE_RUN_TABLES, ...SERIES_TABLES]
+        .sort()
+        .map((table) => `${table}|t|f`),
     );
   });
 

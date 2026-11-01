@@ -21,6 +21,14 @@ import {
 } from "./priceRunService.ts";
 import type { PriceRunAnswer } from "./priceRunTypes.ts";
 import { MAX_PHOTO_BYTES, type RecognizeAnswer } from "./recognizeTypes.ts";
+import {
+  planSeries,
+  type SeriesDeps,
+  searchThemes,
+  startSeries,
+  workOnSeries,
+} from "./seriesService.ts";
+import { SERIES_MAX_SETS, type SeriesAnswer, type SeriesRequest } from "./seriesTypes.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -268,8 +276,91 @@ export interface BricklinkHandlerDeps {
   readonly client: () => BricklinkClient | undefined;
   /** The price run (P11); nothing if the BrickLink secrets or the database are missing. */
   readonly priceRun: () => PriceRunDeps | undefined;
+  /** Building series (P12); nothing if the database, Rebrickable or BrickLink secrets are missing. */
+  readonly series: () => SeriesDeps | undefined;
   /** `PRICE_RUN_SECRET`, the cron job's proof; without it the cron job is turned away. */
   readonly runSecret: string | undefined;
+}
+
+const THEME_ID = /^\d{1,9}$/;
+
+function wholeId(value: unknown): number | undefined {
+  const text = typeof value === "number" ? String(value) : "";
+  return THEME_ID.test(text) ? Number(text) : undefined;
+}
+
+/** The series request of the app, or nothing if it is not one. */
+export function parseSeriesRequest(body: unknown): SeriesRequest | undefined {
+  if (!isRecord(body) || body.op !== "series") return undefined;
+  switch (body.action) {
+    case "search": {
+      const query = str(body.query)?.trim();
+      if (query === undefined || query === "" || query.length > MAX_QUERY_LENGTH) return undefined;
+      return { op: "series", action: "search", query };
+    }
+    case "plan":
+    case "start": {
+      const themeId = wholeId(body.themeId);
+      return themeId === undefined ? undefined : { op: "series", action: body.action, themeId };
+    }
+    case "work":
+    case "remove": {
+      const id = wholeId(body.id);
+      return id === undefined ? undefined : { op: "series", action: body.action, id };
+    }
+    case "get": {
+      const id = wholeId(body.id);
+      if (id === undefined || typeof body.touch !== "boolean") return undefined;
+      return { op: "series", action: "get", id, touch: body.touch };
+    }
+    case "list":
+      return { op: "series", action: "list" };
+    default:
+      return undefined;
+  }
+}
+
+/** The series calls of the app (P12), all with the person's sign-in. */
+async function seriesCall(
+  request: Request,
+  body: unknown,
+  deps: BricklinkHandlerDeps,
+): Promise<Response> {
+  const parsed = parseSeriesRequest(body);
+  if (!parsed) return failure("bad_request");
+  const owner = await deps.user(request);
+  if (owner === undefined) return failure("not_signed_in");
+  const series = deps.series();
+  if (!series) return failure("unavailable");
+  const reply = (result: SeriesAnswer) => answer(200, result);
+  switch (parsed.action) {
+    case "search":
+      return reply({ action: "search", themes: await searchThemes(series, parsed.query) });
+    case "plan":
+      return reply({ action: "plan", plan: await planSeries(series, parsed.themeId) });
+    case "start": {
+      // A theme that is too big is refused before anything is queued.
+      const { setCount } = await planSeries(series, parsed.themeId);
+      if (setCount > SERIES_MAX_SETS) return failure("bad_request");
+      const summary = await startSeries(series, owner, parsed.themeId);
+      return reply({ action: "start", summary });
+    }
+    case "work": {
+      await workOnSeries(series, { owner, budgetMs: MANUAL_BUDGET_MS });
+      const summary = await series.store.summary(owner, parsed.id);
+      return summary ? reply({ action: "work", summary }) : failure("not_found");
+    }
+    case "list":
+      return reply({ action: "list", series: await series.store.summaries(owner) });
+    case "get":
+      return reply({
+        action: "get",
+        detail: await series.store.detail(owner, parsed.id, parsed.touch),
+      });
+    case "remove":
+      await series.store.remove(owner, parsed.id);
+      return reply({ action: "remove" });
+  }
 }
 
 /** The cron job's call (pg_net with the secret from the Vault): work on every open run. */
@@ -280,9 +371,19 @@ async function scheduledRun(request: Request, deps: BricklinkHandlerDeps): Promi
     return failure("not_signed_in");
   }
   const run = deps.priceRun();
-  if (!run) return failure("unavailable");
+  const series = deps.series();
+  if (!run && !series) return failure("unavailable");
   try {
-    return answer(200, await workOnPriceRuns(run, { budgetMs: SCHEDULED_BUDGET_MS }));
+    const prices = run
+      ? await workOnPriceRuns(run, { budgetMs: SCHEDULED_BUDGET_MS })
+      : { processed: 0, paused: false };
+    // The series builds (P12) go on with the same call, so one cron job serves both.
+    return answer(
+      200,
+      series
+        ? { ...prices, series: await workOnSeries(series, { budgetMs: SCHEDULED_BUDGET_MS }) }
+        : prices,
+    );
   } catch (error) {
     return failure(error instanceof CatalogError ? error.failure : "unavailable");
   }
@@ -319,6 +420,7 @@ export function handleBricklink(request: Request, deps: BricklinkHandlerDeps): P
   }
   return serve(request, deps, async (body) => {
     if (isRecord(body) && body.op === "priceRun") return manualRun(request, body, deps);
+    if (isRecord(body) && body.op === "series") return seriesCall(request, body, deps);
     const number = isRecord(body) ? str(body.number) : undefined;
     if (!isRecord(body) || number === undefined || !/^[A-Za-z0-9._-]{1,50}$/.test(number)) {
       return failure("bad_request");

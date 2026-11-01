@@ -291,6 +291,9 @@ export const TEXTS = {
       progress: (have: number, total: number) => `${have} / ${total}`,
       progressLabel: (have: number, total: number) => `${have} von ${total} Figuren vorhanden`,
       missing: "fehlt",
+      addWish: "+ Wunschliste",
+      wished: "auf der Wunschliste",
+      addWishLabel: (name: string) => `${name} auf die Wunschliste setzen`,
       quantity: (count: number) => `×${count}`,
       noFigures: "Zu diesem Set sind noch keine Figuren angegeben.",
     },
@@ -322,7 +325,8 @@ export const TEXTS = {
     soon: "Kommt bald",
     onlyFigures: "Erkannt werden nur Figuren",
     noCatalogForParts: "Für Sonderteile gibt es keinen Katalog",
-    later: "Der Wunsch kommt bald.",
+    later:
+      "Einen Wunsch legst du in einer Reihe an oder bei einer fehlenden Figur auf der Seite eines Sets.",
     onlyManual: "Ein Diorama erfasst du von Hand",
   },
   /** S5 list, S6 detail, S6a assign sheet and the diorama form (P10, F8). */
@@ -561,6 +565,138 @@ export const TEXTS = {
     retry: "Noch einmal lesen",
     withoutPreview: "Ohne Vorschau weiter – Link wird gespeichert",
   },
+  /** S9 wishlist and S9a wish sheet (P12, F14). */
+  wishlist: {
+    switchLabel: "Wunschliste oder Reihen",
+    tabs: { wishes: "Wunschliste", series: "Reihen" },
+    loading: "Die Wunschliste wird geladen …",
+    reached: "Zielpreis erreicht",
+    reachedBadge: "Zielpreis erreicht",
+    entries: (count: number) => (count === 1 ? "1 Eintrag" : `${count} Einträge`),
+    sortLabel: "Sortieren nach",
+    sorts: { priority: "Nach Priorität", price: "Nach Preis", name: "Nach Name" },
+    priorities: { high: "hoch", medium: "mittel", low: "niedrig" },
+    priorityChoices: { high: "Hoch", medium: "Mittel", low: "Niedrig" },
+    set: "Set",
+    fromSeries: (name: string) => `aus Reihe ${name}`,
+    target: (price: string) => `Ziel ${price}`,
+    noPrice: "kein Marktpreis",
+    empty: {
+      title: "Deine Wunschliste ist noch leer",
+      text: "Such unter „Reihen“ eine Reihe und setz fehlende Figuren mit einem Tipp auf die Wunschliste. Fehlende Figuren eines Sets legst du auch auf der Seite des Sets an.",
+      action: "Reihe suchen",
+    },
+    loadFailed: {
+      title: "Die Wunschliste konnte nicht geladen werden",
+      text: "Prüf das Internet und versuch es noch einmal.",
+      retry: "Noch einmal versuchen",
+    },
+  },
+  wishSheet: {
+    titleEdit: "Wunsch bearbeiten",
+    titleNew: "Auf die Wunschliste",
+    close: "Schließen",
+    reachedNote: (price: string) => `Marktpreis ${price} – Zielpreis erreicht`,
+    marketNote: (price: string, date: string) => `Marktpreis ${price} · Stand vom ${date}`,
+    noMarketNote: "Kein Marktpreis verfügbar",
+    priority: "Priorität",
+    targetPrice: "Zielpreis",
+    targetPriceHint: "Leer lassen, wenn es keinen Zielpreis gibt.",
+    condition: "Gewünschter Zustand",
+    note: "Notiz",
+    errors: {
+      money: "Das ist kein Betrag. Schreib es z. B. so: 20,00",
+      tooLong: "Die Notiz ist zu lang.",
+    },
+    save: "Speichern",
+    add: "Auf die Wunschliste setzen",
+    saving: "Wird gespeichert …",
+    received: "Erhalten – in die Sammlung",
+    remove: "Von der Wunschliste entfernen",
+    removeSure: "Wirklich entfernen?",
+    removeConfirm: "Ja, entfernen",
+    removeKeep: "Behalten",
+    removing: "Wird entfernt …",
+    failed: "Das hat nicht geklappt. Prüf das Internet und versuch es noch einmal.",
+    alreadyWished: "Diese Figur steht schon auf deiner Wunschliste.",
+  },
+  /** S10 series, S10a series detail and the plan before creating one (P12, F13). */
+  series: {
+    back: "Zurück zu den Reihen",
+    searchLabel: "Reihe oder Thema suchen",
+    searchPlaceholder: "Reihe oder Thema suchen",
+    searchHint:
+      "Eine Reihe baut auf einem Unterthema auf, z. B. „Clone Wars“ oder „Batman Movie“, nicht auf einem großen Hauptthema.",
+    searching: "Es wird gesucht …",
+    noThemes:
+      "Dazu gibt es kein Unterthema. Versuch es mit einem Teil des Namens, englisch oder deutsch.",
+    searchFailed: {
+      offline: "Keine Verbindung zum Server. Prüf das Internet und versuch es noch einmal.",
+      limit_reached: "Für heute sind alle Abfragen verbraucht. Versuch es morgen noch einmal.",
+      unavailable: "Die Suche ist gerade nicht erreichbar. Versuch es später noch einmal.",
+    },
+    mine: "Meine Reihen",
+    loading: "Deine Reihen werden geladen …",
+    loadFailed: "Deine Reihen konnten gerade nicht gelesen werden.",
+    retry: "Noch einmal versuchen",
+    empty: "Noch keine Reihe. Such oben ein Thema und leg die erste Reihe an.",
+    progress: (present: number, total: number) => `${present} / ${total}`,
+    progressLabel: (present: number, total: number) => `${present} von ${total} Figuren`,
+    building: (done: number, total: number) => `wird aufgebaut: ${done} von ${total} Sets`,
+    paused: (until: string) => `Pause bis ${until} (Tageslimit von BrickLink)`,
+    plan: {
+      title: "Reihe anlegen",
+      close: "Schließen",
+      sets: (count: number) => (count === 1 ? "1 Set" : `${count} Sets`),
+      calls: (count: number) =>
+        count === 1 ? "1 BrickLink-Abfrage" : `${count} BrickLink-Abfragen`,
+      summary: (sets: string, calls: string) => `${sets} – dafür sind ${calls} nötig.`,
+      explain:
+        "Zu jedem Set fragt die App bei BrickLink die Figuren ab. Das läuft über das Tageslimit, das sich der Katalog und der Preisabruf teilen. Ist es verbraucht, macht die App am nächsten Tag von selbst weiter.",
+      warning: (limit: number) =>
+        `Das sind mehr als ${limit} Sets. Der Aufbau dauert dann lange und verbraucht viele Abfragen des Tages. Wähl lieber ein kleineres Unterthema.`,
+      tooBig: (max: number) =>
+        `Mehr als ${max} Sets kann eine Reihe nicht haben. Wähl ein kleineres Unterthema.`,
+      create: "Reihe anlegen",
+      createAnyway: "Trotzdem anlegen",
+      creating: "Wird angelegt …",
+      loading: "Es wird gezählt …",
+      failed: "Das hat nicht geklappt. Prüf das Internet und versuch es noch einmal.",
+    },
+    detail: {
+      title: "Reihe",
+      notFound: {
+        title: "Reihe nicht gefunden",
+        text: "Diese Reihe gibt es nicht (mehr).",
+      },
+      figuresOf: (total: number) => `von ${total} Figuren`,
+      missingLine: (missing: number, wished: number) =>
+        `${missing} fehlen · ${wished} davon auf der Wunschliste`,
+      allThere: "Alle Figuren sind da.",
+      filters: { all: "Alle", missing: "Fehlen", present: "Vorhanden" },
+      filterLabel: "Anzeigen",
+      legend: { present: "vorhanden", wished: "auf Wunschliste", missing: "grau = fehlt" },
+      addToWishlist: "+ Wunschliste",
+      statusPresent: "vorhanden",
+      statusWished: "auf der Wunschliste",
+      statusMissing: "fehlt",
+      noFigures: "In dieser Reihe hat BrickLink bisher keine Figuren gefunden.",
+      nothingShown: "Dazu gibt es in dieser Reihe nichts.",
+      building: (done: number, total: number) =>
+        `Die Reihe wird noch aufgebaut: ${done} von ${total} Sets sind abgefragt. Die Liste wächst von selbst.`,
+      paused: (until: string) =>
+        `Das Tageslimit von BrickLink ist erreicht. Die App macht am ${until} von selbst weiter.`,
+      failedSets: (count: number) =>
+        count === 1
+          ? "1 Set kennt BrickLink nicht; seine Figuren fehlen hier."
+          : `${count} Sets kennt BrickLink nicht; ihre Figuren fehlen hier.`,
+      workFailed: "Der Aufbau ist gerade nicht erreichbar. Er geht später von selbst weiter.",
+      remove: "Reihe löschen",
+      removeSure: "Die Reihe wird gelöscht. Deine Figuren und Wünsche bleiben.",
+      removeConfirm: "Ja, löschen",
+      removeKeep: "Behalten",
+    },
+  },
   /** S8 filled from the catalog (P7) or from a link (P9). */
   catalogForm: {
     linkBanner: "Grüne Felder stammen aus dem Link. Du kannst sie ändern.",
@@ -577,6 +713,9 @@ export const TEXTS = {
     linkUnreadable:
       "Die Seite ließ sich nicht lesen. Der Link ist gespeichert; trag die Angaben selbst ein.",
     banner: "Grüne Felder kommen aus dem Katalog. Du kannst sie ändern.",
+    wishBanner:
+      "Grüne Felder kommen aus deinem Wunsch. Mit dem Speichern verschwindet er von der Wunschliste.",
+    wishPrefilledNote: "Aus dem Wunsch übernommen",
     loading: "Der Katalogeintrag wird geholt …",
     failed: {
       title: "Der Katalogeintrag kommt nicht an",
@@ -606,6 +745,7 @@ export const TEXTS = {
       legoSet: "Neues Set",
     },
     titleEdit: (name: string) => `${name} bearbeiten`,
+    titleWish: { minifig: "Figur erhalten", legoSet: "Set erhalten" },
     notFound: {
       title: "Nicht gefunden",
       text: "Dieses Objekt gibt es nicht (mehr) in deiner Sammlung.",

@@ -22,8 +22,11 @@ export interface CatalogForm {
   readonly sets: readonly CatalogSetInfo[];
   /** A figure the catalog knows by name only: its BrickLink number is for the person to type. */
   readonly numberMissing: boolean;
-  /** Where the entries came from: the catalog (F2) or a pasted link (F3); it words the hints. */
-  readonly origin: "catalog" | "link";
+  /**
+   * Where the entries came from: the catalog (F2), a pasted link (F3) or a wish that was fulfilled
+   * (F14); it words the hints.
+   */
+  readonly origin: "catalog" | "link" | "wish";
 }
 
 /** The figures of a set as the object keeps them. */
