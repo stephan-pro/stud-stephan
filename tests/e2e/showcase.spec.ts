@@ -412,8 +412,8 @@ test.describe("mit Beispielsammlung", () => {
     page,
   }) => {
     await page.goto("#/vitrine/figur/gibt-es-nicht");
-    await expect(heading(page)).toHaveCount(0);
-    await expect(page.getByRole("heading", { name: TEXTS.detail.notFound.title })).toBeVisible();
+    await expect(heading(page)).toHaveText(TEXTS.detail.notFound.title);
+    await expect(heading(page)).toHaveCount(1);
     await expectNoAccessibilityViolations(page);
     await page.getByRole("link", { name: TEXTS.detail.back }).last().click();
     await expect(heading(page)).toHaveText("Hey Stephan");
