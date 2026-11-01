@@ -92,17 +92,24 @@ export class SupabaseRemote implements Remote {
   }
 
   async save<K extends ObjectKind>(kind: K, object: ObjectOfKind[K]): Promise<void> {
+    await removeReleased(this, await this.saveKeeping(kind, object));
+  }
+
+  async saveKeeping<K extends ObjectKind>(kind: K, object: ObjectOfKind[K]): Promise<StoredFile[]> {
     const answer = await this.rpc("save_object", {
       p_kind: kind,
       p_object: object,
       p_schema_version: SCHEMA_VERSION,
     });
-    await removeReleased(this, released(answer));
+    return released(answer);
   }
 
   async remove(kind: ObjectKind, id: Id): Promise<void> {
-    const answer = await this.rpc("delete_object", { p_kind: kind, p_id: id });
-    await removeReleased(this, released(answer));
+    await removeReleased(this, await this.removeKeeping(kind, id));
+  }
+
+  async removeKeeping(kind: ObjectKind, id: Id): Promise<StoredFile[]> {
+    return released(await this.rpc("delete_object", { p_kind: kind, p_id: id }));
   }
 
   async savePrice(point: PricePoint): Promise<void> {
@@ -194,6 +201,7 @@ export class SupabaseRemote implements Remote {
   }
 }
 
+/** The files the server says an object let go of. */
 function released(answer: unknown): StoredFile[] {
   const files = (answer as { releasedFiles?: unknown } | null)?.releasedFiles;
   return Array.isArray(files) ? (files as StoredFile[]) : [];

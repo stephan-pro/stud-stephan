@@ -8,7 +8,7 @@ import type { Auth } from "./auth/auth";
 import { FakeHttpAuth, fakeAuthToken } from "./auth/fakeHttpAuth";
 import { SupabaseAuth } from "./auth/supabaseAuth";
 import { createSupabaseClient } from "./auth/supabaseClient";
-import { type Catalog, SupabaseCatalog } from "./backend/catalog";
+import { type Catalog, type SourceId, type SourceState, SupabaseCatalog } from "./backend/catalog";
 import { FakeCatalog } from "./backend/fakeCatalog";
 import { createFakeHttpRemote } from "./backend/fakeHttpRemote";
 import { FakeLinkPreviewer, type LinkControl } from "./backend/fakeLinkPreviewer";
@@ -27,6 +27,7 @@ import { DEMO_CATALOG } from "./demo/catalog";
 import { DEMO_COLLECTION } from "./demo/collection";
 import { DEMO_LINK_PAGES } from "./demo/links";
 import { DEMO_SUGGESTIONS } from "./demo/recognition";
+import { seedDemoStore } from "./demo/seed";
 import { DEMO_SERIES_CATALOG } from "./demo/series";
 import { App } from "./ui/App";
 
@@ -39,6 +40,19 @@ function fakeCatalogFailure(): "offline" | "unavailable" | "limit_reached" | und
       : undefined;
   } catch {
     return undefined;
+  }
+}
+
+/**
+ * Lets an end-to-end test set the state of data sources (P14):
+ * `localStorage["stud-stephan-fake:sources"]` = JSON like `{"bricklink":"missingKeys"}`.
+ */
+function fakeSources(): Partial<Record<SourceId, SourceState>> {
+  try {
+    const value = JSON.parse(localStorage.getItem("stud-stephan-fake:sources") ?? "{}");
+    return typeof value === "object" && value !== null ? value : {};
+  } catch {
+    return {};
   }
 }
 
@@ -117,7 +131,7 @@ function createBackend(): {
       auth: new FakeHttpAuth({ baseUrl: __FAKE_SERVER__, store: localStorage }),
       remote,
       // The catalog functions are not part of the fake server: a few example entries in memory.
-      catalog: new FakeCatalog(DEMO_CATALOG, fakeCatalogFailure),
+      catalog: new FakeCatalog(DEMO_CATALOG, fakeCatalogFailure, fakeSources),
       recognizer: new FakeRecognizer(DEMO_SUGGESTIONS, fakeRecognition),
       previewer: new FakeLinkPreviewer(DEMO_LINK_PAGES, fakeLink),
       // The price run writes its price points through the fake server like the real one.
@@ -155,7 +169,10 @@ if (!root) {
 /** The demo has no server: what is entered lives in memory until the page is closed. */
 function createDemoRemote(): Remote {
   const store = new FakeStore();
-  return new FakeRemote(store, store.createUser());
+  const owner = store.createUser();
+  // The server of the demo holds what the demo shows (export and import work on it).
+  seedDemoStore(store, owner, DEMO_COLLECTION);
+  return new FakeRemote(store, owner);
 }
 
 const backend = createBackend();

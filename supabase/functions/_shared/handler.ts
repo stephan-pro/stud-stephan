@@ -29,6 +29,7 @@ import {
   workOnSeries,
 } from "./seriesService.ts";
 import { SERIES_MAX_SETS, type SeriesAnswer, type SeriesRequest } from "./seriesTypes.ts";
+import { checkSources, type SourceProbes } from "./sourcesService.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -91,6 +92,8 @@ export interface HandlerDeps {
   readonly signedIn: (request: Request) => Promise<boolean>;
   /** The services; nothing if the secrets are not set. */
   readonly services: () => CatalogDeps | undefined;
+  /** One probe per data source for the settings (P14); without it the state is not offered. */
+  readonly sources?: () => SourceProbes;
 }
 
 async function readBody(request: Request): Promise<unknown> {
@@ -119,9 +122,17 @@ async function serve(
   }
 }
 
-/** The function `catalog`: `{op: "search", kind, query}` and `{op: "item", kind, ref}`. */
+/**
+ * The function `catalog`: `{op: "search", kind, query}` and `{op: "item", kind, ref}`, and
+ * `{op: "sources"}` (P14), which answers the state of the four data sources and nothing else.
+ */
 export function handleCatalog(request: Request, deps: HandlerDeps): Promise<Response> {
   return serve(request, deps, async (body) => {
+    if (isRecord(body) && body.op === "sources") {
+      return deps.sources
+        ? answer(200, await checkSources(deps.sources()))
+        : failure("unavailable");
+    }
     const parsed = parseCatalogRequest(body);
     if (!parsed) return failure("bad_request");
     const services = deps.services();

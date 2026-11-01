@@ -74,19 +74,27 @@ export function createFakeHttpRemote(options: FakeHttpRemoteOptions): Remote {
     load: () => call<Collection>("/collection", { method: "GET" }),
 
     async save<K extends ObjectKind>(kind: K, object: ObjectOfKind[K]) {
+      await removeReleased(remote, await remote.saveKeeping(kind, object));
+    },
+
+    async saveKeeping<K extends ObjectKind>(kind: K, object: ObjectOfKind[K]) {
       const { releasedFiles } = await call<{ releasedFiles: StoredFile[] }>(
         `/objects/${kind}?schemaVersion=${SCHEMA_VERSION}`,
         sendJson("POST", object),
       );
-      await removeReleased(remote, releasedFiles);
+      return releasedFiles;
     },
 
     async remove(kind: ObjectKind, id: Id) {
+      await removeReleased(remote, await remote.removeKeeping(kind, id));
+    },
+
+    async removeKeeping(kind: ObjectKind, id: Id) {
       const { releasedFiles } = await call<{ releasedFiles: StoredFile[] }>(
         `/objects/${kind}/${encodeURIComponent(id)}`,
         { method: "DELETE" },
       );
-      await removeReleased(remote, releasedFiles);
+      return releasedFiles;
     },
 
     async savePrice(point: PricePoint) {

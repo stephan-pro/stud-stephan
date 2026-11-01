@@ -276,6 +276,11 @@ export class FakeStore {
     return total;
   }
 
+  /** How many files lie in storage, whoever they belong to (for tests). */
+  fileCount(): number {
+    return this.files.size;
+  }
+
   /** Whether a file exists at all, whoever it belongs to (for tests). */
   hasFile(bucket: Bucket, path: string): boolean {
     return this.files.has(`${bucket}|${path}`);

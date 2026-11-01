@@ -57,6 +57,52 @@ describe("P7 F2 Der Katalog der App ruft die Funktion catalog", () => {
     await expect(offline.item("legoSet", "1-1")).rejects.toMatchObject({ failure: "offline" });
   });
 
+  it("P14 S12 Der Stand der Datenquellen kommt von der Funktion catalog, ohne Schlüssel", async () => {
+    const calls: unknown[] = [];
+    const sources = {
+      rebrickable: "ok",
+      bricklink: "missingKeys",
+      brickognize: "ok",
+      merlin: "unreachable",
+    };
+    const catalog = catalogWith(async (name, options) => {
+      calls.push([name, options.body]);
+      return { data: { op: "sources", sources }, error: null };
+    });
+
+    expect(await catalog.sources()).toEqual(sources);
+    expect(calls).toEqual([["catalog", { op: "sources" }]]);
+  });
+
+  it("P14 S12 Ein Fehler oder eine unvollständige Antwort der Datenquellen wird zum Fehler", async () => {
+    const failing = catalogWith(async () => ({
+      data: null,
+      error: { context: Response.json({ failure: "not_signed_in" }, { status: 401 }) },
+    }));
+    await expect(failing.sources()).rejects.toMatchObject({ failure: "not_signed_in" });
+    for (const data of [null, { op: "search" }, { op: "sources", sources: { merlin: "ok" } }]) {
+      const odd = catalogWith(async () => ({ data, error: null }));
+      await expect(odd.sources()).rejects.toMatchObject({ failure: "unavailable" });
+    }
+  });
+
+  it("P14 S12 Der Beispielkatalog meldet alles in Ordnung, ein Test kann einzelne Quellen ändern", async () => {
+    expect(await new FakeCatalog(DEMO_CATALOG).sources()).toEqual({
+      rebrickable: "ok",
+      bricklink: "ok",
+      brickognize: "ok",
+      merlin: "ok",
+    });
+    const changed = new FakeCatalog(
+      DEMO_CATALOG,
+      () => undefined,
+      () => ({ bricklink: "missingKeys" }),
+    );
+    expect((await changed.sources()).bricklink).toBe("missingKeys");
+    const offline = new FakeCatalog(DEMO_CATALOG, () => "offline");
+    await expect(offline.sources()).rejects.toMatchObject({ failure: "offline" });
+  });
+
   it("P7 F2 Eine unlesbare oder falsche Antwort ist 'nicht verfügbar'", async () => {
     for (const data of [null, { op: "boom" }]) {
       const catalog = catalogWith(async () => ({ data, error: null }));

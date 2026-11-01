@@ -13,6 +13,8 @@ import type {
   CatalogRequest,
 } from "../../supabase/functions/_shared/catalogTypes";
 
+import { SOURCE_IDS, type SourcesAnswer } from "../../supabase/functions/_shared/sourcesTypes";
+
 export type {
   CatalogFailure,
   CatalogFigureInfo,
@@ -37,11 +39,15 @@ export class CatalogCallError extends Error {
   }
 }
 
+export type { SourceId, SourceState } from "../../supabase/functions/_shared/sourcesTypes";
+
 export interface Catalog {
   /** Entries matching a BrickLink/set number or a name; an empty list is "no match". */
   search(kind: CatalogKind, query: string): Promise<CatalogHit[]>;
   /** The full entry of a hit (`ref`), to fill a form from. */
   item(kind: CatalogKind, ref: string): Promise<CatalogItem>;
+  /** The state of the four data sources, for the settings (P14); never a key. */
+  sources(): Promise<SourcesAnswer["sources"]>;
 }
 
 const FAILURES: readonly CatalogFailure[] = [
@@ -83,6 +89,19 @@ export class SupabaseCatalog implements Catalog {
     const answer = await this.call({ op: "item", kind, ref });
     if (answer.op !== "item") throw new CatalogCallError("catalog: falsche Antwort", "unavailable");
     return answer.item;
+  }
+
+  async sources(): Promise<SourcesAnswer["sources"]> {
+    const { data, error } = await this.client.functions.invoke("catalog", {
+      body: { op: "sources" },
+    });
+    if (error) throw await failureOf(error);
+    const answer = data as Partial<SourcesAnswer> | null;
+    const sources = answer?.sources;
+    if (answer?.op !== "sources" || !sources || SOURCE_IDS.some((id) => !(id in sources))) {
+      throw new CatalogCallError("catalog: unlesbare Antwort", "unavailable");
+    }
+    return sources;
   }
 
   private async call(request: CatalogRequest): Promise<CatalogAnswer> {

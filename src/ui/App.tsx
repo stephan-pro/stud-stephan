@@ -9,14 +9,16 @@ import type { Remote } from "../backend/remote";
 import type { SeriesBuilder } from "../backend/seriesBuilder";
 import { recordPriceRun } from "../domain/prices";
 import type { Collection, RemovableObject } from "../domain/types";
+import { APP_VERSION } from "../version";
 import { CaptureLink } from "./captureLink";
 import { CapturePhoto } from "./capturePhoto";
 import { AccountCard } from "./components/AccountCard";
+import { BackupCard } from "./components/BackupCard";
 import { CaptureSheet } from "./components/CaptureSheet";
-import { ComingSoon } from "./components/ComingSoon";
 import { PhoneNavigation, Sidebar } from "./components/Navigation";
 import { PageHeader } from "./components/PageHeader";
 import { PriceRunCard } from "./components/PriceRunCard";
+import { SourcesCard } from "./components/SourcesCard";
 import { StorageCard } from "./components/StorageCard";
 import { Toast } from "./components/Toast";
 import { today } from "./ids";
@@ -264,11 +266,20 @@ function Shell({
                 <CaptureSheet onClose={() => (location.hash = routeHash("showcase"))} />
               )}
               {route === "settings" && <AccountCard email={session.email} onSignOut={onSignOut} />}
+              {route === "settings" && catalog !== undefined && <SourcesCard catalog={catalog} />}
               {route === "settings" && runner !== undefined && (
                 // The demo writes the prices straight into the shown collection.
                 <PriceRunCard runner={runner} onPricesChanged={demo ? () => {} : data.retry} />
               )}
               {route === "settings" && remote !== undefined && <StorageCard remote={remote} />}
+              {route === "settings" && remote !== undefined && (
+                <BackupCard
+                  remote={remote}
+                  collection={data.state.status === "ready" ? data.state.collection : undefined}
+                  onRestored={reloadFrom(remote, data)}
+                />
+              )}
+              {route === "settings" && <p class="version">{TEXTS.version(APP_VERSION)}</p>}
               {route === "dioramas" && (
                 <DioramasPage data={data} onShowWithoutDiorama={showWithoutDiorama} />
               )}
@@ -285,7 +296,6 @@ function Shell({
                   onShowWithoutDiorama={showWithoutDiorama}
                 />
               )}
-              {route === "settings" && <ComingSoon route={route} />}
             </>
           )}
         </main>
@@ -306,6 +316,19 @@ function Shell({
       </div>
     </PhotoSourceContext.Provider>
   );
+}
+
+/**
+ * What the settings call after a backup was imported: the collection is read from the server
+ * again and shown (the demo has its collection in the page, so it is replaced instead of loaded).
+ */
+function reloadFrom(remote: Remote, data: LoadedCollection): () => void {
+  return () => {
+    remote.load().then(
+      (fresh) => data.update(() => fresh),
+      () => data.retry(),
+    );
+  };
 }
 
 /**

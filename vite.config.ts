@@ -37,6 +37,7 @@ export default defineConfig(({ mode, isPreview, isSsrBuild }) => {
           "src/backend/mode.ts",
           "supabase/functions/_shared/**/*.ts",
           "src/files/**/*.ts",
+          "src/backup/**/*.ts",
           "src/ui/route.ts",
           "src/ui/labels.ts",
         ],

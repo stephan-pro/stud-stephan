@@ -6,7 +6,12 @@ export function saveAsFile(
   fileName: string,
   contentType = "application/octet-stream",
 ): void {
-  const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: contentType }));
+  saveBlob(new Blob([bytes as BlobPart], { type: contentType }), fileName);
+}
+
+/** Saves a blob (which the browser may keep outside the page's memory) under the given name. */
+export function saveBlob(blob: Blob, fileName: string): void {
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
   link.download = fileName;

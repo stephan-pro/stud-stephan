@@ -163,6 +163,32 @@ export function describeRemoteContract(name: string, setup: () => Promise<Contra
         await expect(a.getFile("photos", cover)).rejects.toMatchObject({ reason: "not_found" });
       });
 
+      it("P14 Speichern ohne Aufräumen nennt die losgelassenen Fotos, lässt sie aber im Speicher", async () => {
+        const kept = await photo(a, "kept.webp");
+        const dropped = await photo(a, "dropped.webp");
+        await a.save("legoSet", aSet({ id: "set", photos: [dropped, kept] }));
+
+        const released = await a.saveKeeping("legoSet", aSet({ id: "set", photos: [kept] }));
+
+        expect(released).toEqual([{ bucket: "photos", path: dropped }]);
+        expect(await a.getFile("photos", dropped)).toHaveLength(1_000);
+        expect((await a.load()).sets[0]?.photos).toEqual([kept]);
+        // Saving the old version again brings the photo back into the object.
+        await a.saveKeeping("legoSet", aSet({ id: "set", photos: [dropped, kept] }));
+        expect((await a.load()).sets[0]?.photos).toEqual([dropped, kept]);
+      });
+
+      it("P14 Löschen ohne Aufräumen nennt die Dateien, lässt sie aber im Speicher", async () => {
+        const cover = await photo(a, "coin.webp");
+        await a.save("specialPart", aSpecialPart({ id: "coin", photos: [cover] }));
+
+        const released = await a.removeKeeping("specialPart", "coin");
+
+        expect(released).toEqual([{ bucket: "photos", path: cover }]);
+        expect((await a.load()).specialParts).toEqual([]);
+        expect(await a.getFile("photos", cover)).toHaveLength(1_000);
+      });
+
       it("F8 Diorama löschen → zugeordnete Figuren bleiben erhalten und gelten wieder als „ohne Diorama“", async () => {
         const studioPath = await a.putFile("studio-files", "umbara.io", someBytes(800), STUDIO);
         await a.save("diorama", aDiorama({ id: "umbara", studioFiles: [aStudioFile(studioPath)] }));

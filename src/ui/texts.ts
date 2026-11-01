@@ -17,7 +17,6 @@ export const TEXTS = {
   skipLink: "Zum Inhalt springen",
   mainNavigation: "Hauptnavigation",
   back: "Zurück",
-  comingSoonTitle: "Kommt bald",
   routes: {
     showcase: {
       label: "Vitrine",
@@ -939,4 +938,153 @@ export const TEXTS = {
     signOut: "Abmelden",
     demo: "Beispieldaten, ohne Anmeldung",
   },
+  /** The card "Datenquellen" in the settings (S12, P14): state of the four sources, never a key. */
+  sources: {
+    title: "Datenquellen",
+    loading: "Wird geprüft …",
+    failed: "Der Stand der Datenquellen konnte gerade nicht gelesen werden.",
+    retry: "Noch einmal prüfen",
+    names: {
+      rebrickable: "Rebrickable",
+      bricklink: "BrickLink",
+      brickognize: "Brickognize",
+      merlin: "Merlins Steine",
+    },
+    /** The line under the name: state, then what the source is for (or what is missing). */
+    lines: {
+      rebrickable: {
+        ok: "verbunden · Namenssuche und Themen",
+        missingKeys: "nicht verbunden · Namenssuche und Reihen fehlen",
+        refused: "Schlüssel abgelehnt · Namenssuche und Reihen fehlen",
+        unreachable: "gerade nicht erreichbar · Namenssuche und Themen",
+      },
+      bricklink: {
+        ok: "verbunden · Katalog und Marktwerte",
+        missingKeys: "nicht verbunden · Marktwerte fehlen",
+        refused: "Schlüssel abgelehnt · Marktwerte fehlen",
+        unreachable: "gerade nicht erreichbar · Katalog und Marktwerte",
+      },
+      brickognize: {
+        ok: "erreichbar · Fotoerkennung",
+        missingKeys: "nicht verbunden · Fotoerkennung fehlt",
+        refused: "abgelehnt · Fotoerkennung fehlt",
+        unreachable: "nicht erreichbar · Fotoerkennung geht gerade nicht",
+      },
+      merlin: {
+        ok: "erreichbar · Link-Vorschau",
+        missingKeys: "nicht verbunden · Link-Vorschau fehlt",
+        refused: "abgelehnt · Link-Vorschau fehlt",
+        unreachable: "nicht erreichbar · Link-Vorschau geht gerade nicht",
+      },
+    },
+    /** The small label for a source that needs the person's attention. */
+    chips: { missingKeys: "Schlüssel fehlt", refused: "Schlüssel prüfen" },
+    note: "Die App zeigt nie einen Schlüssel an. Schlüssel setzt du wie in der Einrichtung beschrieben.",
+  },
+  /** The card "Datensicherung" in the settings (S12, P14, F15). */
+  backup: {
+    title: "Datensicherung",
+    intro: "Alle Daten inklusive Fotos und Studio-Dateien als eine Datei.",
+    size: (size: string) => `Die Datei wird etwa ${size} groß.`,
+    bigHint: "Bei einer großen Datei sicherst du am Handy besser im WLAN.",
+    export: "Export",
+    import: "Import",
+    fileLabel: "Sicherungsdatei wählen",
+    last: {
+      never: "Auf diesem Gerät gibt es noch keine Sicherung. Am besten legst du gleich eine an.",
+      recent: (date: string) => `Letzte Sicherung auf diesem Gerät: ${date}`,
+      due: (date: string, days: number) =>
+        `Die letzte Sicherung auf diesem Gerät ist ${days} Tage her (${date}). Zeit für eine neue?`,
+    },
+    progress: {
+      reading: "Die Daten werden gelesen …",
+      files: (done: number, total: number) => `Dateien werden gesichert: ${done} von ${total} …`,
+      checking: "Die fertige Datei wird geprüft …",
+      checkingFile: "Die Sicherungsdatei wird geprüft …",
+      before: (done: number, total: number) =>
+        `Dein jetziger Stand wird gesichert: ${done} von ${total} …`,
+      uploading: (done: number, total: number) =>
+        `Dateien werden hochgeladen: ${done} von ${total} …`,
+      objects: (done: number, total: number) => `Daten werden eingespielt: ${done} von ${total} …`,
+      prices: (done: number, total: number) => `Preisstände: ${done} von ${total} …`,
+      cleanup: "Es wird aufgeräumt …",
+    },
+    exported: (fileName: string, what: string, size: string) =>
+      `Gesichert in ${fileName}: ${what} (${size}). Die Datei wurde geprüft und liegt in deinen Downloads.`,
+    skipped: (count: number) =>
+      count === 1
+        ? "1 Datei fehlte im Speicher oder war kein gültiges Bild und ist nicht in der Sicherung."
+        : `${count} Dateien fehlten im Speicher oder waren keine gültigen Bilder und sind nicht in der Sicherung.`,
+    imported: (date: string, fileName: string) =>
+      `Fertig. Deine Sammlung ist jetzt der Stand der Sicherung vom ${date}. Der Stand davor liegt in ${fileName} in deinen Downloads.`,
+    /** The sheet before replacing. */
+    sheet: {
+      title: "Sicherung einspielen?",
+      close: "Schließen",
+      from: (time: string) => `Sicherung vom ${time}`,
+      replaces:
+        "Das ersetzt deine ganze jetzige Sammlung. Die Zahlen zeigen: jetzt → in der Sicherung.",
+      safety:
+        "Vorher lädt die App deinen jetzigen Stand automatisch als Sicherungsdatei herunter. Danach wird ersetzt. Klappt das nicht, bekommst du deinen jetzigen Stand zurück.",
+      prices: "Preisstände werden ergänzt, keine gelöscht.",
+      confirm: "Ersetzen",
+      cancel: "Abbrechen",
+    },
+    /** Singular and plural of what a backup holds: "1 Figur", "286 Figuren". */
+    counts: {
+      minifigs: ["Figur", "Figuren"],
+      sets: ["Set", "Sets"],
+      specialParts: ["Sonderteil", "Sonderteile"],
+      dioramas: ["Diorama", "Dioramen"],
+      wishlist: ["Wunsch", "Wünsche"],
+      prices: ["Preisstand", "Preisstände"],
+      photos: ["Foto", "Fotos"],
+      studioFiles: ["Studio-Datei", "Studio-Dateien"],
+    },
+    kinds: {
+      minifig: "Figur",
+      legoSet: "Set",
+      specialPart: "Sonderteil",
+      diorama: "Diorama",
+      wishItem: "Wunsch",
+      price: "Preisstand",
+    },
+    problems: {
+      notZip:
+        "Das ist keine Sicherung von Stud Stephan: Die Datei ist keine ZIP-Datei oder wurde nicht ganz heruntergeladen.",
+      damaged:
+        "Die Datei ist beschädigt oder unvollständig. Lade die Sicherung noch einmal herunter oder nimm eine andere.",
+      unsupportedZip:
+        "Das ist keine Sicherung von Stud Stephan: Die ZIP-Datei ist anders aufgebaut.",
+      notBackup: "Das ist keine Sicherung von Stud Stephan.",
+      tooNew:
+        "Die Sicherung stammt aus einer neueren Version der App. Lade die Seite neu und versuch es noch einmal.",
+      tooOld:
+        "Die Sicherung stammt aus einer älteren Version der App, für die es keine Umstellung gibt.",
+      invalidData: (what: string) => `In der Sicherung stimmt eine Angabe nicht (${what}).`,
+      missingFile: (entry: string) => `In der Sicherung fehlt eine Datei (${entry}).`,
+      badFile: (entry: string | undefined) =>
+        entry
+          ? `Eine Datei in der Sicherung ist nicht erlaubt oder kein gültiges Bild (${entry}).`
+          : "Eine Datei in der Sicherung ist nicht erlaubt oder kein gültiges Bild.",
+      tooBig: "Die Sicherung ist größer, als der Speicher fasst (1 GB), oder hat zu viele Dateien.",
+      fileTrouble:
+        "Eine Datei ließ sich nicht aus dem Speicher lesen. Prüf die Verbindung und versuch es noch einmal.",
+      selfCheck: (reason: string) =>
+        `Die fertige Datei hat die eigene Prüfung nicht bestanden und wird deshalb nicht angeboten (${reason}).`,
+      unknown: "Das hat nicht geklappt. Versuch es bitte noch einmal.",
+      nothingChanged: "Es wurde nichts verändert.",
+    },
+    restoreFailed: {
+      restored: (fileName: string | undefined) =>
+        `Das Einspielen hat nicht geklappt. Deine Sammlung ist wie vorher.${
+          fileName ? ` Die Sicherung deines Stands liegt in ${fileName}.` : ""
+        }`,
+      notRestored: (fileName: string | undefined) =>
+        `Das Einspielen hat nicht geklappt, und dein alter Stand ist nicht ganz zurückgekommen. Ändere bitte nichts mehr und spiel die Sicherung deines Stands wieder ein${
+          fileName ? ` (${fileName})` : ""
+        }.`,
+    },
+  },
+  version: (version: string) => `Stud Stephan · Version ${version}`,
 } as const;

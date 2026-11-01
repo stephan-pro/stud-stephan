@@ -22,6 +22,12 @@ import { createRebrickable } from "./rebrickableClient.ts";
 import type { Resolve } from "./safeFetch.ts";
 import type { SeriesDeps } from "./seriesService.ts";
 import { supabaseSeriesStore } from "./seriesStore.ts";
+import {
+  bricklinkProbe,
+  brickognizeProbe,
+  merlinProbe,
+  rebrickableProbe,
+} from "./sourcesService.ts";
 
 /** BrickLink allows 5,000 calls a day; the rest is left for the price run (P11). */
 export const BRICKLINK_DAILY_CAP = 4500;
@@ -84,6 +90,13 @@ export function catalogHandlerDeps(
       if (!bricklink || !key) return undefined;
       return { bricklink, rebrickable: createRebrickable({ fetch: send, key }), store, now };
     },
+    // The state of the four sources for the settings: BrickLink's call is counted like any other.
+    sources: () => ({
+      rebrickable: rebrickableProbe(send, env("REBRICKABLE_API_KEY")),
+      bricklink: bricklinkProbe(bricklinkOf(env, send, catalogCount(storeOf(env, send)), now)),
+      brickognize: brickognizeProbe(send),
+      merlin: merlinProbe(send),
+    }),
   };
 }
 

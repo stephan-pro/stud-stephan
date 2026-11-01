@@ -5,7 +5,7 @@ import type { Collection, Id, PricePoint } from "../domain/types";
 import { SCHEMA_VERSION } from "../domain/types";
 import { type FakeStore, Refusal } from "./fakeStore";
 import { type Remote, RemoteError, removeReleased } from "./remote";
-import type { Bucket, ObjectKind, ObjectOfKind } from "./rules";
+import type { Bucket, ObjectKind, ObjectOfKind, StoredFile } from "./rules";
 
 export class FakeRemote implements Remote {
   /** When false, every call fails with a temporary `RemoteError`, as without a connection. */
@@ -21,13 +21,19 @@ export class FakeRemote implements Remote {
   }
 
   async save<K extends ObjectKind>(kind: K, object: ObjectOfKind[K]): Promise<void> {
-    const released = this.call(() => this.store.save(this.owner, kind, object, SCHEMA_VERSION));
-    await removeReleased(this, released);
+    await removeReleased(this, await this.saveKeeping(kind, object));
+  }
+
+  async saveKeeping<K extends ObjectKind>(kind: K, object: ObjectOfKind[K]): Promise<StoredFile[]> {
+    return this.call(() => this.store.save(this.owner, kind, object, SCHEMA_VERSION));
   }
 
   async remove(kind: ObjectKind, id: Id): Promise<void> {
-    const released = this.call(() => this.store.remove(this.owner, kind, id));
-    await removeReleased(this, released);
+    await removeReleased(this, await this.removeKeeping(kind, id));
+  }
+
+  async removeKeeping(kind: ObjectKind, id: Id): Promise<StoredFile[]> {
+    return this.call(() => this.store.remove(this.owner, kind, id));
   }
 
   async savePrice(point: PricePoint): Promise<void> {

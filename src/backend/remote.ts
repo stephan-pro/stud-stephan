@@ -45,6 +45,14 @@ export interface Remote {
    * figures keep the catalog's "Stammt aus Set", only the link to the own set goes.
    */
   remove(kind: ObjectKind, id: Id): Promise<void>;
+  /**
+   * Like `save`, but the files the object no longer lists stay in storage; they are answered, and
+   * the caller removes them later (`removeFile`). The import (P14) needs it: until the whole new
+   * state is in place, the old files must stay, so a failure can bring the old state back.
+   */
+  saveKeeping<K extends ObjectKind>(kind: K, object: ObjectOfKind[K]): Promise<StoredFile[]>;
+  /** Like `remove`, but the object's files stay in storage and are answered (see `saveKeeping`). */
+  removeKeeping(kind: ObjectKind, id: Id): Promise<StoredFile[]>;
   /** A second point for the same item and day replaces the first. */
   savePrice(point: PricePoint): Promise<void>;
   /**

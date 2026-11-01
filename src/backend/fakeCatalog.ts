@@ -8,6 +8,8 @@ import {
   type CatalogHit,
   type CatalogItem,
   type CatalogKind,
+  type SourceId,
+  type SourceState,
 } from "./catalog";
 
 function hitOf(item: CatalogItem): CatalogHit {
@@ -38,7 +40,21 @@ export class FakeCatalog implements Catalog {
     private readonly items: readonly CatalogItem[],
     private readonly control: () => "offline" | "unavailable" | "limit_reached" | undefined = () =>
       undefined,
+    /** Sources that are not "ok" (the end-to-end tests set them through the device's storage). */
+    private readonly states: () => Partial<Record<SourceId, SourceState>> = () => ({}),
   ) {}
+
+  async sources(): Promise<Record<SourceId, SourceState>> {
+    this.calls.push("sources");
+    this.check();
+    return {
+      rebrickable: "ok",
+      bricklink: "ok",
+      brickognize: "ok",
+      merlin: "ok",
+      ...this.states(),
+    };
+  }
 
   async search(kind: CatalogKind, query: string): Promise<CatalogHit[]> {
     this.calls.push(`search ${kind} ${query}`);

@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import { TEXTS } from "../../src/ui/texts";
 import {
   expectNoAccessibilityViolations,
   heading,
@@ -18,13 +17,13 @@ test.beforeEach(async ({ page }) => {
 
 // The showcase has its content since P5 (`showcase.spec.ts`), capturing since P6 (`capture.spec.ts`),
 // the dioramas since P10 (`dioramas.spec.ts`), the wishlist since P12 (`wishlist.spec.ts`), the
-// dashboard since P13 (`dashboard.spec.ts`); the others still say what will come.
+// dashboard since P13 (`dashboard.spec.ts`), the settings since P14 (`backup.spec.ts`): every
+// page has its content now. The settings stay in the list for the h1, the tab title and axe.
 const PAGES = [
   {
     hash: "#/einstellungen",
     heading: "Einstellungen",
     tab: "Einstellungen",
-    text: TEXTS.routes.settings,
   },
 ] as const;
 
@@ -36,15 +35,13 @@ for (const [size, viewport] of [
     test.use({ viewport });
 
     for (const page of PAGES) {
-      test(`P1 ${size}: ${page.hash} zeigt eine h1, sagt was kommt und hat keine axe-Verstöße (hell)`, async ({
+      test(`P1 ${size}: ${page.hash} zeigt eine h1, einen Tab-Titel und hat keine axe-Verstöße (hell)`, async ({
         page: browser,
       }) => {
         await browser.goto(page.hash);
         await expect(heading(browser)).toHaveText(page.heading);
         await expect(heading(browser)).toHaveCount(1);
         await expect(browser).toHaveTitle(`${page.tab} – Stud Stephan`);
-        await expect(browser.getByRole("heading", { level: 2, name: "Kommt bald" })).toBeVisible();
-        await expect(browser.getByText(page.text.comingSoon)).toBeVisible();
         await expectNoAccessibilityViolations(browser);
       });
     }
