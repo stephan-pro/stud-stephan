@@ -7,10 +7,17 @@ import { fakeFetch, ok, type Route } from "./catalog.fixtures.ts";
 import { linkHandlerDeps } from "./environment.ts";
 import { handleLinkPreview } from "./handler.ts";
 import type { Fetch } from "./json.ts";
-import { catalogLink, previewLink } from "./linkService.ts";
+import { catalogLink, fetchLinkImage, previewLink } from "./linkService.ts";
 import { LinkError } from "./linkTypes.ts";
 import { extractPreview } from "./pageParser.ts";
-import { checkAddress, fetchPage, isPrivateAddress, type PageDeps } from "./safeFetch.ts";
+import {
+  checkAddress,
+  fetchImage,
+  fetchPage,
+  isPrivateAddress,
+  PAGE_LIMITS,
+  type PageDeps,
+} from "./safeFetch.ts";
 
 const ENV: Record<string, string> = { SUPABASE_URL: "https://projekt.supabase.co" };
 const AUTH: Route = ["/auth/v1/user", ok({ id: "u" })];
@@ -657,6 +664,7 @@ describe("Die Funktion: Anmeldung, Anfrage, Antworten", () => {
     const broken = {
       signedIn: async () => true,
       preview: async () => Promise.reject(new Error("geheim: Stapelspur")),
+      image: async () => Promise.reject(new Error("geheim")),
     };
     const response = await handleLinkPreview(request({ url: ADDRESS }), broken);
     expect(response.status).toBe(502);
@@ -721,5 +729,290 @@ describe("Die Funktion: Anmeldung, Anfrage, Antworten", () => {
       "Accept-Language",
       "User-Agent",
     ]);
+  });
+});
+
+// The second call of `link-preview` (optional part of P10): the one picture of a page, so a page
+// that forbids embedding (Merlins Steine) can still give its picture. Same rules as for pages.
+describe("Das eine Bild einer Seite", () => {
+  const PICTURE = "https://cdn.example.com/bild";
+  const JPEG = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4, 5, 6, 7, 8]);
+  const PNG = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
+  const WEBP = Uint8Array.from([
+    0x52, 0x49, 0x46, 0x46, 9, 9, 9, 9, 0x57, 0x45, 0x42, 0x50, 0x56, 0x50,
+  ]);
+
+  const picture =
+    (bytes: Uint8Array, type: string, headers: Record<string, string> = {}) =>
+    () =>
+      new Response(bytes as BodyInit, { headers: { "Content-Type": type, ...headers } });
+
+  const fetched = (answers: Record<string, () => Response>, extra: Partial<PageDeps> = {}) =>
+    fetchLinkImage(deps(answers, extra), PICTURE);
+
+  it("F3 liest ein JPEG, ein PNG und ein WebP und nennt den Typ, den die ersten Bytes belegen", async () => {
+    for (const [bytes, type] of [
+      [JPEG, "image/jpeg"],
+      [PNG, "image/png"],
+      [WEBP, "image/webp"],
+    ] as const) {
+      const image = await fetched({ [PICTURE]: picture(bytes, type) });
+      expect(image.contentType).toBe(type);
+      expect(image.bytes).toEqual(bytes);
+    }
+    // Charset or capital letters in the header do not matter.
+    const loud = await fetched({ [PICTURE]: picture(JPEG, "Image/JPEG; charset=binary") });
+    expect(loud.contentType).toBe("image/jpeg");
+  });
+
+  it.each([
+    ["text/html", JPEG],
+    ["image/svg+xml", new TextEncoder().encode("<svg onload='x()'/>")],
+    ["image/gif", new TextEncoder().encode("GIF89a....")],
+    ["application/octet-stream", JPEG],
+    ["", JPEG],
+  ])("F3 lehnt den Typ '%s' ab", async (type, bytes) => {
+    expect(await failure(fetched({ [PICTURE]: picture(bytes, type) }))).toBe("unreachable");
+  });
+
+  it("F3 lehnt ein Bild ab, dessen Bytes nicht zum Typ passen (HTML als PNG, JPEG als PNG)", async () => {
+    const lie = new TextEncoder().encode("<html><script>alert(1)</script></html>");
+    expect(await failure(fetched({ [PICTURE]: picture(lie, "image/png") }))).toBe("unreachable");
+    expect(await failure(fetched({ [PICTURE]: picture(JPEG, "image/png") }))).toBe("unreachable");
+    expect(await failure(fetched({ [PICTURE]: picture(new Uint8Array(), "image/png") }))).toBe(
+      "unreachable",
+    );
+  });
+
+  it("F3 bricht bei mehr als 3 MB ab, nach der Angabe der Größe und beim Lesen", async () => {
+    expect(PAGE_LIMITS.imageBytes).toBe(3_000_000);
+    const declared = picture(JPEG, "image/jpeg", { "Content-Length": "3000001" });
+    expect(await failure(fetched({ [PICTURE]: declared }))).toBe("unreachable");
+    // Without a size in the header the body is cut off at the limit.
+    const big = new Uint8Array(3_000_001);
+    big.set(JPEG);
+    expect(await failure(fetched({ [PICTURE]: picture(big, "image/jpeg") }))).toBe("unreachable");
+    const exact = new Uint8Array(3_000_000);
+    exact.set(JPEG);
+    expect((await fetched({ [PICTURE]: picture(exact, "image/jpeg") })).bytes.length).toBe(
+      3_000_000,
+    );
+  });
+
+  it("F3 die Grenze für Seiten (2 MB) bleibt für Seiten, die für Bilder (3 MB) gilt nur für Bilder", async () => {
+    const small = { limits: { maxBytes: 5, imageBytes: 20 } };
+    expect(
+      await failure(
+        fetchPage(deps({ [PICTURE]: html("<title>zu groß</title>") }, small), new URL(PICTURE)),
+      ),
+    ).toBe("unreachable");
+    expect((await fetched({ [PICTURE]: picture(JPEG, "image/jpeg") }, small)).bytes.length).toBe(
+      JPEG.length,
+    );
+    expect(
+      await failure(
+        fetched({ [PICTURE]: picture(JPEG, "image/jpeg") }, { limits: { imageBytes: 5 } }),
+      ),
+    ).toBe("unreachable");
+  });
+
+  it("F3 folgt höchstens 3 Weiterleitungen und prüft jedes Ziel: auch ein Bild darf nicht ins interne Netz führen", async () => {
+    const ok = {
+      "https://a.example.com/": redirect("https://b.example.com/"),
+      "https://b.example.com/": redirect("/c"),
+      "https://b.example.com/c": redirect("https://cdn.example.com/bild"),
+      [PICTURE]: picture(JPEG, "image/jpeg"),
+    };
+    expect((await fetchImage(deps(ok), new URL("https://a.example.com/"))).url.href).toBe(PICTURE);
+    const four = {
+      "https://a.example.com/": redirect("https://b.example.com/"),
+      "https://b.example.com/": redirect("https://c.example.com/"),
+      "https://c.example.com/": redirect("https://d.example.com/"),
+      "https://d.example.com/": redirect("https://e.example.com/"),
+      "https://e.example.com/": picture(JPEG, "image/jpeg"),
+    };
+    expect(await failure(fetchImage(deps(four), new URL("https://a.example.com/")))).toBe(
+      "unreachable",
+    );
+    for (const target of [
+      "http://127.0.0.1/geheim.png",
+      "http://169.254.169.254/latest/meta-data",
+      "http://localhost/x.png",
+      "https://intern.example.org/x.png",
+    ]) {
+      const sent: Sent[] = [];
+      const toInternal = pages(
+        { [PICTURE]: redirect(target), [target]: picture(PNG, "image/png") },
+        sent,
+      );
+      const resolve = async (host: string) =>
+        host === "intern.example.org" ? ["10.0.0.5"] : ["93.184.216.34"];
+      expect(await failure(fetchImage({ fetch: toInternal, resolve }, new URL(PICTURE)))).toBe(
+        "blocked",
+      );
+      expect(sent.map((call) => call.url)).toEqual([PICTURE]);
+    }
+  });
+
+  it("F3 eine nicht erlaubte Adresse wird gar nicht erst abgerufen (keine IP, kein Port, keine Anmeldung, kein ftp)", async () => {
+    for (const address of [
+      "http://127.0.0.1/x.png",
+      "http://10.0.0.1/x.png",
+      "https://shop.example.com:8443/x.png",
+      "https://nutzer:geheim@shop.example.com/x.png",
+      "ftp://shop.example.com/x.png",
+      "file:///etc/passwd",
+      "data:image/png;base64,AAAA",
+      "kein-link",
+    ]) {
+      const sent: Sent[] = [];
+      const none = { fetch: pages({}, sent), resolve: PUBLIC };
+      expect(await failure(fetchLinkImage(none, address))).toBe("blocked");
+      expect(sent).toEqual([]);
+    }
+  });
+
+  it("F3 ein Name, der auch auf eine private Adresse führt, wird abgelehnt", async () => {
+    const resolve = async () => ["93.184.216.34", "192.168.0.10"];
+    expect(
+      await failure(
+        fetchImage(
+          { fetch: pages({ [PICTURE]: picture(JPEG, "image/jpeg") }), resolve },
+          new URL(PICTURE),
+        ),
+      ),
+    ).toBe("blocked");
+  });
+
+  it("F3 eine Seite, die nicht antwortet oder 404 gibt, ist nicht erreichbar", async () => {
+    expect(await failure(fetched({}))).toBe("unreachable");
+    const hang: Fetch = (async (_input: RequestInfo | URL, init?: RequestInit) =>
+      new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(new Error("abgebrochen")));
+      })) as Fetch;
+    expect(
+      await failure(
+        fetchImage({ fetch: hang, resolve: PUBLIC, limits: { timeoutMs: 30 } }, new URL(PICTURE)),
+      ),
+    ).toBe("unreachable");
+  });
+
+  it("F3 gibt nur feste Kopfzeilen weiter, ohne Anmeldedaten und mit Bild-Accept", async () => {
+    const sent: Sent[] = [];
+    await fetchImage(
+      { fetch: pages({ [PICTURE]: picture(JPEG, "image/jpeg") }, sent), resolve: PUBLIC },
+      new URL(PICTURE),
+    );
+    const call = sent[0] as Sent;
+    expect(Object.keys(call.headers).sort()).toEqual(["Accept", "Accept-Language", "User-Agent"]);
+    expect(call.headers.Accept).toBe("image/webp,image/jpeg,image/png");
+    expect(call.init?.credentials).toBe("omit");
+    expect(call.init?.redirect).toBe("manual");
+    expect(call.init?.method).toBe("GET");
+  });
+
+  describe("die Funktion", () => {
+    function request(body: unknown, signedIn = true): Request {
+      return new Request("https://projekt.supabase.co/functions/v1/link-preview", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(signedIn ? { Authorization: "Bearer jwt", apikey: "pk" } : {}),
+        },
+        body: JSON.stringify(body),
+      });
+    }
+
+    function handlerDeps(answers: Record<string, () => Response>, log: string[] = []) {
+      const pageFetch = pages(answers);
+      const send = fakeFetch([AUTH], log);
+      return linkHandlerDeps(
+        (name) => ENV[name],
+        (async (input: RequestInfo | URL, init?: RequestInit) => {
+          if (String(input).includes("/auth/v1/user")) return send(input, init);
+          log.push(String(input));
+          return pageFetch(input, init);
+        }) as Fetch,
+        PUBLIC,
+      );
+    }
+
+    it("F3 {image} gibt Typ und Bytes als base64 zurück", async () => {
+      const response = await handleLinkPreview(
+        request({ image: PICTURE }),
+        handlerDeps({ [PICTURE]: picture(PNG, "image/png") }),
+      );
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as { kind: string; contentType: string; data: string };
+      expect(body.kind).toBe("image");
+      expect(body.contentType).toBe("image/png");
+      expect(Uint8Array.from(atob(body.data), (char) => char.charCodeAt(0))).toEqual(PNG);
+    });
+
+    it("F3 ein großes Bild (fast 3 MB) wird ganz und unverändert zurückgegeben", async () => {
+      const big = new Uint8Array(2_900_000).map((_, index) => (index * 7) % 256);
+      big.set(JPEG);
+      const response = await handleLinkPreview(
+        request({ image: PICTURE }),
+        handlerDeps({ [PICTURE]: picture(big, "image/jpeg") }),
+      );
+      const body = (await response.json()) as { data: string };
+      // Compared as buffers: a deep comparison of millions of numbers is far too slow.
+      const back = Buffer.from(body.data, "base64");
+      expect(back.length).toBe(big.length);
+      expect(back.equals(Buffer.from(big))).toBe(true);
+    });
+
+    it("ohne Anmeldung: 401, und es wird nichts abgerufen", async () => {
+      const log: string[] = [];
+      const response = await handleLinkPreview(
+        request({ image: PICTURE }, false),
+        handlerDeps({ [PICTURE]: picture(JPEG, "image/jpeg") }, log),
+      );
+      expect(response.status).toBe(401);
+      expect(await response.json()).toEqual({ failure: "not_signed_in" });
+      expect(log).toEqual([]);
+    });
+
+    it("eine nicht erlaubte Adresse gibt 422, ein unbrauchbares Bild 502", async () => {
+      const blocked = await handleLinkPreview(
+        request({ image: "http://127.0.0.1/x.png" }),
+        handlerDeps({}),
+      );
+      expect(blocked.status).toBe(422);
+      expect(await blocked.json()).toEqual({ failure: "blocked" });
+      const html = await handleLinkPreview(
+        request({ image: PICTURE }),
+        handlerDeps({
+          [PICTURE]: () => new Response("<html>", { headers: { "Content-Type": "text/html" } }),
+        }),
+      );
+      expect(html.status).toBe(502);
+      expect(await html.json()).toEqual({ failure: "unreachable" });
+    });
+
+    it("schlechte Anfragen: beides zugleich, kein Text, zu lang", async () => {
+      for (const body of [
+        { image: PICTURE, url: PICTURE },
+        { image: 5 },
+        { image: "" },
+        { image: `https://a.example.com/${"a".repeat(2001)}` },
+      ]) {
+        const response = await handleLinkPreview(request(body), handlerDeps({}));
+        expect(response.status).toBe(400);
+        expect(await response.json()).toEqual({ failure: "bad_request" });
+      }
+    });
+
+    it("ein unerwarteter Fehler ist 'unavailable' ohne Einzelheiten", async () => {
+      const broken = {
+        signedIn: async () => true,
+        preview: async () => Promise.reject(new Error("geheim")),
+        image: async () => Promise.reject(new Error("geheim: Stapelspur")),
+      };
+      const response = await handleLinkPreview(request({ image: PICTURE }), broken);
+      expect(response.status).toBe(502);
+      expect(await response.json()).toEqual({ failure: "unavailable" });
+    });
   });
 });

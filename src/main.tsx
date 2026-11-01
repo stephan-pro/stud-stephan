@@ -57,7 +57,10 @@ function fakeRecognition(): RecognitionControl {
 function fakeLink(): LinkControl {
   try {
     const value = localStorage.getItem("stud-stephan-fake:link");
-    return value === "offline" || value === "unavailable" || value === "unreachable"
+    return value === "offline" ||
+      value === "unavailable" ||
+      value === "unreachable" ||
+      value === "imageUnreachable"
       ? value
       : undefined;
   } catch {

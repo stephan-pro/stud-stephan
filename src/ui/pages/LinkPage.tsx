@@ -225,7 +225,12 @@ export function LinkPage({
       )}
 
       {state.status === "done" && state.answer.kind === "page" && (
-        <PageResult type={type} address={state.address} answer={state.answer} />
+        <PageResult
+          type={type}
+          address={state.address}
+          answer={state.answer}
+          previewer={previewer}
+        />
       )}
     </>
   );
@@ -236,10 +241,12 @@ function PageResult({
   type,
   address,
   answer,
+  previewer,
 }: {
   readonly type: DetailType;
   readonly address: string;
   readonly answer: Extract<LinkAnswer, { kind: "page" }>;
+  readonly previewer: LinkPreviewer | undefined;
 }) {
   const next = (
     <a
@@ -268,9 +275,50 @@ function PageResult({
       address={address}
       answer={answer}
       fields={fields}
+      previewer={previewer}
       next={next}
     />
   );
+}
+
+type FetchedImage =
+  | { readonly status: "none" }
+  | { readonly status: "loading" }
+  | { readonly status: "ready"; readonly url: string }
+  | { readonly status: "failed" };
+
+/**
+ * The page's picture, fetched by the function (a page that forbids embedding still gives it). The
+ * file is kept for the form that follows; the address shown here is only for the card.
+ */
+function useFetchedImage(
+  previewer: LinkPreviewer | undefined,
+  imageUrl: string | undefined,
+): FetchedImage {
+  const [picture, setPicture] = useState<FetchedImage>({ status: "none" });
+  useEffect(() => {
+    if (!imageUrl || !previewer) {
+      setPicture({ status: "none" });
+      return;
+    }
+    let active = true;
+    let shown: string | undefined;
+    setPicture({ status: "loading" });
+    previewer.image(imageUrl).then(
+      (file) => {
+        if (!active) return;
+        CaptureLink.holdImage(imageUrl, file);
+        shown = URL.createObjectURL(file);
+        setPicture({ status: "ready", url: shown });
+      },
+      () => active && setPicture({ status: "failed" }),
+    );
+    return () => {
+      active = false;
+      if (shown) URL.revokeObjectURL(shown);
+    };
+  }, [previewer, imageUrl]);
+  return picture;
 }
 
 /** The card itself; its own component so the "picture failed" note starts over for each address. */
@@ -279,15 +327,18 @@ function PageCard({
   address,
   answer,
   fields,
+  previewer,
   next,
 }: {
   readonly type: DetailType;
   readonly address: string;
   readonly answer: Extract<LinkAnswer, { kind: "page" }>;
   readonly fields: PageFields;
+  readonly previewer: LinkPreviewer | undefined;
   readonly next: ComponentChildren;
 }) {
   const [imageFailed, setImageFailed] = useState(false);
+  const picture = useFetchedImage(previewer, fields.imageUrl);
   return (
     <>
       <section class="card" aria-labelledby="link-recognized">
@@ -298,7 +349,13 @@ function PageCard({
           <Source label={T.sources[answer.source]} />
         </div>
         <Cover
-          image={fields.imageUrl ? { kind: "catalog", url: fields.imageUrl } : undefined}
+          image={
+            picture.status === "ready"
+              ? { kind: "catalog", url: picture.url }
+              : fields.imageUrl
+                ? { kind: "catalog", url: fields.imageUrl }
+                : undefined
+          }
           alt={fields.imageUrl ? T.imageAlt : ""}
           tintKey={address}
           scribbleId="link-preview"
@@ -315,7 +372,11 @@ function PageCard({
                 {row.value === undefined ? (
                   <span class="pill pill--pop">{T.pleaseAdd}</span>
                 ) : row.key === "image" ? (
-                  imageFailed ? (
+                  picture.status === "loading" ? (
+                    T.imageLoading
+                  ) : picture.status === "ready" ? (
+                    T.imageTaken
+                  ) : imageFailed ? (
                     T.imageBlocked
                   ) : (
                     T.imageTaken

@@ -115,18 +115,109 @@ test.describe("Link einfügen (S7c)", () => {
     await expect(page.getByRole("link", { name: /merlinssteine\.de/ })).toBeVisible();
   });
 
-  test("F3 Sperrt die andere Seite die Einbettung des Bildes (wie Merlins Steine), sagt die Karte es, statt „übernommen“ zu zeigen", async ({
+  test("F3 Sperrt die Seite die Einbettung ihres Bildes (wie Merlins Steine), holt die App das Bild trotzdem über die Funktion und zeigt es", async ({
     page,
   }) => {
     await page.route("**/bluebrixx-110374.jpg", (route) => route.abort());
     await page.goto("#/erfassen/link/set");
     await paste(page, MERLIN_LINK);
-    await expect(page.locator(".rows__row").nth(4)).toContainText(L.imageBlocked);
-    await expect(page.locator(".rows__row").nth(4)).not.toContainText(L.imageTaken);
+    const row = page.locator(".rows__row").nth(4);
+    await expect(row).toContainText(L.imageTaken);
+    await expect(row).not.toContainText(L.imageBlocked);
+    // The card shows the picture the function fetched, not the page's own address.
+    await expect(page.locator(".cover--banner img")).toHaveAttribute("src", /^blob:/);
     await expectNoAccessibilityViolations(page);
-    // The form still opens and the person can add an own photo.
+  });
+
+  test("F3 Das Bild der Seite wird beim Speichern das erste eigene Foto (mit Hinweis „Bild von … übernommen“), das Bild der Adresse bleibt nicht als zweites", async ({
+    page,
+  }) => {
+    await page.route("**/bluebrixx-110374.jpg", (route) => route.abort());
+    await page.goto("#/erfassen/link/set");
+    await paste(page, MERLIN_LINK);
     await page.getByRole("link", { name: L.next }).click();
-    await expect(field(page, F.fields.name)).toHaveValue("Burgtor mit Zugbrücke");
+
+    const notice = page.getByText(C.imageTaken("merlinssteine.de"));
+    await expect(notice).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+    // Nothing is sent before saving: the photo list of the form is still empty.
+    await expect(page.locator(".photo-slot img")).toHaveCount(0);
+    await page.getByRole("button", { name: F.save }).click();
+
+    await expect(heading(page)).toHaveText("Burgtor mit Zugbrücke");
+    const gallery = page.locator(".gallery__track img");
+    await expect(gallery).toHaveCount(1);
+    // An own photo comes from the private storage by a signed address.
+    await expect(gallery).toHaveAttribute("src", /\/signed\//);
+    await page.reload();
+    await expect(page.locator(".gallery__track img")).toHaveCount(1);
+    await expect(page.locator(".gallery__track img")).toHaveAttribute("src", /\/signed\//);
+  });
+
+  test("F3 „Nicht übernehmen“ lässt das Bild weg: kein eigenes Foto, nur die Adresse des Seitenbildes bleibt", async ({
+    page,
+  }) => {
+    await page.route("**/bluebrixx-110374.jpg", (route) =>
+      route.fulfill({
+        contentType: "image/png",
+        body: Buffer.from(
+          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+          "base64",
+        ),
+      }),
+    );
+    await page.goto("#/erfassen/link/set");
+    await paste(page, MERLIN_LINK);
+    await page.getByRole("link", { name: L.next }).click();
+    await page.getByRole("button", { name: C.imageSkip }).click();
+    await expect(page.getByText(C.imageTaken("merlinssteine.de"))).toHaveCount(0);
+    await page.getByRole("button", { name: F.save }).click();
+
+    await expect(heading(page)).toHaveText("Burgtor mit Zugbrücke");
+    const gallery = page.locator(".gallery__track img");
+    await expect(gallery).toHaveCount(1);
+    await expect(gallery).toHaveAttribute("src", /merlinssteine\.de\/media/);
+  });
+
+  test("F3 Lässt sich das Bild nicht holen, sagt die Karte „gesperrt“, das Formular nennt es, und speichern geht ohne Bild", async ({
+    page,
+  }) => {
+    await page.addInitScript((key) => localStorage.setItem(key, "imageUnreachable"), LINK_KEY);
+    await page.route("**/bluebrixx-110374.jpg", (route) => route.abort());
+    await page.goto("#/erfassen/link/set");
+    await paste(page, MERLIN_LINK);
+    await expect(page.locator(".rows__row").nth(4)).toContainText(L.imageBlocked);
+    await expectNoAccessibilityViolations(page);
+    await page.getByRole("link", { name: L.next }).click();
+    await expect(page.getByText(C.imageFailed)).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+    await page.getByRole("button", { name: F.save }).click();
+    await expect(heading(page)).toHaveText("Burgtor mit Zugbrücke");
+  });
+
+  test("F3 Wird das Formular über die Adresse geöffnet (Neuladen), holt es das Bild selbst", async ({
+    page,
+  }) => {
+    await page.goto("#/erfassen/link/set");
+    await paste(page, MERLIN_LINK);
+    await page.getByRole("link", { name: L.next }).click();
+    await page.reload();
+    await expect(page.getByText(C.imageTaken("merlinssteine.de"))).toBeVisible();
+    await page.getByRole("button", { name: F.save }).click();
+    await expect(page.locator(".gallery__track img")).toHaveAttribute("src", /\/signed\//);
+  });
+
+  test("F3 Wird das Formular verlassen, ohne zu speichern, bleibt vom Bild nichts auf dem Server", async ({
+    page,
+  }) => {
+    await page.goto("#/erfassen/link/set");
+    await paste(page, MERLIN_LINK);
+    await page.getByRole("link", { name: L.next }).click();
+    await expect(page.getByText(C.imageTaken("merlinssteine.de"))).toBeVisible();
+    await page.getByRole("link", { name: F.cancel }).click();
+    await page.goto("#/einstellungen");
+    await page.reload();
+    await expect(page.getByText("0 B von 1 GB belegt")).toBeVisible();
   });
 
   test("F3 Die Seite liest nur Titel und Bild (Shop oder MOC): der Rest bleibt zum Ergänzen", async ({

@@ -4,11 +4,16 @@
 // (`fakeLinkPreviewer.ts`) answers from a few example pages in the demo and the end-to-end tests.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { LinkAnswer, LinkFailure } from "../../supabase/functions/_shared/linkTypes";
+import type {
+  LinkAnswer,
+  LinkFailure,
+  LinkImageAnswer,
+} from "../../supabase/functions/_shared/linkTypes";
 
 export type {
   LinkAnswer,
   LinkFailure,
+  LinkImageAnswer,
   PageFields,
 } from "../../supabase/functions/_shared/linkTypes";
 
@@ -30,6 +35,23 @@ export class LinkCallError extends Error {
 export interface LinkPreviewer {
   /** What the address gives; throws a `LinkCallError` where it cannot be read. */
   preview(address: string): Promise<LinkAnswer>;
+  /**
+   * The one picture at an address (a page's picture), fetched by the function under the same limits
+   * as a page, so a page that forbids embedding still gives it. JPEG, PNG or WebP, at most 3 MB;
+   * throws a `LinkCallError` where it cannot be fetched.
+   */
+  image(address: string): Promise<File>;
+}
+
+const IMAGE_EXTENSIONS = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" } as const;
+
+/** The picture of an answer as a file the form can send like a chosen photo. */
+export function fileOfImage(answer: LinkImageAnswer): File {
+  const text = atob(answer.data);
+  const bytes = Uint8Array.from(text, (char) => char.charCodeAt(0));
+  return new File([bytes], `bild.${IMAGE_EXTENSIONS[answer.contentType]}`, {
+    type: answer.contentType,
+  });
 }
 
 const FAILURES: readonly LinkFailure[] = [
@@ -66,5 +88,25 @@ export class SupabaseLinkPreviewer implements LinkPreviewer {
       throw new LinkCallError("link-preview: unlesbare Antwort", "unavailable");
     }
     return answer;
+  }
+
+  async image(address: string): Promise<File> {
+    const { data, error } = await this.client.functions.invoke("link-preview", {
+      body: { image: address },
+    });
+    if (error) throw await failureOf(error);
+    const answer = data as LinkImageAnswer | null;
+    if (
+      answer?.kind !== "image" ||
+      typeof answer.data !== "string" ||
+      !(answer.contentType in IMAGE_EXTENSIONS)
+    ) {
+      throw new LinkCallError("link-preview: unlesbare Antwort", "unavailable");
+    }
+    try {
+      return fileOfImage(answer);
+    } catch {
+      throw new LinkCallError("link-preview: unlesbares Bild", "unavailable");
+    }
   }
 }

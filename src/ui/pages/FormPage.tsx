@@ -23,12 +23,14 @@ import { formatMoney } from "../../domain/money";
 import { shortSetNumber } from "../../domain/showcase";
 import type { Collection, ManufacturerKind, ModPart, ShowcaseItem } from "../../domain/types";
 import { modSpend } from "../../domain/value";
+import { resizePhoto } from "../../files/browserPhoto";
+import { uploadFile } from "../../files/upload";
 import { CaptureLink } from "../captureLink";
 import { CapturePhoto } from "../capturePhoto";
 import { Choice, FormCard, fieldId, TextField } from "../components/Fields";
 import { Icon } from "../components/Icon";
 import { ModSheet } from "../components/ModSheet";
-import { PhotoField } from "../components/PhotoField";
+import { PhotoField, photoFileName } from "../components/PhotoField";
 import { newId, today } from "../ids";
 import {
   detailHash,
@@ -81,12 +83,75 @@ function startOf(
   return { values: formFromItem(item, collection.sets), existing: item };
 }
 
+/** The picture of the page a form was started from: being fetched, in hand, or not to be had. */
+type LinkImage =
+  | { readonly status: "none" }
+  | { readonly status: "loading" }
+  | { readonly status: "ready"; readonly file: File }
+  | { readonly status: "failed" };
+
+/** "www.merlinssteine.de" → "merlinssteine.de": what the notice calls the page. */
+function hostOf(address: string): string {
+  try {
+    return new URL(address).hostname.replace(/^www\./, "");
+  } catch {
+    return address;
+  }
+}
+
+/**
+ * The picture of a page, fetched by the function `link-preview` (the one held from the link page,
+ * else asked for once more): a page that forbids embedding still gives it.
+ */
+function useLinkImage(
+  previewer: LinkPreviewer | undefined,
+  imageUrl: string | undefined,
+): LinkImage {
+  const [image, setImage] = useState<LinkImage>(() => {
+    if (!imageUrl) return { status: "none" };
+    const held = CaptureLink.peekImage(imageUrl);
+    return held ? { status: "ready", file: held } : { status: "loading" };
+  });
+  useEffect(() => {
+    if (!imageUrl) {
+      setImage({ status: "none" });
+      return;
+    }
+    const held = CaptureLink.peekImage(imageUrl);
+    if (held) {
+      setImage({ status: "ready", file: held });
+      return;
+    }
+    let active = true;
+    setImage({ status: "loading" });
+    const fetched = previewer
+      ? previewer.image(imageUrl)
+      : Promise.reject(new Error("Keine Link-Vorschau"));
+    fetched.then(
+      (file) => {
+        if (!active) return;
+        CaptureLink.holdImage(imageUrl, file);
+        setImage({ status: "ready", file });
+      },
+      () => active && setImage({ status: "failed" }),
+    );
+    return () => {
+      active = false;
+    };
+  }, [previewer, imageUrl]);
+  return image;
+}
+
 interface FormBodyProps {
   readonly form: FormRef;
   readonly collection: Collection;
   readonly start: { values: FormValues; existing: ShowcaseItem | undefined };
   readonly remote: Remote | undefined;
   readonly update: LoadedCollection["update"];
+  /** The picture of the page the form was started from; it becomes the first own photo on saving. */
+  readonly linkImage?: LinkImage | undefined;
+  /** Whose picture it is, for the notice ("merlinssteine.de"). */
+  readonly imageSource?: string | undefined;
   /** The catalog entry the form starts from (F2). */
   readonly catalogForm?: CatalogForm | undefined;
   /** A hint above the form, e.g. that a pasted link could not be read. */
@@ -104,8 +169,21 @@ function cancelHash(form: FormRef): string {
   return detailHash({ type: form.type, id: form.id });
 }
 
-function FormBody({ form, collection, start, remote, update, catalogForm, notice }: FormBodyProps) {
+function FormBody({
+  form,
+  collection,
+  start,
+  remote,
+  update,
+  catalogForm,
+  notice,
+  linkImage,
+  imageSource,
+}: FormBodyProps) {
   const { type } = form;
+  // The person may decline the page's picture; where it was sent already, a retry reuses it.
+  const [takeImage, setTakeImage] = useState(true);
+  const imagePath = useRef<string | undefined>(undefined);
   const [values, setValues] = useState<FormValues>(start.values);
   const [errors, setErrors] = useState<FormErrors>({});
   const [failure, setFailure] = useState<string | undefined>();
@@ -181,16 +259,53 @@ function FormBody({ form, collection, start, remote, update, catalogForm, notice
       setFailure(T.saveFailed.server);
       return;
     }
-    const item = buildItem(type, values, {
-      id,
-      createdAt: new Date().toISOString(),
-      today: today(),
-      sets: collection.sets,
-      existing: start.existing,
-      catalog: catalogForm?.extras,
-    });
+    if (linkImage?.status === "loading" && takeImage) {
+      setFailure(CT.imageWait);
+      return;
+    }
     setSaving(true);
     setFailure(undefined);
+    // The page's picture becomes the first own photo (made small first, like a chosen one).
+    let photos = values.photos;
+    let extras = catalogForm?.extras;
+    if (linkImage?.status === "ready" && takeImage) {
+      try {
+        if (imagePath.current === undefined) {
+          const small = await resizePhoto(linkImage.file);
+          imagePath.current = await uploadFile(
+            remote,
+            "photos",
+            photoFileName(id, small.contentType),
+            small.bytes,
+            small.contentType,
+          );
+          unsaved.add(imagePath.current);
+        }
+      } catch {
+        setSaving(false);
+        setFailure(CT.imageSaveFailed);
+        return;
+      }
+      const taken = imagePath.current;
+      photos = [taken, ...values.photos.filter((path) => path !== taken)];
+      // The picture is an own photo now; the page's address is not kept as a second one.
+      if (extras) {
+        const { imageUrl: _address, ...rest } = extras;
+        extras = rest;
+      }
+    }
+    const item = buildItem(
+      type,
+      { ...values, photos },
+      {
+        id,
+        createdAt: new Date().toISOString(),
+        today: today(),
+        sets: collection.sets,
+        existing: start.existing,
+        catalog: extras,
+      },
+    );
     try {
       await saveItem(remote, item);
     } catch (error) {
@@ -240,6 +355,24 @@ function FormBody({ form, collection, start, remote, update, catalogForm, notice
         </p>
       )}
       {notice && <p class="banner">{notice}</p>}
+      {linkImage?.status === "loading" && takeImage && (
+        <p class="banner" role="status">
+          {CT.imageLoading(imageSource ?? "")}
+        </p>
+      )}
+      {linkImage?.status === "ready" && takeImage && (
+        <div class="banner banner--catalog banner--action" role="status">
+          <span>{CT.imageTaken(imageSource ?? "")}</span>
+          <button
+            type="button"
+            class="photo-job__button pressable"
+            onClick={() => setTakeImage(false)}
+          >
+            {CT.imageSkip}
+          </button>
+        </div>
+      )}
+      {linkImage?.status === "failed" && <p class="banner">{CT.imageFailed}</p>}
       {summary > 0 && (
         <p class="banner banner--error" role="alert">
           {T.summary(summary)}
@@ -581,6 +714,11 @@ function LinkFormLoader({
     };
   }, [previewer, link, load.status]);
 
+  const linkImage = useLinkImage(
+    previewer,
+    load.status === "ready" ? load.fields.imageUrl : undefined,
+  );
+
   if (load.status === "loading") {
     return (
       <>
@@ -604,6 +742,8 @@ function LinkFormLoader({
       remote={remote}
       update={update}
       catalogForm={formFromLink(type, link, load.fields)}
+      linkImage={linkImage}
+      imageSource={hostOf(link)}
       notice={load.unreadable ? CT.linkUnreadable : undefined}
     />
   );

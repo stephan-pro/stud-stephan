@@ -45,7 +45,8 @@ const EXTENSIONS: Readonly<Record<string, string>> = {
   "image/png": "png",
 };
 
-function fileName(folder: string, contentType: string): string {
+/** The name of a new photo in storage: `<folder>/photo-<stamp>.<extension>`. */
+export function photoFileName(folder: string, contentType: string): string {
   const stamp = `${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`;
   return `${folder}/photo-${stamp}.${EXTENSIONS[contentType] ?? "webp"}`;
 }
@@ -89,7 +90,7 @@ export function PhotoField({
       const path = await uploadFile(
         remote,
         "photos",
-        fileName(folder, small.contentType),
+        photoFileName(folder, small.contentType),
         small.bytes,
         small.contentType,
         {

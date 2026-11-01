@@ -7,6 +7,8 @@
 // - at most 3 redirects, each one followed by hand and checked like the first address;
 // - none of the headers or cookies of the request are passed on: the headers are fixed here;
 // - 10 seconds for everything, 2 MB for the page, and only `text/html` is read.
+// The one picture of a page (`fetchImage`, decision of 01.11.2026 in section 7) goes through the
+// same checks, with 3 MB and only JPEG, PNG or WebP (the first bytes must say so, too).
 
 import type { Fetch } from "./json.ts";
 import { LinkError, MAX_LINK_LENGTH } from "./linkTypes.ts";
@@ -15,6 +17,8 @@ export const PAGE_LIMITS = {
   redirects: 3,
   timeoutMs: 10_000,
   maxBytes: 2_000_000,
+  /** The one picture of a page (`fetchImage`): 3 MB, JPEG, PNG or WebP. */
+  imageBytes: 3_000_000,
 } as const;
 
 /** The only ports a page may be fetched from; the default port of the scheme counts as one. */
@@ -170,7 +174,12 @@ export interface PageDeps {
   readonly fetch: Fetch;
   readonly resolve: Resolve;
   /** Smaller limits for tests. */
-  readonly limits?: Partial<{ redirects: number; timeoutMs: number; maxBytes: number }>;
+  readonly limits?: Partial<{
+    redirects: number;
+    timeoutMs: number;
+    maxBytes: number;
+    imageBytes: number;
+  }>;
 }
 
 export interface FetchedPage {
@@ -192,11 +201,15 @@ function decode(bytes: Uint8Array, contentType: string): string {
 }
 
 /** The body up to `maxBytes`; stops reading (and fails) at the first byte beyond. */
-async function readLimited(response: Response, maxBytes: number): Promise<Uint8Array> {
+async function readLimited(
+  response: Response,
+  maxBytes: number,
+  tooLarge: string,
+): Promise<Uint8Array> {
   const declared = Number(response.headers.get("Content-Length"));
   if (Number.isFinite(declared) && declared > maxBytes) {
     await response.body?.cancel().catch(() => {});
-    throw unreachable("Seite zu groß");
+    throw unreachable(tooLarge);
   }
   const reader = response.body?.getReader();
   if (!reader) return new Uint8Array();
@@ -208,7 +221,7 @@ async function readLimited(response: Response, maxBytes: number): Promise<Uint8A
     size += value.length;
     if (size > maxBytes) {
       await reader.cancel().catch(() => {});
-      throw unreachable("Seite zu groß");
+      throw unreachable(tooLarge);
     }
     chunks.push(value);
   }
@@ -221,11 +234,61 @@ async function readLimited(response: Response, maxBytes: number): Promise<Uint8A
   return all;
 }
 
+/** What one kind of fetch accepts: the `Accept` header, the content type, the size. */
+interface BodyKind {
+  readonly accept: string;
+  readonly allows: (contentType: string) => boolean;
+  readonly maxBytes: (limits: { maxBytes: number; imageBytes: number }) => number;
+  readonly tooLarge: string;
+  readonly wrongType: string;
+}
+
+const HTML_KIND: BodyKind = {
+  accept: "text/html",
+  allows: (contentType) => /^text\/html\b/i.test(contentType.trim()),
+  maxBytes: (limits) => limits.maxBytes,
+  tooLarge: "Seite zu groß",
+  wrongType: "Keine HTML-Seite",
+};
+
+/** The picture types the app can make small (`resizePhoto`); no SVG, no GIF. */
+export type ImageType = "image/jpeg" | "image/png" | "image/webp";
+
+const IMAGE_TYPES: readonly string[] = ["image/jpeg", "image/png", "image/webp"];
+
+const IMAGE_KIND: BodyKind = {
+  accept: "image/webp,image/jpeg,image/png",
+  allows: (contentType) =>
+    IMAGE_TYPES.includes(contentType.split(";")[0]?.trim().toLowerCase() ?? ""),
+  maxBytes: (limits) => limits.imageBytes,
+  tooLarge: "Bild zu groß",
+  wrongType: "Kein erlaubtes Bild",
+};
+
+/** What the first bytes say a picture is, whatever the server claims; nothing if none of the three. */
+export function sniffImage(bytes: Uint8Array): ImageType | undefined {
+  const starts = (...signature: number[]) =>
+    signature.every((byte, index) => bytes[index] === byte);
+  if (starts(0xff, 0xd8, 0xff)) return "image/jpeg";
+  if (starts(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)) return "image/png";
+  // "RIFF", four bytes of size, "WEBP".
+  if (starts(0x52, 0x49, 0x46, 0x46) && bytes[8] === 0x57 && bytes[9] === 0x45) {
+    return bytes[10] === 0x42 && bytes[11] === 0x50 ? "image/webp" : undefined;
+  }
+  return undefined;
+}
+
+interface FetchedBody {
+  readonly bytes: Uint8Array;
+  readonly contentType: string;
+  readonly url: URL;
+}
+
 /**
- * Reads the HTML page at `start`: follows up to 3 redirects by hand, checks every address (also
- * the name's look-up), gives up after 10 seconds or 2 MB and accepts only `text/html`.
+ * The shared fetch: follows up to 3 redirects by hand, checks every address (also the name's
+ * look-up), gives up after 10 seconds or the size limit of the kind and accepts only its types.
  */
-export async function fetchPage(deps: PageDeps, start: URL): Promise<FetchedPage> {
+async function fetchBody(deps: PageDeps, start: URL, kind: BodyKind): Promise<FetchedBody> {
   const limits = { ...PAGE_LIMITS, ...deps.limits };
   const signal = AbortSignal.timeout(limits.timeoutMs);
   let current = start;
@@ -234,7 +297,7 @@ export async function fetchPage(deps: PageDeps, start: URL): Promise<FetchedPage
       await assertPublicHost(current.hostname.toLowerCase().replace(/\.$/, ""), deps.resolve);
       const response = await deps.fetch(current.href, {
         method: "GET",
-        headers: REQUEST_HEADERS,
+        headers: { ...REQUEST_HEADERS, Accept: kind.accept },
         redirect: "manual",
         credentials: "omit",
         signal,
@@ -253,16 +316,44 @@ export async function fetchPage(deps: PageDeps, start: URL): Promise<FetchedPage
         throw unreachable(`Antwort ${response.status}`);
       }
       const contentType = response.headers.get("Content-Type") ?? "";
-      if (!/^text\/html\b/i.test(contentType.trim())) {
+      if (!kind.allows(contentType)) {
         await response.body?.cancel().catch(() => {});
-        throw unreachable("Keine HTML-Seite");
+        throw unreachable(kind.wrongType);
       }
-      const bytes = await readLimited(response, limits.maxBytes);
-      return { html: decode(bytes, contentType), url: current };
+      const bytes = await readLimited(response, kind.maxBytes(limits), kind.tooLarge);
+      return { bytes, contentType, url: current };
     }
   } catch (error) {
     if (error instanceof LinkError) throw error;
     // Timeout, refused connection, broken answer: all "the page does not answer".
     throw unreachable(error instanceof Error ? error.message : "Seite nicht erreichbar");
   }
+}
+
+/**
+ * Reads the HTML page at `start`: follows up to 3 redirects by hand, checks every address (also
+ * the name's look-up), gives up after 10 seconds or 2 MB and accepts only `text/html`.
+ */
+export async function fetchPage(deps: PageDeps, start: URL): Promise<FetchedPage> {
+  const { bytes, contentType, url } = await fetchBody(deps, start, HTML_KIND);
+  return { html: decode(bytes, contentType), url };
+}
+
+export interface FetchedImage {
+  readonly bytes: Uint8Array;
+  readonly contentType: ImageType;
+  readonly url: URL;
+}
+
+/**
+ * Reads the one picture at `start` under the same rules as a page (redirects, internal addresses,
+ * 10 seconds), but with 3 MB and only JPEG, PNG or WebP: what the server says and what the first
+ * bytes say must agree.
+ */
+export async function fetchImage(deps: PageDeps, start: URL): Promise<FetchedImage> {
+  const { bytes, contentType, url } = await fetchBody(deps, start, IMAGE_KIND);
+  const declared = contentType.split(";")[0]?.trim().toLowerCase();
+  const actual = sniffImage(bytes);
+  if (!actual || actual !== declared) throw unreachable("Kein erlaubtes Bild");
+  return { bytes, contentType: actual, url };
 }

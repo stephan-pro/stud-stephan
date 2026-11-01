@@ -5,7 +5,13 @@
 
 import type { LinkAnswer, PageFields } from "./linkTypes.ts";
 import { extractPreview, extractSetPage } from "./pageParser.ts";
-import { checkAddress, fetchPage, type PageDeps } from "./safeFetch.ts";
+import {
+  checkAddress,
+  type FetchedImage,
+  fetchImage,
+  fetchPage,
+  type PageDeps,
+} from "./safeFetch.ts";
 
 /** The longest texts the form takes (`FIELD_LIMITS` in `src/domain/forms.ts`): a longer one would be refused there. */
 const FIELD_LIMITS = { name: 200, short: 100, link: 500 } as const;
@@ -88,6 +94,15 @@ function cleaned(fields: {
   }
   if (imageUrl) result.imageUrl = imageUrl;
   return result;
+}
+
+/**
+ * The picture at an address (a page's `og:image`), under the same checks as a page: sign-in done by
+ * the handler, public addresses only, redirects checked, 10 s, at most 3 MB, JPEG, PNG or WebP.
+ * Throws `LinkError` for an address or picture that is not usable.
+ */
+export async function fetchLinkImage(deps: PageDeps, address: string): Promise<FetchedImage> {
+  return fetchImage(deps, checkAddress(address));
 }
 
 /** What the pasted address gives; throws `LinkError` for an address or page that is not usable. */

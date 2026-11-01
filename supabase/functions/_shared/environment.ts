@@ -14,7 +14,7 @@ import {
   type RecognizeHandlerDeps,
 } from "./handler.ts";
 import { CatalogError, type Fetch } from "./json.ts";
-import { previewLink } from "./linkService.ts";
+import { fetchLinkImage, previewLink } from "./linkService.ts";
 import { createRebrickable } from "./rebrickableClient.ts";
 import type { Resolve } from "./safeFetch.ts";
 
@@ -87,6 +87,7 @@ export function linkHandlerDeps(env: Environment, send: Fetch, resolve: Resolve)
   return {
     signedIn: (request) => isSignedIn(request, env("SUPABASE_URL") ?? "", send),
     preview: (address) => previewLink({ fetch: send, resolve }, address),
+    image: (address) => fetchLinkImage({ fetch: send, resolve }, address),
   };
 }
 

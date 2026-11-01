@@ -12,7 +12,7 @@ import {
   MAX_QUERY_LENGTH,
 } from "./catalogTypes.ts";
 import { CatalogError, type Fetch, isRecord, str } from "./json.ts";
-import { type LinkAnswer, LinkError, MAX_LINK_LENGTH } from "./linkTypes.ts";
+import { type LinkAnswer, LinkError, type LinkImageAnswer, MAX_LINK_LENGTH } from "./linkTypes.ts";
 import { MAX_PHOTO_BYTES, type RecognizeAnswer } from "./recognizeTypes.ts";
 
 const CORS = {
@@ -169,19 +169,45 @@ export interface LinkHandlerDeps {
   readonly signedIn: HandlerDeps["signedIn"];
   /** What the address gives; throws `LinkError` for an address or page that is not usable. */
   readonly preview: (address: string) => Promise<LinkAnswer>;
+  /** The one picture at the address; throws `LinkError` for one that is not usable. */
+  readonly image: (address: string) => Promise<{
+    readonly bytes: Uint8Array;
+    readonly contentType: LinkImageAnswer["contentType"];
+  }>;
 }
 
 const LINK_STATUS = { blocked: 422, unreachable: 502 } as const;
 
+/** Bytes as base64, in pieces (one `String.fromCharCode` call with 3 MB of arguments would fail). */
+function toBase64(bytes: Uint8Array): string {
+  let text = "";
+  for (let start = 0; start < bytes.length; start += 0x8000) {
+    text += String.fromCharCode(...bytes.subarray(start, start + 0x8000));
+  }
+  return btoa(text);
+}
+
 /**
- * The function `link-preview` (P9): `{url}` in, what the address gives out (`LinkAnswer`). The
- * sign-in is checked first, like in every function, before anything is fetched.
+ * The function `link-preview` (P9): `{url}` in, what the address gives out (`LinkAnswer`), or
+ * `{image}` in, the one picture at that address out (`LinkImageAnswer`, P10). The sign-in is
+ * checked first, like in every function, before anything is fetched.
  */
 export function handleLinkPreview(request: Request, deps: LinkHandlerDeps): Promise<Response> {
   return serve(request, deps, async (body) => {
-    const address = isRecord(body) ? str(body.url) : undefined;
-    if (address === undefined || address.length > MAX_LINK_LENGTH) return failure("bad_request");
+    const page = isRecord(body) ? str(body.url) : undefined;
+    const picture = isRecord(body) ? str(body.image) : undefined;
+    // Exactly one of the two.
+    const address = page ?? picture;
+    if (address === undefined || (page !== undefined && picture !== undefined)) {
+      return failure("bad_request");
+    }
+    if (address.length > MAX_LINK_LENGTH) return failure("bad_request");
     try {
+      if (picture !== undefined) {
+        const { bytes, contentType } = await deps.image(picture);
+        const result: LinkImageAnswer = { kind: "image", contentType, data: toBase64(bytes) };
+        return answer(200, result);
+      }
       return answer(200, await deps.preview(address));
     } catch (error) {
       if (error instanceof LinkError) {

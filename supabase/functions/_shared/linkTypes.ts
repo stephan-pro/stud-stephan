@@ -26,6 +26,17 @@ export type LinkAnswer =
   | { kind: "page"; source: "merlin" | "page"; fields: PageFields };
 
 /**
+ * The one picture of a page, for the call `{image: <address>}`: the bytes as base64 (the function
+ * answers JSON like everywhere else), with the type the first bytes proved.
+ */
+export interface LinkImageAnswer {
+  kind: "image";
+  contentType: "image/jpeg" | "image/png" | "image/webp";
+  /** The picture's bytes, base64. At most 3 MB, so at most about 4 MB of text. */
+  data: string;
+}
+
+/**
  * Why a call failed. `blocked` = the address is not one the function may fetch (not a public web
  * page), `unreachable` = the page did not answer in the allowed time, size or form.
  */

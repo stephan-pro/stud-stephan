@@ -496,6 +496,7 @@ export const TEXTS = {
     },
     kinds: { minifig: "Figur", legoSet: "Set" },
     imageTaken: "übernommen",
+    imageLoading: "wird geholt …",
     imageBlocked: "gesperrt – nimm ein eigenes Foto",
     pleaseAdd: "bitte ergänzen",
     catalogNote: "Name, Teile und Bild holt die App gleich aus dem Katalog.",
@@ -523,6 +524,14 @@ export const TEXTS = {
     linkBanner: "Grüne Felder stammen aus dem Link. Du kannst sie ändern.",
     linkPrefilledNote: "Aus dem Link übernommen",
     linkLoading: "Der Link wird gelesen …",
+    imageLoading: (source: string) => `Das Bild von ${source} wird geholt …`,
+    imageTaken: (source: string) =>
+      `Bild von ${source} übernommen. Es wird beim Speichern als erstes Foto angelegt.`,
+    imageSkip: "Nicht übernehmen",
+    imageFailed: "Das Bild der Seite ließ sich nicht holen. Du kannst ein eigenes Foto hinzufügen.",
+    imageWait: "Das Bild wird noch geholt. Gleich noch einmal speichern.",
+    imageSaveFailed:
+      "Das Bild der Seite ließ sich nicht speichern. Versuch es noch einmal oder wähl „Nicht übernehmen“.",
     linkUnreadable:
       "Die Seite ließ sich nicht lesen. Der Link ist gespeichert; trag die Angaben selbst ein.",
     banner: "Grüne Felder kommen aus dem Katalog. Du kannst sie ändern.",
