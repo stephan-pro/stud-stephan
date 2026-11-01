@@ -32,6 +32,7 @@ Vorlage: der Klick-Dummy in `docs/design/dummy/` (je Screen eine `.dc.html`-Date
 | `--positive` | #11552B | Wertzuwachs (Pfeil, Prozent) |
 | `--danger` | #A3261C | Löschen, fehlgeschlagen |
 | `--scrim` | rgba(20,33,61,0.45) | Abdunklung hinter Bottom-Sheets |
+| `--line` | #E1E4EA | Trennlinien in Listen (1 px) |
 
 Text auf `--accent`, `--pop` und allen Tints ist immer `--ink`. Text auf `--nav` ist Weiß.
 

@@ -37,10 +37,54 @@ export const SIDEBAR_NAVIGATION: readonly Route[] = [
   "dashboard",
 ];
 
+/** What a detail page shows (S2 figure, S3 set, S4 special part). */
+export type DetailType = "minifig" | "legoSet" | "specialPart";
+
+export interface DetailRef {
+  readonly type: DetailType;
+  readonly id: string;
+}
+
+/** Part of the address for each kind of detail page: "#/vitrine/figur/<id>". */
+export const DETAIL_PATHS: Readonly<Record<DetailType, string>> = {
+  minifig: "figur",
+  legoSet: "set",
+  specialPart: "sonderteil",
+};
+
+/** A page, or a detail page below the showcase (which stays the current entry of the navigation). */
+export interface PageLocation {
+  readonly route: Route;
+  readonly detail?: DetailRef;
+}
+
+function decode(segment: string): string | undefined {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return undefined;
+  }
+}
+
 /** Reads `location.hash` (e.g. "#/dioramen"); anything unknown is the start page. */
+export function parseLocation(hash: string): PageLocation {
+  const segments = hash.replace(/^#\/?/, "").replace(/\/+$/, "").split("/");
+  const [first, kind, rawId] = segments;
+  const route = ROUTES.find((candidate) => ROUTE_PATHS[candidate] === first);
+  if (route === "showcase" && segments.length === 3) {
+    const type = (Object.keys(DETAIL_PATHS) as DetailType[]).find(
+      (candidate) => DETAIL_PATHS[candidate] === kind,
+    );
+    const id = decode(rawId ?? "");
+    if (type && id) return { route, detail: { type, id } };
+    return { route: DEFAULT_ROUTE };
+  }
+  return { route: segments.length === 1 && route ? route : DEFAULT_ROUTE };
+}
+
+/** The page of an address, a detail page counting as the showcase. */
 export function parseRoute(hash: string): Route {
-  const path = hash.replace(/^#\/?/, "").replace(/\/+$/, "");
-  return ROUTES.find((route) => ROUTE_PATHS[route] === path) ?? DEFAULT_ROUTE;
+  return parseLocation(hash).route;
 }
 
 /** The link target of a page, e.g. "#/dioramen". */
@@ -48,12 +92,22 @@ export function routeHash(route: Route): string {
   return `#/${ROUTE_PATHS[route]}`;
 }
 
+/** The link target of a detail page, e.g. "#/vitrine/figur/minifig-rex". */
+export function detailHash(detail: DetailRef): string {
+  return `${routeHash("showcase")}/${DETAIL_PATHS[detail.type]}/${encodeURIComponent(detail.id)}`;
+}
+
+/** The normal spelling of an address; differing spellings are rewritten to it. */
+export function locationHash(page: PageLocation): string {
+  return page.detail ? detailHash(page.detail) : routeHash(page.route);
+}
+
 /** Name of the page in the navigation, as heading and in the browser tab. */
 export function routeLabel(route: Route): string {
   return TEXTS.routes[route].label;
 }
 
-/** Title of the browser tab, e.g. "Dioramen – Stud Stephan". */
-export function documentTitle(route: Route): string {
-  return `${routeLabel(route)} – ${TEXTS.appName}`;
+/** Title of the browser tab, e.g. "Dioramen – Stud Stephan"; a detail page uses its object's name. */
+export function documentTitle(route: Route, detailName?: string): string {
+  return `${detailName ?? routeLabel(route)} – ${TEXTS.appName}`;
 }

@@ -6,7 +6,7 @@ Doku: Anforderungen `docs/ANFORDERUNGEN.md` · Screens und Abläufe `docs/STRUKT
 
 ## Stand
 
-P4c: Anmeldung per Code (S0), danach Gerüst mit Navigation und leeren Seiten, Konto mit Abmelden und Speicheranzeige in den Einstellungen; Foto verkleinern und Dateien hochladen als Bausteine in `src/files/` (noch ohne Oberfläche dafür); Datenmodell und Fachlogik in `src/domain/`, Demo-Daten in `src/demo/` (noch nicht in der Oberfläche); Supabase-Tabellen, Regeln, Dateiablagen und `Remote` in `src/backend/` (App lädt Daten ab P5). Fortschritt: Tabelle in `docs/UMSETZUNG.md`, Abschnitt 4. Supabase: `docs/SUPABASE.md`.
+P5: Anmeldung per Code (S0), Gerüst mit Navigation; die Vitrine (S1, Filter S1a, Detailseiten S2–S4) zeigt die Sammlung aus `Remote.load` (Demo: `src/demo/`), Fotos über `Remote.signedUrl`, Platzhalter ohne Foto; die übrigen Seiten sind noch leer (Kommt bald); Konto mit Abmelden und Speicheranzeige in den Einstellungen; Foto verkleinern und Dateien hochladen als Bausteine in `src/files/` (Oberfläche dafür kommt mit P6 und P10); Datenmodell und Fachlogik in `src/domain/`; Supabase-Tabellen, Regeln, Dateiablagen und `Remote` in `src/backend/`. Fortschritt: Tabelle in `docs/UMSETZUNG.md`, Abschnitt 4. Supabase: `docs/SUPABASE.md`.
 
 ## Befehle
 
@@ -25,11 +25,11 @@ P4c: Anmeldung per Code (S0), danach Gerüst mit Navigation und leeren Seiten, K
 ## Aufbau
 
 - `src/main.tsx` lädt Schriften, `src/ui/tokens.css` (alle Design-Werte) und `src/ui/app.css`, zeichnet `src/ui/App.tsx`.
-- `src/ui/route.ts` – Hash-Router (`#/vitrine` …), reine Funktionen. `src/ui/texts.ts` – alle Texte.
-- `src/ui/App.tsx` – erst Anmeldung (`pages/SignInPage.tsx`), dann `Shell`. `src/ui/components/` – `Navigation` (Handy-Leiste und PC-Seitenleiste), `PageHeader` (die eine `h1`, bekommt nach Seitenwechsel den Fokus), `AccountCard` (S12), `Studs`, `Scribbles`, `Icon` (SVG-Pfade aus dem Dummy).
+- `src/ui/route.ts` – Hash-Router (`#/vitrine` …, Detailseiten `#/vitrine/figur|set|sonderteil/<id>`, zählen zur Vitrine), reine Funktionen. `src/ui/texts.ts` – alle Texte. `src/ui/labels.ts` – Herstellername, sichere Links (`safeUrl`), Platzhalterfarbe.
+- `src/ui/App.tsx` – erst Anmeldung (`pages/SignInPage.tsx`), dann `Shell` (hält Adresse, Ansicht der Vitrine und die Sammlung über `useCollection`; Demo bekommt `demo`). `src/ui/pages/` – `ShowcasePage` (S1 mit Sammlungskarte, Chips, Sortierung, Raster, Auswahl der Exemplare), `DetailPage` (S2–S4). `src/ui/components/` – `Navigation` (Handy-Leiste und PC-Seitenleiste), `PageHeader` (die eine `h1`, bekommt nach Seitenwechsel den Fokus), `AccountCard` (S12), `Studs`, `Scribbles`, `Icon` (SVG-Pfade aus dem Dummy); `Tile`, `Cover` (Foto oder Platzhalter, Adresse über `photos.ts`: `PhotoSourceContext`, `usePhotoUrl`), `Sheet` (`<dialog>`: Bottom-Sheet am Handy, Seitenpanel am PC), `FilterSheet`, `Gallery`, `ValueCard`, `CopyRow`, `DetailParts`.
 - `src/auth/` (P4b, wie Krümel ohne Einladungen) – `auth.ts` (Schnittstelle `Auth`, `AuthFailure`, `CODE_MINUTES`/`CODE_DIGITS`), `supabaseClient.ts` + `supabaseAuth.ts` (`signInWithOtp` ohne neue Konten, unbekannte Adresse = still wie gesendet), `fakeAuth.ts` (im Fake-Server) + `fakeHttpAuth.ts` (Client, Sitzung unter `stud-stephan-fake:auth`), `codeStep.ts` (Schritt über Neuladen gemerkt). `auth.contract.ts` läuft gegen Fake, Nachbau (`auth.fixtures.ts`: `fakeGoTrue`, `MemoryStore`) und lokale Instanz (`supabase/tests/auth.test.ts`, Code aus Mailpit). Mailvorlage `supabase/templates/code.html`.
-- `src/domain/` – `types.ts` (alle Objekte, `SCHEMA_VERSION`), `money.ts` (`formatMoney` …), `prices.ts` (Marktpreis, Preisabruf `recordPriceRun`), `value.ts` (`valueOfItem`, `modSpend`), `totals.ts`, `showcase.ts` (Gruppen ×3, Filter, Sortierung), `dioramas.ts`, `wishlist.ts`, `series.ts`. Testbausteine `fixtures.ts` (`aMinifig`, `aPrice`, `aCollection` …).
-- `src/demo/collection.ts` – `DEMO_COLLECTION`, `DEMO_SERIES`, `DEMO_TODAY` nach dem Klick-Dummy.
+- `src/domain/` – `types.ts` (alle Objekte, `SCHEMA_VERSION`), `money.ts` (`formatMoney` …), `dates.ts` (`formatDate`, `formatMonth`), `prices.ts` (Marktpreis, Verlauf `priceHistory`, Preisabruf `recordPriceRun`), `value.ts` (`valueOfItem`, `modSpend`), `totals.ts`, `showcase.ts` (Gruppen ×3, Filter mit zweistufigen Themen, Sortierung, `tileFacts`, `galleryImages`), `details.ts` (weitere Exemplare, Set der Figur, Figuren eines Sets), `dioramas.ts`, `wishlist.ts`, `series.ts`. Testbausteine `fixtures.ts` (`aMinifig`, `aPrice`, `aCollection` …).
+- `src/demo/collection.ts` – `DEMO_COLLECTION`, `DEMO_SERIES`, `DEMO_TODAY` nach dem Klick-Dummy; `npm run demo` zeigt sie, die E2E-Tests der Vitrine legen sie mit `signInDirectly(page, undefined, DEMO_COLLECTION)` auf den Fake-Server.
 - `src/backend/` – `remote.ts` (Schnittstelle `Remote`: `load`, `save(kind, …)`, `remove`, `savePrice`, `putFile`/`getFile`/`removeFile`; `RemoteError` mit `permanent`, `reason`), `rules.ts` (Arten, Grenzen, Prüfungen wie in SQL), `supabaseRemote.ts`, `fakeStore.ts` + `fakeRemote.ts` (im Speicher), `fakeServer.ts` (mit Anmeldung `/auth/*`, `/test/code`, `/test/user`) + `fakeHttpServer.ts` + `fakeHttpRemote.ts` (Fake-Server), `fakeServer.fixtures.ts` (`fetchFrom`: Fake-Server ohne HTTP), `mode.ts` (Build-Modi). `remote.contract.ts` – dieselben Tests für Fake und echte Datenbank.
 - `src/files/` (P4c) – `photoSize.ts` (`fitWithin`, `shrinkToTarget`: Maße und Qualitätsstufen, rein), `browserPhoto.ts` (`resizePhoto` mit Canvas, nur im Browser, E2E `photo.spec.ts` bündelt es mit Vite), `upload.ts` (`uploadFile` mit Wiederholung und Fortschritt), `studioFile.ts` (`.io`-Prüfung, Speichernamen), `bytes.ts` (`formatBytes`). `Remote.signedUrl` (Anzeige-Adresse) und `Remote.storageUsage` (Belegung); `ui/components/StorageCard.tsx` zeigt sie in den Einstellungen; `App` bekommt `remote` (null im Demo).
 - `supabase/` – `config.toml` (lokale Instanz), `migrations/` (Regeln dort und in `rules.ts`/`fakeStore.ts` immer gleich halten), `tests/` (nur `check:db`).
@@ -75,6 +75,8 @@ P4c: Anmeldung per Code (S0), danach Gerüst mit Navigation und leeren Seiten, K
 | Reihe (Thema) / Fortschritt | series / seriesProgress |
 | Erfassen | capture |
 | Fotoerkennung | recognition |
+| Kachel / Auswahl der Exemplare | tile / copy chooser (`CopyRow`) |
+| Filterblatt | filter sheet (`Sheet`) |
 | Katalog | catalog |
 | Datensicherung (Export/Import) | backup (exportData/importData) |
 | Speicherplatz / Belegung | storage / storageUsage |

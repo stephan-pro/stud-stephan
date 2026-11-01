@@ -6,6 +6,7 @@ import {
   itemsToPrice,
   marketPrice,
   type PriceResult,
+  priceHistory,
   recordPriceRun,
 } from "./prices";
 import { valueOfItem } from "./value";
@@ -118,5 +119,32 @@ describe("F10 Preisabruf", () => {
     const { bricklinkId: _, ...withoutNumber } = rex;
     expect(hasMarketPrice(withoutNumber)).toBe(false);
     expect(marketPrice(withoutNumber, "used", [aPrice("", TODAY, { used: 1 })])).toBeUndefined();
+  });
+});
+
+describe("F10 Verlauf des Marktpreises", () => {
+  const rex = aMinifig({ bricklinkId: "sw0194" });
+  const prices = [
+    aPrice("sw0194", "2026-10-27", { used: 3850, new: 5200 }),
+    aPrice("sw0194", "2026-10-13", { used: 3650 }),
+    aPrice("sw0194", "2026-10-20", { new: 5100 }),
+    aPrice("sw0542", "2026-10-27", { used: 2400 }),
+  ];
+
+  it("F10 Der Verlauf läuft vom ältesten Stand zum neuesten und folgt dem Zustand", () => {
+    expect(priceHistory(rex, "used", prices)).toEqual([
+      { date: "2026-10-13", cents: 3650 },
+      { date: "2026-10-27", cents: 3850 },
+    ]);
+    expect(priceHistory(rex, "new", prices)).toEqual([
+      { date: "2026-10-20", cents: 5100 },
+      { date: "2026-10-27", cents: 5200 },
+    ]);
+  });
+
+  it("F10 Ohne Marktpreis (Custom, ohne Nummer) gibt es keinen Verlauf", () => {
+    const custom = aMinifig({ manufacturer: { kind: "custom", name: "Shop" } });
+    expect(priceHistory(custom, "used", prices)).toEqual([]);
+    expect(priceHistory(aMinifig({ bricklinkId: "sw9999" }), "used", prices)).toEqual([]);
   });
 });

@@ -87,6 +87,32 @@ export function marketPrice(
   return undefined;
 }
 
+/** One day's market price in one condition. */
+export interface PriceStep {
+  date: IsoDate;
+  cents: number;
+}
+
+/**
+ * The market price in one condition over the runs, oldest first (the mini chart of the value card,
+ * F10). Runs without a price in that condition are left out.
+ */
+export function priceHistory(
+  item: Priceable,
+  condition: Condition,
+  prices: readonly PricePoint[],
+): PriceStep[] {
+  const number = itemNumber(item);
+  if (!hasMarketPrice(item) || number === undefined) return [];
+  const points = priceIndex(prices).get(catalogKey(item.type, number)) ?? [];
+  return points
+    .flatMap((point) => {
+      const cents = point.cents[condition];
+      return cents === undefined ? [] : [{ date: point.date, cents }];
+    })
+    .reverse();
+}
+
 /** Every catalog item a price run has to ask BrickLink for, each once: owned objects and wishes. */
 export function itemsToPrice(collection: Collection): CatalogItem[] {
   const items = new Map<string, CatalogItem>();

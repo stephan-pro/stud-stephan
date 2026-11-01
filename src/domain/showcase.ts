@@ -17,10 +17,18 @@ import { isModified, valueOfItem } from "./value";
 
 const collator = new Intl.Collator("de", { sensitivity: "base", numeric: true });
 
-/** "Star Wars – The Clone Wars" → "Star Wars"; the filter and the dashboard use the main theme. */
+const THEME_SEPARATOR = " – ";
+
+/** "Star Wars – The Clone Wars" → "Star Wars". */
 export function mainTheme(theme: string | undefined): string | undefined {
-  const main = theme?.split(" – ")[0]?.trim();
+  const main = theme?.split(THEME_SEPARATOR)[0]?.trim();
   return main || undefined;
+}
+
+/** "Star Wars – The Clone Wars" → "The Clone Wars"; a theme without sub theme has none. */
+export function subTheme(theme: string | undefined): string | undefined {
+  const sub = theme?.split(THEME_SEPARATOR).slice(1).join(THEME_SEPARATOR).trim();
+  return sub || undefined;
 }
 
 /** Lower case without accents, for searching and for comparing names. */
@@ -71,6 +79,13 @@ export function groupCopies(minifigs: readonly Minifig[]): CopyGroup[] {
 
 export type CoverImage = { kind: "photo"; path: string } | { kind: "catalog"; url: string };
 
+/** The gallery of a detail page: own photos in order, the catalog image last (S2). */
+export function galleryImages(item: ShowcaseItem): CoverImage[] {
+  const images: CoverImage[] = item.photos.map((path) => ({ kind: "photo", path }));
+  if (item.catalogImageUrl) images.push({ kind: "catalog", url: item.catalogImageUrl });
+  return images;
+}
+
 /** Own photos before the catalog image (F11); for a group the first copy that has a photo. */
 export function coverImage(entry: ShowcaseEntry): CoverImage | undefined {
   const items = entryItems(entry);
@@ -89,7 +104,10 @@ export interface ShowcaseFilter {
   type: ShowcaseType;
   /** Search in name, number, theme and manufacturer. */
   query: string;
-  /** Main themes; empty = all. */
+  /**
+   * Themes, two levels (PO decision 31.10.2026): a main theme ("Star Wars") takes everything below
+   * it, a sub theme ("Star Wars – The Clone Wars") only its own objects. Empty = all.
+   */
   themes: string[];
   manufacturers: ManufacturerKind[];
   conditions: Condition[];
@@ -131,6 +149,12 @@ function matchesQuery(item: ShowcaseItem, query: string): boolean {
   return words.every((word) => text.includes(word));
 }
 
+/** Whether the theme is chosen: itself (sub theme) or its main theme. `themes` is normalized. */
+function themeSelected(themes: ReadonlySet<string>, theme: string | undefined): boolean {
+  if (theme === undefined) return false;
+  return themes.has(normalize(theme)) || themes.has(normalize(mainTheme(theme) ?? ""));
+}
+
 /**
  * The F11 filters. Modified yes/no and "ohne Diorama" are properties of figures, so they show
  * figures only.
@@ -142,7 +166,7 @@ export function filterShowcase(
   const themes = new Set(filter.themes.map(normalize));
   return items.filter((item) => {
     if (filter.type !== "all" && item.type !== filter.type) return false;
-    if (themes.size > 0 && !themes.has(normalize(mainTheme(item.theme) ?? ""))) return false;
+    if (themes.size > 0 && !themeSelected(themes, item.theme)) return false;
     if (filter.manufacturers.length > 0 && !filter.manufacturers.includes(item.manufacturer.kind))
       return false;
     if (filter.conditions.length > 0 && !filter.conditions.includes(item.condition)) return false;
@@ -154,14 +178,75 @@ export function filterShowcase(
   });
 }
 
-/** Main themes for the filter sheet, alphabetically. */
-export function showcaseThemes(items: readonly ShowcaseItem[]): string[] {
-  const themes = new Map<string, string>();
+export interface ThemeGroup {
+  /** The main theme, e.g. "Star Wars". */
+  theme: string;
+  /** Its sub themes as full themes ("Star Wars – The Clone Wars") with the shown `name`. */
+  subThemes: { theme: string; name: string }[];
+}
+
+/** Themes for the filter sheet, two levels, each alphabetically and without doubles. */
+export function showcaseThemes(items: readonly ShowcaseItem[]): ThemeGroup[] {
+  const groups = new Map<string, { theme: string; subs: Map<string, string> }>();
   for (const item of items) {
-    const theme = mainTheme(item.theme);
-    if (theme && !themes.has(normalize(theme))) themes.set(normalize(theme), theme);
+    const main = mainTheme(item.theme);
+    if (!main) continue;
+    const group = groups.get(normalize(main)) ?? { theme: main, subs: new Map() };
+    groups.set(normalize(main), group);
+    const sub = subTheme(item.theme);
+    if (sub && !group.subs.has(normalize(sub))) group.subs.set(normalize(sub), sub);
   }
-  return [...themes.values()].sort(collator.compare);
+  return [...groups.values()]
+    .sort((a, b) => collator.compare(a.theme, b.theme))
+    .map(({ theme, subs }) => ({
+      theme,
+      subThemes: [...subs.values()]
+        .sort(collator.compare)
+        .map((name) => ({ theme: `${theme}${THEME_SEPARATOR}${name}`, name })),
+    }));
+}
+
+/** What the tile of an entry shows, without texts (the interface words them). */
+export interface TileFacts {
+  name: string;
+  manufacturer: Manufacturer;
+  /** BrickLink number, set number or number of the special part. */
+  number?: string;
+  /** Main theme. */
+  theme?: string;
+  /** Copies behind the tile; more than one shows "×3". */
+  copies: number;
+  modified: boolean;
+  /** Some copy stands in no diorama (figures only). */
+  withoutDiorama: boolean;
+  /** Value of the most valuable copy; "ohne Wert" instead when `valueMissing`. */
+  cents: number;
+  valueMissing: boolean;
+}
+
+export function tileFacts(entry: ShowcaseEntry, prices: readonly PricePoint[]): TileFacts {
+  const items = entryItems(entry);
+  const first = items[0] as ShowcaseItem;
+  const valuations = items.map((item) => valueOfItem(item, prices));
+  const facts: TileFacts = {
+    name: first.name,
+    manufacturer: first.manufacturer,
+    copies: items.length,
+    modified: entry.type === "minifig" && entry.copies.some(isModified),
+    withoutDiorama: entry.type === "minifig" && entry.copies.some((copy) => !copy.dioramaId),
+    cents: Math.max(...valuations.map((valuation) => valuation.cents)),
+    valueMissing: valuations.every((valuation) => valuation.ownValueMissing),
+  };
+  const number = itemNumber(first);
+  if (number) facts.number = number;
+  const theme = mainTheme(first.theme);
+  if (theme) facts.theme = theme;
+  return facts;
+}
+
+/** "75372-1" → "75372": the set number without the version suffix, as the tile shows it. */
+export function shortSetNumber(setNumber: string): string {
+  return setNumber.replace(/^(\d+)-\d+$/, "$1");
 }
 
 export function showcaseItems(collection: Collection): ShowcaseItem[] {

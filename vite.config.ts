@@ -37,6 +37,7 @@ export default defineConfig(({ mode, isPreview, isSsrBuild }) => {
           "src/backend/mode.ts",
           "src/files/**/*.ts",
           "src/ui/route.ts",
+          "src/ui/labels.ts",
         ],
         // `browserPhoto.ts` needs a real browser (end-to-end test `tests/e2e/photo.spec.ts`).
         exclude: [

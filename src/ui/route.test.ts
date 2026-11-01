@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_ROUTE,
+  detailHash,
   documentTitle,
+  locationHash,
   PHONE_NAVIGATION,
+  parseLocation,
   parseRoute,
   ROUTE_PATHS,
   ROUTES,
@@ -48,6 +51,47 @@ describe("P1 Hash-Router", () => {
       expect(parseRoute(routeHash(route))).toBe(route);
     }
     expect(routeHash("dioramas")).toBe("#/dioramen");
+  });
+});
+
+describe("P5 Adressen der Detailseiten", () => {
+  it.each([
+    ["minifig", "figur"],
+    ["legoSet", "set"],
+    ["specialPart", "sonderteil"],
+  ] as const)("P5 Die Detailseite %s hat die Adresse #/vitrine/%s/<Kennung>", (type, path) => {
+    const detail = { type, id: "abc-1" };
+    expect(detailHash(detail)).toBe(`#/vitrine/${path}/abc-1`);
+    expect(parseLocation(detailHash(detail))).toEqual({ route: "showcase", detail });
+  });
+
+  it("P5 Sonderzeichen in der Kennung überstehen die Adresse", () => {
+    const detail = { type: "minifig", id: "ä b/c#?" } as const;
+    expect(parseLocation(detailHash(detail)).detail).toEqual(detail);
+  });
+
+  it("P5 Eine Detailseite zählt in der Navigation zur Vitrine", () => {
+    expect(parseRoute("#/vitrine/set/set-1")).toBe("showcase");
+  });
+
+  it.each([
+    "#/vitrine/figur",
+    "#/vitrine/figur/",
+    "#/vitrine/gibtsnicht/abc",
+    "#/vitrine/figur/abc/mehr",
+    "#/dioramen/figur/abc",
+    "#/vitrine/figur/%E0%A4%A",
+  ])("P5 Die unvollständige Adresse %s öffnet die Vitrine", (hash) => {
+    expect(parseLocation(hash)).toEqual({ route: "showcase" });
+  });
+
+  it("P5 Die übliche Schreibweise einer Adresse", () => {
+    expect(locationHash({ route: "dioramas" })).toBe("#/dioramen");
+    expect(locationHash(parseLocation("#/vitrine/figur/x/"))).toBe("#/vitrine/figur/x");
+  });
+
+  it("P5 Der Titel einer Detailseite ist der Name des Objekts", () => {
+    expect(documentTitle("showcase", "Captain Rex")).toBe("Captain Rex – Stud Stephan");
   });
 });
 

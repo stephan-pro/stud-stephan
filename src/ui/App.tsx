@@ -1,23 +1,35 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Auth, Session } from "../auth/auth";
 import type { Remote } from "../backend/remote";
+import type { Collection } from "../domain/types";
 import { AccountCard } from "./components/AccountCard";
 import { ComingSoon } from "./components/ComingSoon";
 import { PhoneNavigation, Sidebar } from "./components/Navigation";
 import { PageHeader } from "./components/PageHeader";
 import { StorageCard } from "./components/StorageCard";
+import { DetailPage, detailName } from "./pages/DetailPage";
+import { INITIAL_VIEW, ShowcasePage, type ShowcaseView } from "./pages/ShowcasePage";
 import { SignInPage } from "./pages/SignInPage";
-import { DEFAULT_ROUTE, documentTitle, parseRoute, type Route, routeHash } from "./route";
+import { PhotoSourceContext } from "./photos";
+import {
+  DEFAULT_ROUTE,
+  documentTitle,
+  locationHash,
+  type PageLocation,
+  parseLocation,
+  routeHash,
+} from "./route";
 import { TEXTS } from "./texts";
+import { useCollection, useOnline } from "./useCollection";
 
 /** The page of the current address; an empty or unknown address is rewritten to the start page. */
-function currentRoute(): Route {
-  const route = parseRoute(location.hash);
-  if (location.hash !== routeHash(route)) {
+function currentLocation(): PageLocation {
+  const page = parseLocation(location.hash);
+  if (location.hash !== locationHash(page)) {
     // No new history entry: "Zurück" in the browser must not land on the unknown address again.
-    history.replaceState(null, "", routeHash(route));
+    history.replaceState(null, "", locationHash(page));
   }
-  return route;
+  return page;
 }
 
 function focusHeading(): void {
@@ -28,6 +40,8 @@ interface ShellProps {
   readonly session: Session;
   /** The server's files and data; missing in the demo (no server). */
   readonly remote?: Remote | undefined;
+  /** The example collection of the demo (no server). */
+  readonly demo?: Collection | undefined;
   /** Missing in the demo (no sign-in). */
   readonly onSignOut?: (() => void) | undefined;
   /** Move the focus to the heading at once (right after signing in; not on a fresh load). */
@@ -35,18 +49,27 @@ interface ShellProps {
 }
 
 /** The shell: navigation (sidebar on the PC, bottom bar on the phone) and the current page. */
-function Shell({ session, remote, onSignOut, focusOnMount }: ShellProps) {
-  const [route, setRoute] = useState(currentRoute);
+function Shell({ session, remote, demo, onSignOut, focusOnMount }: ShellProps) {
+  const [page, setPage] = useState(currentLocation);
+  const [view, setView] = useState<ShowcaseView>(INITIAL_VIEW);
+  const data = useCollection(remote, demo);
+  const online = useOnline();
   const firstPage = useRef(true);
+  const { route, detail } = page;
+  const address = locationHash(page);
+  const name = detail ? detailName(data, detail) : undefined;
 
   useEffect(() => {
-    const onHashChange = () => setRoute(currentRoute());
+    const onHashChange = () => setPage(currentLocation());
     addEventListener("hashchange", onHashChange);
     return () => removeEventListener("hashchange", onHashChange);
   }, []);
 
   useEffect(() => {
-    document.title = documentTitle(route);
+    document.title = documentTitle(route, name);
+  }, [route, name]);
+
+  useEffect(() => {
     // A freshly loaded page starts at the top without moving the focus (the skip link comes
     // first). After a page change keyboard and screen reader users start at the new heading.
     if (firstPage.current) {
@@ -56,23 +79,58 @@ function Shell({ session, remote, onSignOut, focusOnMount }: ShellProps) {
     }
     scrollTo(0, 0);
     focusHeading();
-  }, [route, focusOnMount]);
+  }, [address, focusOnMount]);
+
+  const hasItems =
+    data.state.status === "ready" &&
+    data.state.collection.minifigs.length +
+      data.state.collection.sets.length +
+      data.state.collection.specialParts.length >
+      0;
+  const search =
+    route === "showcase" && !detail && hasItems
+      ? {
+          open: view.searchOpen,
+          onToggle: () => {
+            setView({ ...view, searchOpen: !view.searchOpen });
+            if (!view.searchOpen) {
+              requestAnimationFrame(() => document.getElementById("showcase-search")?.focus());
+            }
+          },
+        }
+      : undefined;
 
   return (
-    <div class="shell">
-      {/* A button, not a link to "#inhalt": the address belongs to the router. */}
-      <button type="button" class="skip-link" onClick={focusHeading}>
-        {TEXTS.skipLink}
-      </button>
-      <Sidebar current={route} />
-      <main class={`page page--${route}`}>
-        <PageHeader route={route} />
-        {route === "settings" && <AccountCard email={session.email} onSignOut={onSignOut} />}
-        {route === "settings" && remote !== undefined && <StorageCard remote={remote} />}
-        <ComingSoon route={route} />
-      </main>
-      {route !== "settings" && <PhoneNavigation current={route} />}
-    </div>
+    <PhotoSourceContext.Provider value={remote}>
+      <div class="shell">
+        {/* A button, not a link to "#inhalt": the address belongs to the router. */}
+        <button type="button" class="skip-link" onClick={focusHeading}>
+          {TEXTS.skipLink}
+        </button>
+        <Sidebar current={route} />
+        <main class={`page page--${route}`}>
+          {!online && (
+            <p class="banner" role="status">
+              {TEXTS.offline}
+            </p>
+          )}
+          {detail ? (
+            <div class="detail">
+              <DetailPage data={data} detail={detail} />
+            </div>
+          ) : (
+            <>
+              <PageHeader route={route} search={search} />
+              {route === "showcase" && <ShowcasePage data={data} view={view} onView={setView} />}
+              {route === "settings" && <AccountCard email={session.email} onSignOut={onSignOut} />}
+              {route === "settings" && remote !== undefined && <StorageCard remote={remote} />}
+              {route !== "showcase" && <ComingSoon route={route} />}
+            </>
+          )}
+        </main>
+        {route !== "settings" && <PhoneNavigation current={route} />}
+      </div>
+    </PhotoSourceContext.Provider>
   );
 }
 
@@ -87,9 +145,12 @@ const DEMO_SESSION: Session = { userId: "demo", email: "" };
 export function App({
   auth,
   remote,
+  demo,
 }: {
   readonly auth: Auth | null;
   readonly remote?: Remote | undefined;
+  /** The example collection; only the demo has one. */
+  readonly demo?: Collection | undefined;
 }) {
   /** `undefined` while it is read from the device, `null` when signed out. */
   const [session, setSession] = useState<Session | null | undefined>(undefined);
@@ -112,7 +173,7 @@ export function App({
     };
   }, [auth]);
 
-  if (auth === null) return <Shell session={DEMO_SESSION} focusOnMount={false} />;
+  if (auth === null) return <Shell session={DEMO_SESSION} demo={demo} focusOnMount={false} />;
   if (session === undefined) return null;
   if (session === null) {
     return (

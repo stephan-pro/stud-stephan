@@ -55,7 +55,7 @@ pg_cron (wöchentlich) ──► Edge Function „bricklink“ ──► BrickLi
 | P4a | Supabase: Tabellen, Regeln, Dateispeicher, Fake-Server | Opus | High | ✅ 31.10.2026 |
 | P4b | Anmeldung per Code (nur Stephan) | Opus | High | ✅ 01.11.2026 |
 | P4c | Fotos und Studio-Dateien hochladen | Sonnet | Medium | ✅ 01.11.2026 |
-| P5 | Vitrine, Filter, Detailseiten | Sonnet | Medium | offen |
+| P5 | Vitrine, Filter, Detailseiten | Sonnet | Medium | ✅ 01.11.2026 |
 | P6 | Manuell erfassen, bearbeiten, löschen, Mods | Sonnet | Medium | offen |
 | P7 | Katalog (BrickLink-Nummern, Rebrickable-Suche) | Sonnet | Medium | offen |
 | P8 | Fotoerkennung (Brickognize) | Sonnet | Medium | offen |
@@ -319,6 +319,15 @@ Tickets are written in English. Every acceptance criterion is at least one test,
   - Der Fortschritt beim Hochladen zeigt Schritte (Senden, Warten auf den nächsten Versuch, Fertig) statt Prozent: `fetch` meldet keine gesendeten Bytes. Bis zu 4 Versuche mit 1, 2, 4 Sekunden Pause; eine Ablehnung des Servers wird nicht wiederholt.
   - Speicherplatz: 1 GB zählt als 1.000.000.000 Bytes; die Anzeige in den Einstellungen rechnet in Schritten zu 1.000. Die Belegung wird beim Öffnen der Einstellungen aus dem Dateispeicher gelesen (keine neue Migration).
   - Die Oberfläche zum Auswählen, Anzeigen und Löschen von Fotos und Studio-Dateien kommt mit den Seiten, die sie brauchen (P5 Anzeige und Platzhalter, P6 Fotos auswählen und löschen, P10 Dioramen mit Studio-Dateien); P4c liefert die Bausteine (`src/files/`, `Remote.signedUrl`) und die Speicheranzeige.
+
+- 01.11.2026 (P5, von Claude entschieden, vom PO änderbar):
+  - Die Vitrine lädt die Sammlung einmal beim Start der App. Was später gespeichert wird (ab P6), aktualisiert die Anzeige beim Speichern; bis dahin zeigt ein Neuladen neue Daten. Ohne Verbindung zeigt eine Leiste oben „Keine Verbindung“, die geladene Sammlung bleibt stehen; ein Offline-Speicher für den Start ohne Netz kommt mit P15.
+  - Die Kachel einer Gruppe (×3) zeigt den Wert des wertvollsten Exemplars (nicht die Summe); ein Objekt ohne Marktwert und ohne eigenen Wert zeigt „ohne Wert“ statt „0,00 €“.
+  - Eine enthaltene Figur eines Sets gilt als „vorhanden“, wenn eine LEGO-Figur mit derselben BrickLink-Nummer in der Sammlung steht (ohne Nummer: gleicher Name und mit dem Set verknüpft). „2 / 4“ zählt Stücke: zwei Clone Trooper im Set, drei eigene Exemplare → 2 von 2 vorhanden.
+  - Der Filter wirkt sofort beim Antippen; der Knopf unten nennt die Zahl der Ergebnisse. Themen zweistufig: ein Hauptthema nimmt alle Unterthemen mit, ein Unterthema nur sich selbst (Entscheidung vom 31.10.2026).
+  - Handy: Die Lupe öffnet das Suchfeld; am PC steht es immer da (wie im PC-Dummy).
+  - Noch nicht dabei, weil das Paket es bringt: „+2,5 % Woche“ in der Sammlungskarte (Verlauf des Gesamtwerts, P13), „Bearbeiten“, „Weiteres Exemplar anlegen“ und „Löschen“ (P6), Diorama verlinken und „Einem Diorama zuordnen“ (P10), „＋ Wunschliste“ bei fehlenden Figuren eines Sets (P12). Ein Diorama steht auf der Figur mit Namen und Bild, noch ohne Link.
+  - Neuer Design-Wert: `--line` (#E1E4EA) für die Trennlinien in Listen, in `DESIGN.md` und `tokens.css` eingetragen.
 
 ## 8. Abhängigkeiten
 

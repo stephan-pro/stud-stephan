@@ -16,8 +16,8 @@ test.beforeEach(async ({ page }) => {
   await signInDirectly(page);
 });
 
+// The showcase has its content since P5 (`showcase.spec.ts`); the others still say what will come.
 const PAGES = [
-  { hash: "#/vitrine", heading: "Hey Stephan", tab: "Vitrine", text: TEXTS.routes.showcase },
   { hash: "#/dioramen", heading: "Dioramen", tab: "Dioramen", text: TEXTS.routes.dioramas },
   { hash: "#/erfassen", heading: "Erfassen", tab: "Erfassen", text: TEXTS.routes.capture },
   {

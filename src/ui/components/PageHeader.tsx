@@ -5,6 +5,8 @@ import { Studs } from "./Studs";
 
 interface PageHeaderProps {
   readonly route: Route;
+  /** Search button of the showcase on the phone (the PC has the search field open all the time). */
+  readonly search?: { readonly open: boolean; readonly onToggle: () => void } | undefined;
 }
 
 /**
@@ -12,7 +14,7 @@ interface PageHeaderProps {
  * change). The showcase greets instead of naming the page; on the phone its avatar "S" opens the
  * settings. The settings have a back button on the phone, where the bottom bar is hidden.
  */
-export function PageHeader({ route }: PageHeaderProps) {
+export function PageHeader({ route, search }: PageHeaderProps) {
   if (route === "showcase") {
     return (
       <header class="page-header">
@@ -31,6 +33,17 @@ export function PageHeader({ route }: PageHeaderProps) {
             </h1>
           </div>
         </div>
+        {search && (
+          <button
+            type="button"
+            class="icon-button search-toggle pressable"
+            aria-label={search.open ? TEXTS.showcase.searchClose : TEXTS.showcase.searchOpen}
+            aria-expanded={search.open}
+            onClick={search.onToggle}
+          >
+            <Icon name={search.open ? "close" : "search"} />
+          </button>
+        )}
       </header>
     );
   }

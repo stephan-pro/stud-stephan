@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Locator, type Page } from "@playwright/test";
 import { FAKE_AUTH_KEY } from "../../src/auth/fakeHttpAuth";
+import type { ObjectKind } from "../../src/backend/rules";
+import { type Collection, SCHEMA_VERSION } from "../../src/domain/types";
 
 /** Phone size of the click dummy (Redmi-like) and a usual PC window. */
 export const PHONE = { width: 390, height: 844 } as const;
@@ -17,16 +19,47 @@ export function newAddress(): string {
   return `stephan-${Date.now()}-${Math.floor(Math.random() * 1e6)}@beispiel.de`;
 }
 
+/** Puts the objects and prices of a collection onto the fake server, for the account of `token`. */
+async function seedCollection(page: Page, token: string, collection: Collection): Promise<void> {
+  const send = async (path: string, data: unknown) => {
+    const response = await page.request.post(`${FAKE_SERVER}${path}`, {
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      data,
+    });
+    expect(response.ok(), `${path}: ${response.status()}`).toBe(true);
+  };
+  const save = (kind: ObjectKind, objects: readonly object[]) =>
+    Promise.all(
+      objects.map((object) => send(`/objects/${kind}?schemaVersion=${SCHEMA_VERSION}`, object)),
+    );
+  // The example Studio files do not exist on the fake server; the showcase does not need them.
+  await save(
+    "diorama",
+    collection.dioramas.map((diorama) => ({ ...diorama, studioFiles: [] })),
+  );
+  await save("minifig", collection.minifigs);
+  await save("legoSet", collection.sets);
+  await save("specialPart", collection.specialParts);
+  await save("wishItem", collection.wishlist);
+  await Promise.all(collection.prices.map((point) => send("/prices", point)));
+}
+
 /**
  * Makes an account by hand (as "Add user" in the dashboard) and puts its session into the browser
  * before the app starts, so a test of the shell starts signed in without the sign-in page (that
  * page has its own tests in `signIn.spec.ts`). Only for the first load of the tab: after signing
- * out, a reload stays signed out. Answers the address.
+ * out, a reload stays signed out. Answers the address. With `collection` the account starts with
+ * those objects, otherwise it is empty.
  */
-export async function signInDirectly(page: Page, email = newAddress()): Promise<string> {
+export async function signInDirectly(
+  page: Page,
+  email = newAddress(),
+  collection?: Collection,
+): Promise<string> {
   const response = await page.request.post(`${FAKE_SERVER}/test/user`, { data: { email } });
   expect(response.ok()).toBe(true);
   const account = (await response.json()) as { token: string; owner: string; email: string };
+  if (collection) await seedCollection(page, account.token, collection);
   const stored = JSON.stringify({
     token: account.token,
     session: { userId: account.owner, email: account.email },

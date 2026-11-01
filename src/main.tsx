@@ -11,6 +11,7 @@ import { createSupabaseClient } from "./auth/supabaseClient";
 import { createFakeHttpRemote } from "./backend/fakeHttpRemote";
 import type { Remote } from "./backend/remote";
 import { SupabaseRemote } from "./backend/supabaseRemote";
+import { DEMO_COLLECTION } from "./demo/collection";
 import { App } from "./ui/App";
 
 /** Sign-in and data of the server this build runs on (`src/backend/mode.ts`); none in the demo. */
@@ -42,4 +43,11 @@ if (!root) {
   throw new Error("Element #app fehlt in index.html");
 }
 const backend = createBackend();
-render(<App auth={backend?.auth ?? null} remote={backend?.remote} />, root);
+render(
+  <App
+    auth={backend?.auth ?? null}
+    remote={backend?.remote}
+    demo={__BACKEND__ === "demo" ? DEMO_COLLECTION : undefined}
+  />,
+  root,
+);

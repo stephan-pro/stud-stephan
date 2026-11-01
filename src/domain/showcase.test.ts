@@ -4,14 +4,18 @@ import {
   activeFilterCount,
   coverImage,
   filterShowcase,
+  galleryImages,
   groupCopies,
   mainTheme,
   NO_FILTER,
   type ShowcaseEntry,
+  shortSetNumber,
   showcase,
   showcaseItems,
   showcaseThemes,
   sortShowcase,
+  subTheme,
+  tileFacts,
   toEntries,
 } from "./showcase";
 
@@ -176,14 +180,97 @@ describe("F11 Vitrine", () => {
     ).toBe(5);
   });
 
-  it("F11 Die Themen für den Filter sind die Hauptthemen, alphabetisch und ohne Doppelte", () => {
+  it("F11 Die Themen für den Filter sind Hauptthemen mit ihren Unterthemen, alphabetisch und ohne Doppelte", () => {
     const ninja = aMinifig({ theme: "Ninjago – Staffel 1" });
     const lower = aMinifig({ theme: "star wars" });
-    expect(showcaseThemes([...items, ninja, lower, aMinifig({ theme: "" })])).toEqual([
-      "Ninjago",
-      "Ritter",
-      "Star Wars",
+    const mando = aMinifig({ theme: "Star Wars – The Mandalorian" });
+    const again = aMinifig({ theme: "star wars – the clone wars" });
+    expect(showcaseThemes([...items, ninja, lower, mando, again, aMinifig({ theme: "" })])).toEqual(
+      [
+        { theme: "Ninjago", subThemes: [{ theme: "Ninjago – Staffel 1", name: "Staffel 1" }] },
+        { theme: "Ritter", subThemes: [] },
+        {
+          theme: "Star Wars",
+          subThemes: [
+            { theme: "Star Wars – The Clone Wars", name: "The Clone Wars" },
+            { theme: "Star Wars – The Mandalorian", name: "The Mandalorian" },
+          ],
+        },
+      ],
+    );
+  });
+
+  it("F11 Ein Hauptthema im Filter nimmt alle Unterthemen mit, ein Unterthema nur sich selbst", () => {
+    const clone = aMinifig({ id: "clone", theme: "Star Wars – The Clone Wars" });
+    const mando = aMinifig({ id: "mando", theme: "Star Wars – The Mandalorian" });
+    const plain = aMinifig({ id: "plain", theme: "Star Wars" });
+    const other = aMinifig({ id: "other", theme: "Ritter" });
+    const ids = (themes: string[]) =>
+      filterShowcase([clone, mando, plain, other], { ...NO_FILTER, themes }).map((i) => i.id);
+    expect(ids(["Star Wars"])).toEqual(["clone", "mando", "plain"]);
+    expect(ids(["Star Wars – The Clone Wars"])).toEqual(["clone"]);
+    expect(ids(["star wars – the mandalorian", "Ritter"])).toEqual(["mando", "other"]);
+  });
+
+  it("F11 Das Unterthema ist der Teil nach dem Gedankenstrich", () => {
+    expect(subTheme("Star Wars – The Clone Wars")).toBe("The Clone Wars");
+    expect(subTheme("Star Wars")).toBeUndefined();
+    expect(subTheme(undefined)).toBeUndefined();
+  });
+
+  it("F11 Die Galerie zeigt eigene Fotos in Reihenfolge, das Katalogbild zuletzt", () => {
+    const rexWith = aMinifig({ photos: ["a.webp", "b.webp"], catalogImageUrl: "https://x/y.png" });
+    expect(galleryImages(rexWith)).toEqual([
+      { kind: "photo", path: "a.webp" },
+      { kind: "photo", path: "b.webp" },
+      { kind: "catalog", url: "https://x/y.png" },
     ]);
+    expect(galleryImages(aMinifig())).toEqual([]);
+  });
+
+  it("F5 Die Kachel zeigt Anzahl, Mod, fehlendes Diorama und den Wert des wertvollsten Exemplars", () => {
+    const prices = [aPrice("sw0194", "2026-10-27", { used: 3850, new: 5200 })];
+    const copies = [
+      aMinifig({ id: "c1", dioramaId: "d" }),
+      aMinifig({ id: "c2", condition: "new", mods: [mod] }),
+    ];
+    const [group] = toEntries(copies);
+    expect(tileFacts(group as ShowcaseEntry, prices)).toEqual({
+      name: "Captain Rex",
+      manufacturer: { kind: "lego" },
+      number: "sw0194",
+      theme: "Star Wars",
+      copies: 2,
+      modified: true,
+      withoutDiorama: true,
+      cents: 5200,
+      valueMissing: false,
+    });
+  });
+
+  it("F10 Die Kachel eines Objekts ohne Wert sagt es, ohne Nummer und Thema fehlen sie", () => {
+    const [entry] = toEntries([
+      aMinifig({ bricklinkId: "", theme: "", manufacturer: { kind: "custom", name: "X" } }),
+    ]);
+    expect(tileFacts(entry as ShowcaseEntry, [])).toMatchObject({
+      copies: 1,
+      modified: false,
+      cents: 0,
+      valueMissing: true,
+    });
+    expect(tileFacts(entry as ShowcaseEntry, [])).not.toHaveProperty("number");
+    expect(tileFacts(entry as ShowcaseEntry, [])).not.toHaveProperty("theme");
+  });
+
+  it("F7 Die Kachel eines Sets und die Setnummer ohne Versionsendung", () => {
+    const [entry] = toEntries([aSet({ setNumber: "75372-1" })]);
+    expect(tileFacts(entry as ShowcaseEntry, [])).toMatchObject({
+      number: "75372-1",
+      modified: false,
+      withoutDiorama: false,
+    });
+    expect(shortSetNumber("75372-1")).toBe("75372");
+    expect(shortSetNumber("BB-1234")).toBe("BB-1234");
   });
 
   it("F11 Sortierung „zuletzt hinzugefügt“, neueste zuerst", () => {

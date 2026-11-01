@@ -18,6 +18,7 @@
   --positive: #11552b;
   --danger: #a3261c;
   --scrim: rgba(20, 33, 61, 0.45);
+  --line: #e1e4ea;
   /* Text and symbols on dark areas (DESIGN.md: "Text auf --nav ist Weiß"), the scribbles. */
   --on-nav: #ffffff;
   --on-ink: #ffffff;
@@ -37,6 +38,8 @@
   --radius-input: 14px;
   --radius-pill: 999px;
   --radius-sidebar: 28px;
+  /* A corner that stays square (the side panel on the PC has two). */
+  --radius-square: 0;
 
   /* Spacing (section 4) */
   --space-1: 4px;
@@ -64,6 +67,8 @@
   --stud-large: 14px;
   /* Scribble lines: white, faint (DESIGN.md section 5; sign-in page as in the click dummy). */
   --scribble-opacity: 0.4;
+  /* On the cards and placeholders of the showcase: 50-55 % (DESIGN.md section 5). */
+  --scribble-opacity-card: 0.55;
   --sign-in-width: 440px;
 
   /* Motion (section 8) */
