@@ -25,6 +25,18 @@ describeRemoteContract("FakeHttpRemote (Fake-Server über HTTP)", async () => ({
 }));
 
 describe("Fake-Server", () => {
+  it("P4c Die Adresse einer Datei liefert ohne Schlüssel genau ihre Bytes, bis die Datei gelöscht ist", async () => {
+    const remote = createFakeHttpRemote({ baseUrl: running.url, token: await account() });
+    const bytes = new Uint8Array([1, 2, 3, 250, 251, 0]);
+    const path = await remote.putFile("photos", "anzeige.webp", bytes, "image/webp");
+
+    const url = await remote.signedUrl("photos", path);
+
+    expect(new Uint8Array(await (await fetch(url)).arrayBuffer())).toEqual(bytes);
+    await remote.removeFile("photos", path);
+    expect((await fetch(url)).status).toBe(404);
+  });
+
   it("Antwortet auf die Bereitschaftsprüfung", async () => {
     const response = await fetch(`${running.url}/health`);
     expect(await response.json()).toBe("ok");

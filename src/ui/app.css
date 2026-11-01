@@ -405,6 +405,13 @@ a {
   overflow-wrap: anywhere;
 }
 
+/* S12 storage card: used part of the free storage */
+
+.storage__bar {
+  width: 100%;
+  accent-color: var(--ink);
+}
+
 /* Phone: floating bar at the bottom (DESIGN.md section 7) */
 
 .tabbar {

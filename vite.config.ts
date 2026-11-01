@@ -35,9 +35,16 @@ export default defineConfig(({ mode, isPreview, isSsrBuild }) => {
           "src/demo/**/*.ts",
           "src/auth/**/*.ts",
           "src/backend/mode.ts",
+          "src/files/**/*.ts",
           "src/ui/route.ts",
         ],
-        exclude: ["src/**/*.test.ts", "src/**/*.fixtures.ts", "src/**/*.contract.ts"],
+        // `browserPhoto.ts` needs a real browser (end-to-end test `tests/e2e/photo.spec.ts`).
+        exclude: [
+          "src/files/browserPhoto.ts",
+          "src/**/*.test.ts",
+          "src/**/*.fixtures.ts",
+          "src/**/*.contract.ts",
+        ],
         thresholds: {
           lines: 90,
           functions: 90,

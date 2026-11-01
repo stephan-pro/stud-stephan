@@ -63,6 +63,9 @@ export const MAX_FILE_BYTES: Readonly<Record<Bucket, number>> = {
   "studio-files": 25 * 1024 * 1024,
 };
 
+/** What the free storage plan holds in all (1 GB); the settings show the used part of it. */
+export const STORAGE_LIMIT_BYTES = 1_000_000_000;
+
 /** The content types a bucket takes (Studio files are sent as plain bytes). */
 export const FILE_TYPES: Readonly<Record<Bucket, readonly string[]>> = {
   photos: ["image/webp", "image/jpeg", "image/png"],

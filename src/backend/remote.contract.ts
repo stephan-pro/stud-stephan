@@ -218,6 +218,28 @@ export function describeRemoteContract(name: string, setup: () => Promise<Contra
         expect(await a.getFile("photos", path)).toEqual(someBytes(20));
       });
 
+      it("P4c Die Belegung zählt nur die eigenen Dateien und sinkt beim Löschen", async () => {
+        const before = await a.storageUsage();
+        const first = await a.putFile("photos", "belegung/eins.webp", someBytes(1_000), WEBP);
+        await a.putFile("studio-files", "belegung/zwei.io", someBytes(2_000), STUDIO);
+        await b.putFile("photos", "belegung/fremd.webp", someBytes(5_000), WEBP);
+
+        expect(await a.storageUsage()).toBe(before + 3_000);
+
+        await a.removeFile("photos", first);
+        expect(await a.storageUsage()).toBe(before + 2_000);
+      });
+
+      it("P4c Für eigene Dateien gibt es eine Adresse zum Anzeigen, für fremde und fehlende nicht", async () => {
+        const path = await photo(a, "adresse.webp");
+
+        expect(await a.signedUrl("photos", path)).toMatch(/\S+/);
+        await expect(b.signedUrl("photos", path)).rejects.toMatchObject({ permanent: true });
+        await expect(
+          a.signedUrl("photos", `${await ownFolder(a)}fehlt.webp`),
+        ).rejects.toMatchObject({ permanent: true, reason: "not_found" });
+      });
+
       it("Eine gelöschte Datei ist weg", async () => {
         const path = await photo(a, "weg.webp");
         await a.removeFile("photos", path);

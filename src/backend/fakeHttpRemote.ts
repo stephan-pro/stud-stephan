@@ -17,8 +17,8 @@ import {
 export interface FakeHttpRemoteOptions {
   /** e.g. "http://localhost:4180" */
   readonly baseUrl: string;
-  /** The secret of the account (`POST /test/user` hands it out). */
-  readonly token: string;
+  /** The secret of the account (`POST /test/user` hands it out); a function reads it per call. */
+  readonly token: string | (() => string);
   /** Default: the browser's `fetch`. */
   readonly fetch?: typeof fetch;
 }
@@ -29,7 +29,8 @@ function encodePath(path: string): string {
 }
 
 export function createFakeHttpRemote(options: FakeHttpRemoteOptions): Remote {
-  const { baseUrl, token } = options;
+  const { baseUrl } = options;
+  const token = () => (typeof options.token === "string" ? options.token : options.token());
   const send = options.fetch ?? ((input, init) => fetch(input, init));
 
   async function request(path: string, init: RequestInit): Promise<Response> {
@@ -37,7 +38,7 @@ export function createFakeHttpRemote(options: FakeHttpRemoteOptions): Remote {
     try {
       response = await send(`${baseUrl}${path}`, {
         ...init,
-        headers: { ...init.headers, Authorization: `Bearer ${token}` },
+        headers: { ...init.headers, Authorization: `Bearer ${token()}` },
       });
     } catch (error) {
       throw new RemoteError(`Keine Verbindung zum Server: ${String(error)}`);
@@ -112,6 +113,18 @@ export function createFakeHttpRemote(options: FakeHttpRemoteOptions): Remote {
 
     async removeFile(bucket: Bucket, path: string) {
       await call(`/files/${bucket}/${encodePath(path)}`, { method: "DELETE" });
+    },
+
+    async signedUrl(bucket: Bucket, path: string) {
+      const { token: secret } = await call<{ token: string }>(
+        `/sign/${bucket}/${encodePath(path)}`,
+        { method: "POST" },
+      );
+      return `${baseUrl}/signed/${encodeURIComponent(secret)}`;
+    },
+
+    async storageUsage() {
+      return (await call<{ usedBytes: number }>("/usage", { method: "GET" })).usedBytes;
     },
   };
   return remote;

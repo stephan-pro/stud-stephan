@@ -6,7 +6,7 @@ Doku: Anforderungen `docs/ANFORDERUNGEN.md` · Screens und Abläufe `docs/STRUKT
 
 ## Stand
 
-P4b: Anmeldung per Code (S0), danach Gerüst mit Navigation und leeren Seiten, Konto mit Abmelden in den Einstellungen; Datenmodell und Fachlogik in `src/domain/`, Demo-Daten in `src/demo/` (noch nicht in der Oberfläche); Supabase-Tabellen, Regeln, Dateiablagen und `Remote` in `src/backend/` (App lädt Daten ab P5). Fortschritt: Tabelle in `docs/UMSETZUNG.md`, Abschnitt 4. Supabase: `docs/SUPABASE.md`.
+P4c: Anmeldung per Code (S0), danach Gerüst mit Navigation und leeren Seiten, Konto mit Abmelden und Speicheranzeige in den Einstellungen; Foto verkleinern und Dateien hochladen als Bausteine in `src/files/` (noch ohne Oberfläche dafür); Datenmodell und Fachlogik in `src/domain/`, Demo-Daten in `src/demo/` (noch nicht in der Oberfläche); Supabase-Tabellen, Regeln, Dateiablagen und `Remote` in `src/backend/` (App lädt Daten ab P5). Fortschritt: Tabelle in `docs/UMSETZUNG.md`, Abschnitt 4. Supabase: `docs/SUPABASE.md`.
 
 ## Befehle
 
@@ -31,6 +31,7 @@ P4b: Anmeldung per Code (S0), danach Gerüst mit Navigation und leeren Seiten, K
 - `src/domain/` – `types.ts` (alle Objekte, `SCHEMA_VERSION`), `money.ts` (`formatMoney` …), `prices.ts` (Marktpreis, Preisabruf `recordPriceRun`), `value.ts` (`valueOfItem`, `modSpend`), `totals.ts`, `showcase.ts` (Gruppen ×3, Filter, Sortierung), `dioramas.ts`, `wishlist.ts`, `series.ts`. Testbausteine `fixtures.ts` (`aMinifig`, `aPrice`, `aCollection` …).
 - `src/demo/collection.ts` – `DEMO_COLLECTION`, `DEMO_SERIES`, `DEMO_TODAY` nach dem Klick-Dummy.
 - `src/backend/` – `remote.ts` (Schnittstelle `Remote`: `load`, `save(kind, …)`, `remove`, `savePrice`, `putFile`/`getFile`/`removeFile`; `RemoteError` mit `permanent`, `reason`), `rules.ts` (Arten, Grenzen, Prüfungen wie in SQL), `supabaseRemote.ts`, `fakeStore.ts` + `fakeRemote.ts` (im Speicher), `fakeServer.ts` (mit Anmeldung `/auth/*`, `/test/code`, `/test/user`) + `fakeHttpServer.ts` + `fakeHttpRemote.ts` (Fake-Server), `fakeServer.fixtures.ts` (`fetchFrom`: Fake-Server ohne HTTP), `mode.ts` (Build-Modi). `remote.contract.ts` – dieselben Tests für Fake und echte Datenbank.
+- `src/files/` (P4c) – `photoSize.ts` (`fitWithin`, `shrinkToTarget`: Maße und Qualitätsstufen, rein), `browserPhoto.ts` (`resizePhoto` mit Canvas, nur im Browser, E2E `photo.spec.ts` bündelt es mit Vite), `upload.ts` (`uploadFile` mit Wiederholung und Fortschritt), `studioFile.ts` (`.io`-Prüfung, Speichernamen), `bytes.ts` (`formatBytes`). `Remote.signedUrl` (Anzeige-Adresse) und `Remote.storageUsage` (Belegung); `ui/components/StorageCard.tsx` zeigt sie in den Einstellungen; `App` bekommt `remote` (null im Demo).
 - `supabase/` – `config.toml` (lokale Instanz), `migrations/` (Regeln dort und in `rules.ts`/`fakeStore.ts` immer gleich halten), `tests/` (nur `check:db`).
 - Tests: `*.test.ts` neben dem Code; `tokens.test.ts` prüft Tokens gegen DESIGN.md und Kontraste, `designRules.test.ts` verbietet feste Farben, Radien und Abstände außerhalb von `tokens.css`. E2E in `tests/e2e/` (`helpers.ts`: Größen `PHONE`/`PC`, `expectNoAccessibilityViolations`, `signInDirectly` = angemeldet starten, `newAddress`; Anmeldeseite in `signIn.spec.ts`).
 - `scripts/check.mjs` (Kurzausgabe), `scripts/short-reporter.mjs`, `scripts/scan-secrets.mjs` (Pre-Commit-Hook `.githooks/`).
@@ -76,3 +77,5 @@ P4b: Anmeldung per Code (S0), danach Gerüst mit Navigation und leeren Seiten, K
 | Fotoerkennung | recognition |
 | Katalog | catalog |
 | Datensicherung (Export/Import) | backup (exportData/importData) |
+| Speicherplatz / Belegung | storage / storageUsage |
+| Serverfehler bei der Anmeldung | serviceFailed (`AuthFailure`) |

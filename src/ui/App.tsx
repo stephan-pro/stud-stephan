@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { Auth, Session } from "../auth/auth";
+import type { Remote } from "../backend/remote";
 import { AccountCard } from "./components/AccountCard";
 import { ComingSoon } from "./components/ComingSoon";
 import { PhoneNavigation, Sidebar } from "./components/Navigation";
 import { PageHeader } from "./components/PageHeader";
+import { StorageCard } from "./components/StorageCard";
 import { SignInPage } from "./pages/SignInPage";
 import { DEFAULT_ROUTE, documentTitle, parseRoute, type Route, routeHash } from "./route";
 import { TEXTS } from "./texts";
@@ -24,6 +26,8 @@ function focusHeading(): void {
 
 interface ShellProps {
   readonly session: Session;
+  /** The server's files and data; missing in the demo (no server). */
+  readonly remote?: Remote | undefined;
   /** Missing in the demo (no sign-in). */
   readonly onSignOut?: (() => void) | undefined;
   /** Move the focus to the heading at once (right after signing in; not on a fresh load). */
@@ -31,7 +35,7 @@ interface ShellProps {
 }
 
 /** The shell: navigation (sidebar on the PC, bottom bar on the phone) and the current page. */
-function Shell({ session, onSignOut, focusOnMount }: ShellProps) {
+function Shell({ session, remote, onSignOut, focusOnMount }: ShellProps) {
   const [route, setRoute] = useState(currentRoute);
   const firstPage = useRef(true);
 
@@ -64,6 +68,7 @@ function Shell({ session, onSignOut, focusOnMount }: ShellProps) {
       <main class={`page page--${route}`}>
         <PageHeader route={route} />
         {route === "settings" && <AccountCard email={session.email} onSignOut={onSignOut} />}
+        {route === "settings" && remote !== undefined && <StorageCard remote={remote} />}
         <ComingSoon route={route} />
       </main>
       {route !== "settings" && <PhoneNavigation current={route} />}
@@ -79,7 +84,13 @@ const DEMO_SESSION: Session = { userId: "demo", email: "" };
  * read from the device, so a reload stays signed in; when it ends (signed out here, or refused by
  * the server) the sign-in page comes back.
  */
-export function App({ auth }: { readonly auth: Auth | null }) {
+export function App({
+  auth,
+  remote,
+}: {
+  readonly auth: Auth | null;
+  readonly remote?: Remote | undefined;
+}) {
   /** `undefined` while it is read from the device, `null` when signed out. */
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   /** Whether the session changed while the app ran (then the new page takes the focus). */
@@ -125,6 +136,11 @@ export function App({ auth }: { readonly auth: Auth | null }) {
   };
 
   return (
-    <Shell session={session} onSignOut={() => void signOut()} focusOnMount={changed.current} />
+    <Shell
+      session={session}
+      remote={remote}
+      onSignOut={() => void signOut()}
+      focusOnMount={changed.current}
+    />
   );
 }

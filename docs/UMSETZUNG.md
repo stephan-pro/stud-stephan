@@ -54,7 +54,7 @@ pg_cron (wöchentlich) ──► Edge Function „bricklink“ ──► BrickLi
 | P3 | Datenmodell und Fachlogik | Opus | High | ✅ 31.10.2026 |
 | P4a | Supabase: Tabellen, Regeln, Dateispeicher, Fake-Server | Opus | High | ✅ 31.10.2026 |
 | P4b | Anmeldung per Code (nur Stephan) | Opus | High | ✅ 01.11.2026 |
-| P4c | Fotos und Studio-Dateien hochladen | Sonnet | Medium | offen |
+| P4c | Fotos und Studio-Dateien hochladen | Sonnet | Medium | ✅ 01.11.2026 |
 | P5 | Vitrine, Filter, Detailseiten | Sonnet | Medium | offen |
 | P6 | Manuell erfassen, bearbeiten, löschen, Mods | Sonnet | Medium | offen |
 | P7 | Katalog (BrickLink-Nummern, Rebrickable-Suche) | Sonnet | Medium | offen |
@@ -312,6 +312,13 @@ Tickets are written in English. Every acceptance criterion is at least one test,
   - Eine unbekannte Adresse bekommt keine Mail, aber dieselbe Seite „Code eingeben“ mit „Wenn … zu Stud Stephan gehört, ist jetzt eine Mail … unterwegs“; jeder Code ist dort „falsch“. So verrät die App nicht, welche Adresse ein Konto hat.
   - Nach dem Abmelden startet die nächste Anmeldung in der Vitrine. Öffnet man einen Link auf eine Seite (z. B. `#/dioramen`) abgemeldet, führt die Anmeldung genau dorthin.
   - `npm run demo` zeigt die App ohne Anmeldung (Konto-Karte: „Beispieldaten, ohne Anmeldung“). `npm run dev` und die Online-Version melden sich bei Supabase an, `npm run check` beim Fake-Server (Build-Modus `e2e`).
+
+- 01.11.2026 (P4b-Nachtrag, von Claude entschieden): Antwortet Supabase mit einem Serverfehler (5xx, z. B. weil der Mailversand scheitert), zeigt die Anmeldeseite „Der Code konnte gerade nicht verschickt oder geprüft werden. Versuch es in ein paar Minuten noch einmal.“ „Keine Verbindung zum Server“ kommt nur noch, wenn gar keine Antwort ankommt.
+- 01.11.2026 (P4c, von Claude entschieden, vom PO änderbar):
+  - Fotos werden auf höchstens 1.600 px an der langen Seite verkleinert und als WebP (Ziel ≤ 300 KB) gespeichert; reicht die Qualitätsstufe nicht, sinkt erst die Qualität, dann die Größe (1.280, 1.024 px). Browser, die kein WebP schreiben können (Safari), speichern JPEG. Die Drehung aus den EXIF-Daten wendet der Browser beim Laden an.
+  - Der Fortschritt beim Hochladen zeigt Schritte (Senden, Warten auf den nächsten Versuch, Fertig) statt Prozent: `fetch` meldet keine gesendeten Bytes. Bis zu 4 Versuche mit 1, 2, 4 Sekunden Pause; eine Ablehnung des Servers wird nicht wiederholt.
+  - Speicherplatz: 1 GB zählt als 1.000.000.000 Bytes; die Anzeige in den Einstellungen rechnet in Schritten zu 1.000. Die Belegung wird beim Öffnen der Einstellungen aus dem Dateispeicher gelesen (keine neue Migration).
+  - Die Oberfläche zum Auswählen, Anzeigen und Löschen von Fotos und Studio-Dateien kommt mit den Seiten, die sie brauchen (P6 Fotos, P9 Dioramen); P4c liefert die Bausteine (`src/files/`, `Remote.signedUrl`) und die Speicheranzeige.
 
 ## 8. Abhängigkeiten
 

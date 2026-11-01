@@ -69,6 +69,8 @@ function byText(a: string, b: string): number {
 export class FakeStore {
   private readonly owners = new Map<string, OwnerData>();
   private readonly files = new Map<string, StoredBytes>();
+  /** Signed address part → "bucket|path". */
+  private readonly signed = new Map<string, string>();
 
   /** A new account; answers its id (a uuid, like `auth.uid()`). */
   createUser(): string {
@@ -247,6 +249,31 @@ export class FakeStore {
   removeFile(owner: string, bucket: string, path: string): void {
     this.data(owner);
     if (isOwnPath(owner, path)) this.files.delete(`${this.bucket(bucket)}|${path}`);
+  }
+
+  /** A secret address part for an own file (the fake server serves it under `/signed/<it>`). */
+  signFile(owner: string, bucket: string, path: string): string {
+    this.getFile(owner, bucket, path);
+    const token = crypto.randomUUID();
+    this.signed.set(token, `${this.bucket(bucket)}|${path}`);
+    return token;
+  }
+
+  /** The bytes behind a signed address; unknown ones are `not_found`. */
+  signedFile(token: string): Uint8Array {
+    const stored = this.files.get(this.signed.get(token) ?? "");
+    if (stored === undefined) throw new Refusal("not_found");
+    return stored.bytes.slice();
+  }
+
+  /** Bytes of all files of the owner. */
+  usage(owner: string): number {
+    this.data(owner);
+    let total = 0;
+    for (const [key, stored] of this.files) {
+      if (isOwnPath(owner, key.slice(key.indexOf("|") + 1))) total += stored.bytes.length;
+    }
+    return total;
   }
 
   /** Whether a file exists at all, whoever it belongs to (for tests). */

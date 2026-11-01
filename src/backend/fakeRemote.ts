@@ -51,6 +51,15 @@ export class FakeRemote implements Remote {
     this.call(() => this.store.removeFile(this.owner, bucket, path));
   }
 
+  /** No server to open it: the address names the file as `fake-signed:<secret>`. */
+  async signedUrl(bucket: Bucket, path: string): Promise<string> {
+    return `fake-signed:${this.call(() => this.store.signFile(this.owner, bucket, path))}`;
+  }
+
+  async storageUsage(): Promise<number> {
+    return this.call(() => this.store.usage(this.owner));
+  }
+
   private call<T>(action: () => T): T {
     if (!this.online) {
       throw new RemoteError("Keine Verbindung zum Server.");

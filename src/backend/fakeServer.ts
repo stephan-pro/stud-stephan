@@ -18,6 +18,9 @@
 //   PUT    /files/<bucket>/<name>     the bytes, with Content-Type → {path}
 //   GET    /files/<bucket>/<path>     the bytes
 //   DELETE /files/<bucket>/<path>
+//   POST   /sign/<bucket>/<path>      → {token}; the file is then open without a secret at
+//   GET    /signed/<token>            the bytes (what an `<img>` or a download link needs)
+//   GET    /usage                     → {usedBytes} of all the person's files
 //
 // Refusals answer `{reason}` with 400 (404 for `not_found`, 413 too large, 415 wrong type); a
 // missing or unknown secret answers 401, like an expired session. Refused sign-in steps answer
@@ -97,10 +100,26 @@ export class FakeServer {
       if (answer !== undefined) return answer;
     }
 
+    if (method === "GET" && area === "signed" && first !== undefined && rest.length === 0) {
+      // The secret in the address is the permission, like a real signed address.
+      try {
+        return { status: 200, bytes: this.store.signedFile(first), contentType: "image/webp" };
+      } catch (error) {
+        if (error instanceof Refusal) return json(404, { reason: error.reason });
+        throw error;
+      }
+    }
+
     const owner = this.auth.sessionFor(request.token)?.userId;
     if (owner === undefined) return json(401, { reason: "not_signed_in" });
 
     try {
+      if (method === "GET" && area === "usage" && first === undefined) {
+        return json(200, { usedBytes: this.store.usage(owner) });
+      }
+      if (method === "POST" && area === "sign" && first !== undefined && rest.length > 0) {
+        return json(200, { token: this.store.signFile(owner, first, rest.join("/")) });
+      }
       if (method === "GET" && area === "collection" && first === undefined) {
         return json(200, this.store.load(owner));
       }

@@ -86,6 +86,15 @@ export const TEXTS = {
       unknown: "Das hat nicht geklappt. Versuch es bitte später noch einmal.",
     } satisfies Record<AuthFailure, string>,
   },
+  /** The storage card in the settings (S12): what the files take of the free space. */
+  storage: {
+    title: "Speicherplatz",
+    loading: "Wird geladen …",
+    used: (used: string, limit: string) => `${used} von ${limit} belegt`,
+    meter: "Belegter Speicherplatz",
+    failed: "Der Speicherplatz konnte gerade nicht gelesen werden.",
+    retry: "Noch einmal versuchen",
+  },
   /** The account card in the settings (S12). */
   account: {
     label: "Konto",

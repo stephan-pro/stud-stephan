@@ -5,16 +5,25 @@ import "./ui/tokens.css";
 import "./ui/app.css";
 import { render } from "preact";
 import type { Auth } from "./auth/auth";
-import { FakeHttpAuth } from "./auth/fakeHttpAuth";
+import { FakeHttpAuth, fakeAuthToken } from "./auth/fakeHttpAuth";
 import { SupabaseAuth } from "./auth/supabaseAuth";
 import { createSupabaseClient } from "./auth/supabaseClient";
+import { createFakeHttpRemote } from "./backend/fakeHttpRemote";
+import type { Remote } from "./backend/remote";
+import { SupabaseRemote } from "./backend/supabaseRemote";
 import { App } from "./ui/App";
 
-/** The sign-in of the server this build runs on (`src/backend/mode.ts`); none in the demo. */
-function createAuth(): Auth | null {
+/** Sign-in and data of the server this build runs on (`src/backend/mode.ts`); none in the demo. */
+function createBackend(): { auth: Auth; remote: Remote } | null {
   if (__BACKEND__ === "demo") return null;
   if (__BACKEND__ === "fake") {
-    return new FakeHttpAuth({ baseUrl: __FAKE_SERVER__, store: localStorage });
+    return {
+      auth: new FakeHttpAuth({ baseUrl: __FAKE_SERVER__, store: localStorage }),
+      remote: createFakeHttpRemote({
+        baseUrl: __FAKE_SERVER__,
+        token: () => fakeAuthToken(localStorage) ?? "",
+      }),
+    };
   }
   // `vite.config.ts` stops the build if one of the two values is missing.
   const client = createSupabaseClient({
@@ -22,11 +31,15 @@ function createAuth(): Auth | null {
     publishableKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
     store: localStorage,
   });
-  return new SupabaseAuth({ client, store: localStorage });
+  return {
+    auth: new SupabaseAuth({ client, store: localStorage }),
+    remote: new SupabaseRemote(client),
+  };
 }
 
 const root = document.getElementById("app");
 if (!root) {
   throw new Error("Element #app fehlt in index.html");
 }
-render(<App auth={createAuth()} />, root);
+const backend = createBackend();
+render(<App auth={backend?.auth ?? null} remote={backend?.remote} />, root);

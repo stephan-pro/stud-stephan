@@ -12,6 +12,7 @@ import type { Collection, Id, PricePoint } from "../domain/types";
 import { SCHEMA_VERSION } from "../domain/types";
 import { isTemporaryStatus, type Remote, RemoteError, removeReleased } from "./remote";
 import {
+  BUCKETS,
   type Bucket,
   isRefusalReason,
   isValidFileName,
@@ -62,6 +63,10 @@ interface RpcAnswer {
   readonly error: { readonly message: string; readonly code?: string } | null;
   readonly status: number;
 }
+
+/** How long a signed address works; the app asks again for each display. */
+const SIGNED_URL_SECONDS = 3600;
+const LIST_PAGE = 100;
 
 const LISTS = ["minifigs", "sets", "specialParts", "dioramas", "wishlist", "prices"] as const;
 
@@ -130,6 +135,39 @@ export class SupabaseRemote implements Remote {
   async removeFile(bucket: Bucket, path: string): Promise<void> {
     const { error } = await this.client.storage.from(bucket).remove([path]);
     if (error) throw storageError("löschen", error as StorageFailure);
+  }
+
+  async signedUrl(bucket: Bucket, path: string): Promise<string> {
+    const { data, error } = await this.client.storage
+      .from(bucket)
+      .createSignedUrl(path, SIGNED_URL_SECONDS);
+    if (error) throw storageError("Adresse holen", error as StorageFailure);
+    return data.signedUrl;
+  }
+
+  async storageUsage(): Promise<number> {
+    const folder = await this.userId();
+    const sizes = await Promise.all(BUCKETS.map((bucket) => this.folderBytes(bucket, folder)));
+    return sizes.reduce((sum, size) => sum + size, 0);
+  }
+
+  /** Bytes of every file below the folder (Storage lists one level at a time, 100 per page). */
+  private async folderBytes(bucket: Bucket, folder: string): Promise<number> {
+    let total = 0;
+    for (let offset = 0; ; offset += LIST_PAGE) {
+      const { data, error } = await this.client.storage
+        .from(bucket)
+        .list(folder, { limit: LIST_PAGE, offset });
+      if (error) throw storageError("auflisten", error as StorageFailure);
+      for (const entry of data) {
+        // A folder has no id; a file has its size in the metadata.
+        total +=
+          entry.id === null
+            ? await this.folderBytes(bucket, `${folder}/${entry.name}`)
+            : Number((entry.metadata as { size?: unknown } | null)?.size ?? 0);
+      }
+      if (data.length < LIST_PAGE) return total;
+    }
   }
 
   private async userId(): Promise<string> {

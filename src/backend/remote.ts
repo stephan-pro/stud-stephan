@@ -56,6 +56,13 @@ export interface Remote {
   getFile(bucket: Bucket, path: string): Promise<Uint8Array>;
   /** Removes the file; nothing happens if it is missing or someone else's. */
   removeFile(bucket: Bucket, path: string): Promise<void>;
+  /**
+   * An address that shows the file (an `<img>`, a download link) for a while without signing in
+   * again; the files are private. Someone else's or a missing file is `not_found`.
+   */
+  signedUrl(bucket: Bucket, path: string): Promise<string>;
+  /** Bytes of all the person's files (photos and Studio files). */
+  storageUsage(): Promise<number>;
 }
 
 /** Removes files an object no longer lists; a failure leaves the file behind, nothing else. */
