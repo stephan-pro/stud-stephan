@@ -117,6 +117,13 @@ async function serve(
   try {
     return await run(await read(request));
   } catch (error) {
+    // The app only learns "unavailable"; the reason belongs in the function's log (Supabase
+    // Dashboard → Edge Functions → Logs). Messages carry no keys: those only travel in headers.
+    console.error(
+      error instanceof CatalogError
+        ? `${error.failure}: ${error.message}`
+        : `unerwarteter Fehler: ${String(error)}`,
+    );
     if (error instanceof CatalogError) return failure(error.failure);
     return failure("unavailable");
   }
@@ -346,7 +353,7 @@ async function seriesCall(
   const reply = (result: SeriesAnswer) => answer(200, result);
   switch (parsed.action) {
     case "search":
-      return reply({ action: "search", themes: await searchThemes(series, parsed.query) });
+      return reply({ action: "search", ...(await searchThemes(series, parsed.query)) });
     case "plan":
       return reply({ action: "plan", plan: await planSeries(series, parsed.themeId) });
     case "start": {

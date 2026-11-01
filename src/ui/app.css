@@ -2905,6 +2905,31 @@ a.diorama-row .copy-row__name {
   cursor: pointer;
 }
 
+.series-result__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.series-result__note {
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* A main theme that is too big to build from: a heading, not a button. */
+.series-result--main {
+  border-style: dashed;
+  background: transparent;
+  cursor: default;
+}
+
+/* Its sub themes stand below it. */
+.series-result[data-below-main] {
+  width: calc(100% - var(--space-4));
+  margin-left: var(--space-4);
+}
+
 .section-title {
   margin: 0;
   font-family: var(--font-hand);

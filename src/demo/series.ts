@@ -29,12 +29,16 @@ export const DEMO_SERIES_CATALOG: FakeSeriesCatalog = {
       sets: ["71017-1", "71017-2"],
     },
     { id: 3, name: "Ninjago – Alle Staffeln", sets: MANY_SETS },
+    // A main theme with sub themes: the search lists it, but it cannot be chosen.
+    { id: 4, name: "Star Wars", sets: [], large: true },
+    { id: 5, name: "Star Wars – Battle Packs", sets: ["75000-1"] },
   ],
   figuresOfSet: {
     "75372-1": [figure("sw0194", "Captain Rex"), figure("sw0631", "Clone Trooper Phase II")],
     "75345-1": [figure("sw0542", "ARC Trooper Fives"), figure("sw0196", "Commander Cody")],
     "7675-1": [figure("sw0219", "Ahsoka Tano"), figure("sw0001", "Battle Droid")],
     "75021-1": [figure("sw0225", "Plo Koon"), figure("sw0333", "Asajj Ventress")],
+    "75000-1": [figure("sw0631", "Clone Trooper")],
     "71017-1": [figure("coltlbm01", "Batman"), figure("coltlbm02", "Robin")],
     "71017-2": [figure("coltlbm03", "The Joker"), figure("coltlbm04", "Harley Quinn")],
   },

@@ -14,9 +14,36 @@ function builder(control: () => SeriesControl = () => undefined) {
 describe("P12 Reihen im Speicher (Demo und E2E)", () => {
   it("findet Themen über Wörter des Namens, auch „Sammelserie“", async () => {
     const fake = builder();
-    expect((await fake.search("clone wars")).map((theme) => theme.id)).toEqual([1]);
-    expect((await fake.search("Batman Movie Sammelserie")).map((theme) => theme.id)).toEqual([2]);
-    expect(await fake.search("")).toEqual([]);
+    const ids = async (query: string) => (await fake.search(query)).themes.map((theme) => theme.id);
+    expect(await ids("clone wars")).toEqual([1]);
+    expect(await ids("Klonkriege")).toEqual([1]);
+    expect(await ids("Batman Movie Sammelserie")).toEqual([2]);
+    expect(await fake.search("")).toEqual({ themes: [], more: false });
+  });
+
+  it("zeigt ein Hauptthema nicht wählbar mit seinen Unterthemen darunter und legt daraus keine Reihe an", async () => {
+    const fake = builder();
+    const { themes } = await fake.search("star wars");
+    expect(themes.map((theme) => [theme.name, theme.selectable])).toEqual([
+      ["Star Wars", false],
+      ["Star Wars – Battle Packs", true],
+      ["Star Wars – The Clone Wars", true],
+    ]);
+    await expect(fake.plan(4)).rejects.toMatchObject({ failure: "not_found" });
+    await expect(fake.start(4)).rejects.toMatchObject({ failure: "not_found" });
+  });
+
+  it("findet das Thema über eine Set- oder Figurennummer", async () => {
+    const fake = builder();
+    for (const typed of ["75372", "75372-1", "sw0194"]) {
+      const { themes } = await fake.search(typed);
+      expect(
+        themes.map((theme) => theme.id),
+        typed,
+      ).toEqual([1]);
+      expect(themes[0]?.via?.number, typed).toBe(typed === "sw0194" ? "sw0194" : "75372-1");
+    }
+    expect((await fake.search("99999")).themes).toEqual([]);
   });
 
   it("zählt vor dem Anlegen die Sets; das große Thema liegt über der Warnschwelle", async () => {

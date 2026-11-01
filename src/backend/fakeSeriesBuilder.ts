@@ -4,6 +4,7 @@
 // and can be held back by the day's BrickLink limit. The state is kept in the device's storage, if
 // given, so it survives a reload like the real one.
 
+import { classifyQuery, plain, searchWords } from "../../supabase/functions/_shared/themeQuery";
 import { CatalogCallError } from "./catalog";
 import {
   SERIES_MAX_SETS,
@@ -11,6 +12,7 @@ import {
   type SeriesDetail,
   type SeriesFigureInfo,
   type SeriesPlan,
+  type SeriesSearch,
   type SeriesSummary,
   type SeriesTheme,
 } from "./seriesBuilder";
@@ -20,6 +22,8 @@ export interface FakeTheme {
   readonly id: number;
   readonly name: string;
   readonly sets: readonly string[];
+  /** A main theme with sub themes: listed by the search, but no series can be built from it. */
+  readonly large?: true;
 }
 
 /** The example catalog: the themes, and the figures of each set (a set without an entry has none). */
@@ -54,21 +58,8 @@ export interface FakeSeriesOptions {
   readonly portion?: number;
 }
 
-/** Words people type that the English theme names do not have (as in the real function). */
-const ALIASES: Readonly<Record<string, string>> = {
-  sammelserie: "collectible",
-  sammelserien: "collectible",
-  sammelfiguren: "collectible",
-};
-
-function plain(text: string): string {
-  return text
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-}
+/** Sets of a minifig that lead to a theme (as in the real function). */
+const MAX_FIGURE_SETS = 3;
 
 export class FakeSeriesBuilder implements SeriesBuilder {
   /** Every call, newest last, to check what the page asked for. */
@@ -80,24 +71,55 @@ export class FakeSeriesBuilder implements SeriesBuilder {
     private readonly options: FakeSeriesOptions = {},
   ) {}
 
-  async search(query: string): Promise<SeriesTheme[]> {
+  async search(query: string): Promise<SeriesSearch> {
     this.calls.push(`search ${query}`);
     this.check();
-    const words = plain(query)
-      .split(" ")
-      .filter((word) => word !== "")
-      .map((word) => ALIASES[word] ?? word);
-    if (words.length === 0) return [];
-    return this.catalog.themes
+    const kind = classifyQuery(query);
+    if (kind.kind !== "words") {
+      const found = this.byNumber(kind.kind, kind.number);
+      if (found.length > 0) return { themes: found, more: false };
+    }
+    const words = searchWords(query);
+    if (words.length === 0) return { themes: [], more: false };
+    const themes = this.catalog.themes
       .filter((theme) => words.every((word) => plain(theme.name).includes(word)))
-      .map((theme) => ({ id: theme.id, name: theme.name }));
+      .sort((a, b) => a.name.localeCompare(b.name, "de"))
+      .map((theme) => this.hit(theme));
+    return { themes, more: false };
+  }
+
+  /** The themes of the set, or of the first sets the minifig is in. */
+  private byNumber(kind: "set" | "figure", number: string): SeriesTheme[] {
+    const sets =
+      kind === "set"
+        ? [number]
+        : Object.entries(this.catalog.figuresOfSet)
+            .filter(([, figures]) => figures.some((figure) => figure.number === number))
+            .map(([setNumber]) => setNumber)
+            .slice(0, MAX_FIGURE_SETS);
+    const themes = this.catalog.themes.filter((theme) =>
+      theme.sets.some((setNumber) => sets.includes(setNumber)),
+    );
+    return themes.map((theme) => this.hit(theme, { kind, number }));
+  }
+
+  private hit(theme: FakeTheme, via?: SeriesTheme["via"]): SeriesTheme {
+    return {
+      id: theme.id,
+      name: theme.name,
+      selectable: theme.large !== true,
+      ...(via === undefined ? {} : { via }),
+    };
   }
 
   async plan(themeId: number): Promise<SeriesPlan> {
     this.calls.push(`plan ${themeId}`);
     this.check();
     const theme = this.theme(themeId);
-    return { theme: { id: theme.id, name: theme.name }, setCount: theme.sets.length };
+    return {
+      theme: { id: theme.id, name: theme.name, selectable: true },
+      setCount: theme.sets.length,
+    };
   }
 
   async start(themeId: number): Promise<SeriesSummary> {
@@ -202,7 +224,8 @@ export class FakeSeriesBuilder implements SeriesBuilder {
 
   private theme(themeId: number): FakeTheme {
     const theme = this.catalog.themes.find((candidate) => candidate.id === themeId);
-    if (!theme) throw new CatalogCallError("Thema unbekannt", "not_found");
+    // A main theme with sub themes is no series, as in the real function.
+    if (!theme || theme.large === true) throw new CatalogCallError("Thema unbekannt", "not_found");
     return theme;
   }
 

@@ -741,10 +741,16 @@ export const TEXTS = {
     searchLabel: "Reihe oder Thema suchen",
     searchPlaceholder: "Reihe oder Thema suchen",
     searchHint:
-      "Eine Reihe baut auf einem Unterthema auf, z. B. „Clone Wars“ oder „Batman Movie“, nicht auf einem großen Hauptthema.",
+      "Eine Reihe baut auf einem Unterthema auf, z. B. „Clone Wars“ oder „Batman Movie“. Du kannst auch eine Set- oder Figurennummer eingeben, z. B. 75372 oder sw0194.",
     searching: "Es wird gesucht …",
     noThemes:
-      "Dazu gibt es kein Unterthema. Versuch es mit einem Teil des Namens, englisch oder deutsch.",
+      "Dazu gibt es kein Unterthema. Tipp: Gib englische Namen ein, z. B. Clone Wars, oder eine Set- oder Figurennummer, z. B. 75372 oder sw0194.",
+    tooBigTheme: "sehr groß – wähle ein Unterthema",
+    foundBy: {
+      set: (number: string) => `Thema von Set ${number}`,
+      figure: (number: string) => `Thema der Figur ${number}`,
+    },
+    moreHits: "Es passen noch mehr Themen. Gib mehr vom Namen ein, um die Liste zu verkleinern.",
     searchFailed: {
       offline: "Keine Verbindung zum Server. Prüf das Internet und versuch es noch einmal.",
       limit_reached: "Für heute sind alle Abfragen verbraucht. Versuch es morgen noch einmal.",

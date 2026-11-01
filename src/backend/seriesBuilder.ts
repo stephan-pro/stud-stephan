@@ -9,8 +9,8 @@ import type {
   SeriesDetail,
   SeriesPlan,
   SeriesRequest,
+  SeriesSearch,
   SeriesSummary,
-  SeriesTheme,
 } from "../../supabase/functions/_shared/seriesTypes";
 import { CatalogCallError, failureOf } from "./catalog";
 
@@ -18,6 +18,7 @@ export type {
   SeriesDetail,
   SeriesFigureInfo,
   SeriesPlan,
+  SeriesSearch,
   SeriesSummary,
   SeriesTheme,
 } from "../../supabase/functions/_shared/seriesTypes";
@@ -30,8 +31,11 @@ export {
 export type SeriesCallError = CatalogCallError;
 
 export interface SeriesBuilder {
-  /** Themes below a main theme whose name has every word of the text. */
-  search(query: string): Promise<SeriesTheme[]>;
+  /**
+   * The themes whose name has every word of the text, or the theme of a set or minifig number.
+   * A main theme with sub themes comes first and cannot be chosen; its sub themes follow it.
+   */
+  search(query: string): Promise<SeriesSearch>;
   /** How many sets (= BrickLink calls) building the series of the theme takes. */
   plan(themeId: number): Promise<SeriesPlan>;
   /** Creates the series (or finds the one there is) and queues its sets. */
@@ -64,10 +68,10 @@ export function seriesAsked(summary: SeriesSummary): number {
 export class SupabaseSeriesBuilder implements SeriesBuilder {
   constructor(private readonly client: Pick<SupabaseClient, "functions">) {}
 
-  async search(query: string): Promise<SeriesTheme[]> {
+  async search(query: string): Promise<SeriesSearch> {
     const answer = await this.call({ op: "series", action: "search", query });
-    if (answer.action !== "search") throw this.unreadable();
-    return answer.themes;
+    if (answer.action !== "search" || !Array.isArray(answer.themes)) throw this.unreadable();
+    return { themes: answer.themes, more: answer.more === true };
   }
 
   async plan(themeId: number): Promise<SeriesPlan> {

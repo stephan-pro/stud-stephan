@@ -57,6 +57,8 @@ export interface RebrickableOptions {
 const HITS = "8";
 /** Pages read of one list at most (1,000 entries each): all themes and the biggest theme fit. */
 const MAX_PAGES = 5;
+/** Pages of the theme list at most: it must be read whole (if the page size were ignored: 100 each). */
+const MAX_THEME_PAGES = 12;
 
 function parseSet(raw: unknown): RebrickableSet | undefined {
   if (!isRecord(raw)) return undefined;
@@ -130,21 +132,30 @@ export function createRebrickable(options: RebrickableOptions): RebrickableClien
 
   const results = (body: unknown): unknown[] => (isRecord(body) ? list(body.results) : []);
 
-  /** Every page of a list, 1,000 entries each; a page limit stops a runaway answer. */
-  async function allPages(path: string, query: Record<string, string>): Promise<unknown[]> {
+  /**
+   * Every page of a list, 1,000 entries each; a page limit stops a runaway answer. With `whole` a
+   * list that does not end within the limit is an error instead of a cut-off list.
+   */
+  async function allPages(
+    path: string,
+    query: Record<string, string>,
+    whole = false,
+  ): Promise<unknown[]> {
     const rows: unknown[] = [];
-    for (let page = 1; page <= MAX_PAGES; page++) {
+    const pages = whole ? MAX_THEME_PAGES : MAX_PAGES;
+    for (let page = 1; page <= pages; page++) {
       const body = await get(path, { ...query, page_size: "1000", page: String(page) });
       rows.push(...results(body));
       if (!isRecord(body) || str(body.next) === undefined) return rows;
     }
+    if (whole) throw new CatalogError("unavailable", `Rebrickable: ${path} endet nicht`);
     return rows;
   }
 
   return {
     async themes() {
       const nodes: RebrickableThemeNode[] = [];
-      for (const raw of await allPages("/themes/", {})) {
+      for (const raw of await allPages("/themes/", {}, true)) {
         if (!isRecord(raw)) continue;
         const id = num(raw.id);
         const name = str(raw.name);

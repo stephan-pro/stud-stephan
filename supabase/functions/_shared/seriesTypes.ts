@@ -12,6 +12,19 @@ export interface SeriesTheme {
   id: number;
   /** "Main theme – sub theme". */
   name: string;
+  /**
+   * `false` for a main theme with sub themes: it is shown as a heading ("sehr groß – wähle ein
+   * Unterthema"), its sub themes follow it, and no series is built from it.
+   */
+  selectable: boolean;
+  /** The set or minifig number the theme was found by (the person typed a number). */
+  via?: { kind: "set" | "figure"; number: string };
+}
+
+/** The answer to a search: the themes, and whether more fit than were taken. */
+export interface SeriesSearch {
+  themes: SeriesTheme[];
+  more: boolean;
 }
 
 /** What building a series costs, shown before it is created. */
@@ -74,7 +87,7 @@ export type SeriesRequest =
   | { op: "series"; action: "remove"; id: number };
 
 export type SeriesAnswer =
-  | { action: "search"; themes: SeriesTheme[] }
+  | ({ action: "search" } & SeriesSearch)
   | { action: "plan"; plan: SeriesPlan }
   | { action: "start" | "work"; summary: SeriesSummary }
   | { action: "list"; series: SeriesSummary[] }

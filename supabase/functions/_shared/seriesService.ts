@@ -13,7 +13,14 @@ import { CatalogError } from "./json.ts";
 import { MAX_ATTEMPTS, nextCountDay } from "./priceRunService.ts";
 import type { RebrickableClient, RebrickableThemeNode } from "./rebrickableClient.ts";
 import type { ClaimedSet, SeriesStore, SetOutcome } from "./seriesStore.ts";
-import type { SeriesFigureInfo, SeriesPlan, SeriesSummary, SeriesTheme } from "./seriesTypes.ts";
+import type {
+  SeriesFigureInfo,
+  SeriesPlan,
+  SeriesSearch,
+  SeriesSummary,
+  SeriesTheme,
+} from "./seriesTypes.ts";
+import { classifyQuery, plain, searchWords } from "./themeQuery.ts";
 
 export interface SeriesDeps {
   readonly store: SeriesStore;
@@ -21,25 +28,26 @@ export interface SeriesDeps {
   readonly cache: CatalogStore;
   readonly rebrickable: RebrickableClient;
   /** A client that counts its calls on the day's limit (`beforeCall`). */
-  readonly bricklink: Pick<BricklinkClient, "contentsOfSet">;
+  readonly bricklink: Pick<BricklinkClient, "contentsOfSet" | "setsOfMinifig">;
   readonly now: () => Date;
 }
 
 const CACHE_DAYS = 30;
-/** Themes found by one search. */
-const MAX_HITS = 15;
+/** Themes shown by one search; a main theme brings its sub themes, so there can be many. */
+export const MAX_HITS = 40;
 /** A theme with more sub themes than this is cut off (a main theme is not meant to be built). */
 const MAX_THEMES_IN_TREE = 25;
 /** Sets taken from the queue at once; small, so a call can stop on time. */
 export const BATCH_SIZE = 5;
-
-/** Words people type that the English theme names do not have. */
-const ALIASES: Readonly<Record<string, readonly string[]>> = {
-  sammelserie: ["collectible"],
-  sammelserien: ["collectible"],
-  sammelfiguren: ["collectible"],
-  sammelminifiguren: ["collectible"],
-};
+/** Sets of a minifig that are asked about for the theme (one Rebrickable call each). */
+export const MAX_FIGURE_SETS = 3;
+/**
+ * Rebrickable has hundreds of themes; a list this short is a cut-off or broken answer and is
+ * neither used nor kept ("Star Wars" must not be "no hit" because the list was never whole).
+ */
+export const MIN_PLAUSIBLE_THEMES = 50;
+/** "themes2": the first version kept whatever it got, also a list that was too short. */
+const THEMES_KEY = "series:themes2";
 
 async function cached<T>(
   deps: SeriesDeps,
@@ -70,22 +78,41 @@ const isFigureList = (value: unknown): value is SeriesFigureInfo[] =>
   value.length > 0 &&
   value.every((figure) => typeof figure?.number === "string" && typeof figure?.name === "string");
 
-/** Lower case without accents and punctuation. */
-function plain(text: string): string {
-  return text
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-}
+/** A list that can be Rebrickable's whole list of themes (see `MIN_PLAUSIBLE_THEMES`). */
+const isThemeList = (value: unknown): value is RebrickableThemeNode[] =>
+  isNodeList(value) &&
+  value.length >= MIN_PLAUSIBLE_THEMES &&
+  value.some((node) => node.parentId !== undefined);
+
+const isThemeRef = (value: unknown): value is { themeId: number } =>
+  typeof (value as { themeId?: unknown } | null)?.themeId === "number";
+
+const isNumberList = (value: unknown): value is string[] =>
+  Array.isArray(value) &&
+  value.length > 0 &&
+  value.every((entry) => typeof entry === "string" && entry !== "");
 
 function loadThemes(deps: SeriesDeps): Promise<RebrickableThemeNode[]> {
-  return cached(deps, "series:themes", () => deps.rebrickable.themes(), isNodeList);
+  return cached(
+    deps,
+    THEMES_KEY,
+    async () => {
+      const themes: RebrickableThemeNode[] = await deps.rebrickable.themes();
+      // An answer that is too short is an error the person is told about, not "no hits".
+      if (themes.length < MIN_PLAUSIBLE_THEMES || !themes.some((node) => node.parentId)) {
+        throw new CatalogError(
+          "unavailable",
+          `Rebrickable lieferte nur ${themes.length} Themen, erwartet sind mehrere hundert`,
+        );
+      }
+      return themes;
+    },
+    isThemeList,
+  );
 }
 
-/** "Collectible Minifigures – The LEGO Batman Movie Series": the names from the root down. */
-export function themePath(themes: readonly RebrickableThemeNode[], node: RebrickableThemeNode) {
+/** "Collectible Minifigures", "The LEGO Batman Movie Series": the names from the root down. */
+function themeNames(themes: readonly RebrickableThemeNode[], node: RebrickableThemeNode): string[] {
   const names = [node.name];
   let parentId = node.parentId;
   for (let level = 0; parentId !== undefined && level < 6; level++) {
@@ -94,7 +121,41 @@ export function themePath(themes: readonly RebrickableThemeNode[], node: Rebrick
     names.unshift(parent.name);
     parentId = parent.parentId;
   }
-  return names.join(" – ");
+  return names;
+}
+
+/** "Collectible Minifigures – The LEGO Batman Movie Series". */
+export function themePath(themes: readonly RebrickableThemeNode[], node: RebrickableThemeNode) {
+  return themeNames(themes, node).join(" – ");
+}
+
+/** Sub themes below a theme (any depth), in tree order: each theme before its own sub themes. */
+function descendantsOf(
+  themes: readonly RebrickableThemeNode[],
+  node: RebrickableThemeNode,
+): RebrickableThemeNode[] {
+  const found = [node.id];
+  for (let index = 0; index < found.length; index++) {
+    for (const theme of themes) {
+      if (theme.parentId === found[index] && !found.includes(theme.id)) found.push(theme.id);
+    }
+  }
+  return themes
+    .filter((theme) => theme.id !== node.id && found.includes(theme.id))
+    .sort(byPath(themes));
+}
+
+/** Tree order: names from the root down, compared name by name. */
+function byPath(themes: readonly RebrickableThemeNode[]) {
+  return (a: RebrickableThemeNode, b: RebrickableThemeNode) => {
+    const left = themeNames(themes, a);
+    const right = themeNames(themes, b);
+    for (let level = 0; level < Math.min(left.length, right.length); level++) {
+      const order = (left[level] ?? "").localeCompare(right[level] ?? "", "de");
+      if (order !== 0) return order;
+    }
+    return left.length - right.length;
+  };
 }
 
 /**
@@ -105,23 +166,126 @@ function selectable(themes: readonly RebrickableThemeNode[], node: RebrickableTh
   return node.parentId !== undefined || !themes.some((theme) => theme.parentId === node.id);
 }
 
-/** The themes whose name has every word of the query, shortest names first. */
-export async function searchThemes(deps: SeriesDeps, query: string): Promise<SeriesTheme[]> {
-  const words = plain(query)
-    .split(" ")
-    .filter((word) => word !== "")
-    .flatMap((word) => ALIASES[word] ?? [word]);
-  if (words.length === 0) return [];
+const NOTHING: SeriesSearch = { themes: [], more: false };
+
+function hitOf(
+  themes: readonly RebrickableThemeNode[],
+  node: RebrickableThemeNode,
+  via?: SeriesTheme["via"],
+): SeriesTheme {
+  return {
+    id: node.id,
+    name: themePath(themes, node),
+    selectable: selectable(themes, node),
+    ...(via === undefined ? {} : { via }),
+  };
+}
+
+/** A main theme with sub themes comes with its sub themes below it (it cannot be chosen itself). */
+function hitsOfTheme(
+  themes: readonly RebrickableThemeNode[],
+  node: RebrickableThemeNode,
+  via?: SeriesTheme["via"],
+): SeriesTheme[] {
+  const own = hitOf(themes, node, via);
+  if (own.selectable) return [own];
+  return [own, ...descendantsOf(themes, node).map((sub) => hitOf(themes, sub))];
+}
+
+function cutOff(hits: readonly SeriesTheme[]): SeriesSearch {
+  const seen = new Set<number>();
+  const unique = hits.filter((hit) => !seen.has(hit.id) && seen.add(hit.id));
+  return { themes: unique.slice(0, MAX_HITS), more: unique.length > MAX_HITS };
+}
+
+/** The theme id of a set (Rebrickable, kept 30 days); nothing for a set it does not know. */
+async function themeIdOfSet(deps: SeriesDeps, setNumber: string): Promise<number | undefined> {
+  try {
+    const known = await cached(
+      deps,
+      `series:set:${setNumber}`,
+      async () => {
+        const set = await deps.rebrickable.set(setNumber);
+        if (set.themeId === undefined) throw new CatalogError("not_found", "Set ohne Thema");
+        return { themeId: set.themeId };
+      },
+      isThemeRef,
+    );
+    return known.themeId;
+  } catch (error) {
+    if (error instanceof CatalogError && error.failure === "not_found") return undefined;
+    throw error;
+  }
+}
+
+/** The themes of the first few sets a minifig comes in (one BrickLink call, a few Rebrickable calls). */
+async function themeIdsOfFigure(deps: SeriesDeps, figureNumber: string): Promise<number[]> {
+  let setNumbers: string[];
+  try {
+    setNumbers = await cached(
+      deps,
+      `series:figure-sets:${figureNumber}`,
+      async () => (await deps.bricklink.setsOfMinifig(figureNumber)).map((set) => set.number),
+      isNumberList,
+    );
+  } catch (error) {
+    if (error instanceof CatalogError && error.failure === "not_found") return [];
+    throw error;
+  }
+  const ids: number[] = [];
+  for (const setNumber of setNumbers.slice(0, MAX_FIGURE_SETS)) {
+    const id = await themeIdOfSet(deps, setNumber);
+    if (id !== undefined && !ids.includes(id)) ids.push(id);
+  }
+  return ids;
+}
+
+/** The themes a typed set or minifig number leads to; nothing if the number is not known. */
+async function searchByNumber(
+  deps: SeriesDeps,
+  themes: readonly RebrickableThemeNode[],
+  kind: "set" | "figure",
+  number: string,
+): Promise<SeriesSearch> {
+  const ids =
+    kind === "set"
+      ? [await themeIdOfSet(deps, number)].flatMap((id) => id ?? [])
+      : await themeIdsOfFigure(deps, number);
+  const via = { kind, number } as const;
+  return cutOff(
+    ids.flatMap((id) => {
+      const node = themes.find((theme) => theme.id === id);
+      return node ? hitsOfTheme(themes, node, via) : [];
+    }),
+  );
+}
+
+/**
+ * What a typed text leads to, in tree order (a main theme, then its sub themes):
+ * - a set number ("75372", "75372-1"): the theme of the set,
+ * - a BrickLink minifig number ("sw0194"): the themes of the first sets it comes in,
+ * - else the themes whose name has every word (English names, a few German words).
+ * A main theme with sub themes is listed but cannot be chosen (`selectable: false`).
+ */
+export async function searchThemes(deps: SeriesDeps, query: string): Promise<SeriesSearch> {
+  const kind = classifyQuery(query);
+  const words = searchWords(query);
+  if (kind.kind === "words" && words.length === 0) return NOTHING;
   const themes = await loadThemes(deps);
-  return themes
-    .filter((node) => selectable(themes, node))
-    .map((node) => ({ id: node.id, name: themePath(themes, node) }))
-    .filter((theme) => {
-      const text = plain(theme.name);
-      return words.every((word) => text.includes(word));
-    })
-    .sort((a, b) => a.name.length - b.name.length || a.name.localeCompare(b.name, "de"))
-    .slice(0, MAX_HITS);
+  if (kind.kind !== "words") {
+    const found = await searchByNumber(deps, themes, kind.kind, kind.number);
+    if (found.themes.length > 0) return found;
+  }
+  if (words.length === 0) return NOTHING;
+  return cutOff(
+    themes
+      .filter((node) => {
+        const text = plain(themePath(themes, node));
+        return words.every((word) => text.includes(word));
+      })
+      .sort(byPath(themes))
+      .map((node) => hitOf(themes, node)),
+  );
 }
 
 /** The theme and its sub themes, the theme first; cut off at `MAX_THEMES_IN_TREE`. */
@@ -156,7 +320,7 @@ async function themeInfo(deps: SeriesDeps, themeId: number): Promise<ThemeInfo> 
     for (const set of own) if (!sets.has(set.number)) sets.set(set.number, set);
   }
   return {
-    theme: { id: node.id, name: themePath(themes, node) },
+    theme: { id: node.id, name: themePath(themes, node), selectable: true },
     sets: [...sets.values()].sort((a, b) =>
       a.number.localeCompare(b.number, "en", { numeric: true }),
     ),

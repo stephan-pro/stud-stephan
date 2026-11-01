@@ -2,27 +2,53 @@
 // queue of the database in memory, following the rules of `series_begin`, `…_claim`, `…_finish`,
 // `…_release`.
 
-import { brickLink, ok, type Route } from "./catalog.fixtures.ts";
+import { brickLink, brickLinkFailure, ok, type Route } from "./catalog.fixtures.ts";
 import type { ClaimedSet, SeriesStore, SetOutcome } from "./seriesStore.ts";
 import type { SeriesDetail, SeriesSummary } from "./seriesTypes.ts";
 
-/** The theme tree: "Star Wars" (with sub themes) and a root without sub themes. */
+/**
+ * The theme tree as Rebrickable sends it (`id`, `name`, `parent_id`; roots have none): "Star Wars"
+ * with sub themes (one with a sub theme of its own), "Super Heroes", "Collectible Minifigures", roots
+ * without sub themes, and filler roots so that the list is as long as a real one needs to look.
+ */
 export const THEMES = [
   { id: 1, name: "Star Wars" },
   { id: 2, name: "The Clone Wars", parent_id: 1 },
   { id: 3, name: "Battle Packs", parent_id: 1 },
   { id: 7, name: "Season 1", parent_id: 2 },
+  { id: 8, name: "Episode IV/V/VI", parent_id: 1 },
+  { id: 9, name: "The Mandalorian", parent_id: 1 },
   { id: 4, name: "Collectible Minifigures" },
   { id: 5, name: "The LEGO Batman Movie Series", parent_id: 4 },
   { id: 6, name: "Ninjago" },
+  { id: 10, name: "Super Heroes" },
+  { id: 11, name: "Spider-Man", parent_id: 10 },
+  { id: 12, name: "Batman", parent_id: 10 },
+  { id: 13, name: "The Lord of the Rings" },
+  { id: 14, name: "Castle" },
+  { id: 15, name: "Knights Kingdom", parent_id: 14 },
+  ...Array.from({ length: 60 }, (_, index) => ({ id: 1000 + index, name: `Other ${index + 1}` })),
 ];
 
 const set = (number: string) => ({ set_num: number, name: `Set ${number}`, year: 2020 });
 
-/** Rebrickable routes: all themes in one page, the sets of each theme. */
+/** A set with its theme, as Rebrickable's set page sends it. */
+const setPage = (number: string, themeId: number) => ({
+  set_num: number,
+  name: `Set ${number}`,
+  year: 2020,
+  theme_id: themeId,
+});
+
+/** Rebrickable routes: all themes in one page, the sets of each theme, the theme of some sets. */
 export function seriesRebrickableRoutes(): Route[] {
   return [
     ["/themes/?", ok({ count: THEMES.length, next: null, results: THEMES })],
+    ["/lego/sets/75372-1/", ok(setPage("75372-1", 3))],
+    ["/lego/sets/75345-1/", ok(setPage("75345-1", 2))],
+    ["/lego/sets/7675-1/", ok(setPage("7675-1", 7))],
+    ["/lego/sets/75000-1/", ok(setPage("75000-1", 3))],
+    ["/lego/sets/75001-1/", ok(setPage("75001-1", 1))],
     ["theme_id=2&", ok({ results: [set("75372-1"), set("75345-1")], next: null })],
     ["theme_id=7&", ok({ results: [set("75345-1"), set("7675-1")], next: null })],
     ["theme_id=3&", ok({ results: [set("75000-1")], next: null })],
@@ -39,9 +65,22 @@ const entry = (no: string, name: string, quantity = 1) => ({
   entries: [{ item: { no, name, type: "MINIFIG" }, quantity }],
 });
 
+/** The sets a minifig comes in, as BrickLink's supersets answer. */
+const supersets = (...numbers: string[]) =>
+  brickLink([
+    {
+      color_id: 0,
+      entries: numbers.map((no) => ({ item: { no, name: `Set ${no}`, type: "SET" }, quantity: 1 })),
+    },
+  ]);
+
 /** BrickLink routes: the minifigs of some sets; the other sets are unknown (404). */
 export function seriesBrickLinkRoutes(): Route[] {
   return [
+    // Captain Rex comes in four sets; only the first three are asked about.
+    ["/items/MINIFIG/sw0194/supersets", supersets("75372-1", "75345-1", "7675-1", "75000-1")],
+    ["/items/MINIFIG/sw9999/supersets", supersets("75001-1")],
+    ["/items/MINIFIG/sw0000/supersets", brickLinkFailure(404, "RESOURCE_NOT_FOUND")],
     [
       "/items/SET/75372-1/subsets",
       brickLink([entry("sw0194", "Captain Rex"), entry("sw0631", "Trooper")]),

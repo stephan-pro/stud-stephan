@@ -29,6 +29,14 @@ function problemOf(error: unknown): Problem {
   return failure === "offline" || failure === "limit_reached" ? failure : "unavailable";
 }
 
+/** Whether the theme is one of the sub themes listed below a main theme that cannot be chosen. */
+function isBelowMain(themes: readonly SeriesTheme[], index: number): boolean {
+  const name = themes[index]?.name ?? "";
+  return themes
+    .slice(0, index)
+    .some((main) => !main.selectable && name.startsWith(`${main.name} – `));
+}
+
 /** A series with how much of it the collection has. */
 interface Entry {
   readonly summary: SeriesSummary;
@@ -172,6 +180,7 @@ export function SeriesPage({
 }) {
   const [query, setQuery] = useState("");
   const [themes, setThemes] = useState<readonly SeriesTheme[] | undefined>();
+  const [more, setMore] = useState(false);
   const [searching, setSearching] = useState(false);
   const [problem, setProblem] = useState<Problem | undefined>();
   const [chosen, setChosen] = useState<SeriesTheme | undefined>();
@@ -194,7 +203,8 @@ export function SeriesPage({
       builder.search(text).then(
         (found) => {
           if (run.current !== mine) return;
-          setThemes(found);
+          setThemes(found.themes);
+          setMore(found.more);
           setProblem(undefined);
           setSearching(false);
         },
@@ -266,20 +276,43 @@ export function SeriesPage({
       )}
       {themes && themes.length > 0 && (
         <ul class="series-results">
-          {themes.map((theme) => (
+          {themes.map((theme, index) => (
             <li key={theme.id}>
-              <button
-                type="button"
-                class="series-result pressable"
-                onClick={() => setChosen(theme)}
-              >
-                {theme.name}
-                <Icon name="plus" size={20} />
-              </button>
+              {theme.selectable ? (
+                <button
+                  type="button"
+                  class="series-result pressable"
+                  data-below-main={isBelowMain(themes, index) || undefined}
+                  onClick={() => setChosen(theme)}
+                >
+                  <span class="series-result__text">
+                    {theme.name}
+                    {theme.via && (
+                      <span class="series-result__note">
+                        {T.foundBy[theme.via.kind](theme.via.number)}
+                      </span>
+                    )}
+                  </span>
+                  <Icon name="plus" size={20} />
+                </button>
+              ) : (
+                <div class="series-result series-result--main">
+                  <span class="series-result__text">
+                    {theme.name}
+                    <span class="series-result__note">{T.tooBigTheme}</span>
+                    {theme.via && (
+                      <span class="series-result__note">
+                        {T.foundBy[theme.via.kind](theme.via.number)}
+                      </span>
+                    )}
+                  </span>
+                </div>
+              )}
             </li>
           ))}
         </ul>
       )}
+      {more && !searching && <p class="note">{T.moreHits}</p>}
 
       <h2 class="section-title">{T.mine}</h2>
       {loaded.status === "loading" && (
