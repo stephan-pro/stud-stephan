@@ -57,7 +57,7 @@ pg_cron (wöchentlich) ──► Edge Function „bricklink“ ──► BrickLi
 | P4c | Fotos und Studio-Dateien hochladen | Sonnet | Medium | ✅ 01.11.2026 |
 | P5 | Vitrine, Filter, Detailseiten | Sonnet | Medium | ✅ 01.11.2026 |
 | P6 | Manuell erfassen, bearbeiten, löschen, Mods | Sonnet | Medium | ✅ 01.11.2026 (Hochformat-Foto am Redmi vom PO bestätigt) |
-| P7 | Katalog (BrickLink-Nummern, Rebrickable-Suche) | Sonnet | Medium | Code fertig und online 01.11.2026; offen: PO-Schritte (Migration, Secrets, Funktionen bereitstellen, Prüfung mit sw0194) |
+| P7 | Katalog (BrickLink-Nummern, Rebrickable-Suche) | Sonnet | Medium | ✅ 01.11.2026 (Prüfung mit sw0194 und 75372 vom PO bestätigt; „Stammt aus Set“ bleibt bei mehreren Sets leer, so gewollt) |
 | P8 | Fotoerkennung (Brickognize) | Sonnet | Medium | offen |
 | P9 | Erfassen per Link (Merlins Steine, Rebrickable, andere) | Sonnet | Medium | offen |
 | P10 | Dioramen | Sonnet | Medium | offen |
