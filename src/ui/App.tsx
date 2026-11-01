@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { Auth, Session } from "../auth/auth";
 import type { Catalog } from "../backend/catalog";
+import { FakePriceRunner } from "../backend/fakePriceRun";
 import type { LinkPreviewer } from "../backend/linkPreview";
+import type { PriceRunner } from "../backend/priceRun";
 import type { Recognizer } from "../backend/recognition";
 import type { Remote } from "../backend/remote";
+import { recordPriceRun } from "../domain/prices";
 import type { Collection, RemovableObject } from "../domain/types";
 import { CaptureLink } from "./captureLink";
 import { CapturePhoto } from "./capturePhoto";
@@ -12,6 +15,7 @@ import { CaptureSheet } from "./components/CaptureSheet";
 import { ComingSoon } from "./components/ComingSoon";
 import { PhoneNavigation, Sidebar } from "./components/Navigation";
 import { PageHeader } from "./components/PageHeader";
+import { PriceRunCard } from "./components/PriceRunCard";
 import { StorageCard } from "./components/StorageCard";
 import { Toast } from "./components/Toast";
 import { AssignPage } from "./pages/AssignPage";
@@ -35,7 +39,7 @@ import {
   routeHash,
 } from "./route";
 import { TEXTS } from "./texts";
-import { useCollection, useOnline } from "./useCollection";
+import { type LoadedCollection, useCollection, useOnline } from "./useCollection";
 import { usePendingRemoval } from "./usePendingRemoval";
 
 /** The page of the current address; an empty or unknown address is rewritten to the start page. */
@@ -62,6 +66,8 @@ interface ShellProps {
   readonly recognizer?: Recognizer | undefined;
   /** Capture by link (P9): a pasted address in, what the page gives out. */
   readonly previewer?: LinkPreviewer | undefined;
+  /** The price run (P11): its state and "Jetzt aktualisieren"; the demo makes its own. */
+  readonly priceRunner?: PriceRunner | undefined;
   /** The example collection of the demo (no server). */
   readonly demo?: Collection | undefined;
   /** Missing in the demo (no sign-in). */
@@ -77,6 +83,7 @@ function Shell({
   catalog,
   recognizer,
   previewer,
+  priceRunner,
   demo,
   onSignOut,
   focusOnMount,
@@ -84,6 +91,7 @@ function Shell({
   const [page, setPage] = useState(currentLocation);
   const [view, setView] = useState<ShowcaseView>(INITIAL_VIEW);
   const data = useCollection(remote, demo);
+  const runner = useDemoPriceRunner(priceRunner, demo, data);
   const online = useOnline();
   const firstPage = useRef(true);
   const removal = usePendingRemoval(remote, data);
@@ -237,6 +245,10 @@ function Shell({
                 <CaptureSheet onClose={() => (location.hash = routeHash("showcase"))} />
               )}
               {route === "settings" && <AccountCard email={session.email} onSignOut={onSignOut} />}
+              {route === "settings" && runner !== undefined && (
+                // The demo writes the prices straight into the shown collection.
+                <PriceRunCard runner={runner} onPricesChanged={demo ? () => {} : data.retry} />
+              )}
               {route === "settings" && remote !== undefined && <StorageCard remote={remote} />}
               {route === "dioramas" && (
                 <DioramasPage data={data} onShowWithoutDiorama={showWithoutDiorama} />
@@ -266,6 +278,41 @@ function Shell({
   );
 }
 
+/**
+ * The price runner of the shell. The demo has no server and shows its example collection from
+ * memory, so its runner reads that collection and writes the new price points into it.
+ */
+function useDemoPriceRunner(
+  given: PriceRunner | undefined,
+  demo: Collection | undefined,
+  data: LoadedCollection,
+): PriceRunner | undefined {
+  // Read through refs: the runner must stay the same object while the collection changes.
+  const state = useRef(data.state);
+  state.current = data.state;
+  const change = useRef(data.update);
+  change.current = data.update;
+  return useMemo(() => {
+    if (given || !demo) return given;
+    return new FakePriceRunner({
+      load: async () => {
+        const current = state.current;
+        if (current.status !== "ready") throw new Error("Die Beispielsammlung lädt noch");
+        return current.collection;
+      },
+      savePrice: async (point) =>
+        change.current((collection) => ({
+          ...collection,
+          prices: recordPriceRun(
+            collection.prices,
+            [{ ...point, ok: true, cents: point.cents }],
+            point.date,
+          ),
+        })),
+    });
+  }, [given, demo]);
+}
+
 /** Stands in for a session in the demo, which has no sign-in. */
 const DEMO_SESSION: Session = { userId: "demo", email: "" };
 
@@ -280,6 +327,7 @@ export function App({
   catalog,
   recognizer,
   previewer,
+  priceRunner,
   demo,
 }: {
   readonly auth: Auth | null;
@@ -287,6 +335,7 @@ export function App({
   readonly catalog?: Catalog | undefined;
   readonly recognizer?: Recognizer | undefined;
   readonly previewer?: LinkPreviewer | undefined;
+  readonly priceRunner?: PriceRunner | undefined;
   /** The example collection; only the demo has one. */
   readonly demo?: Collection | undefined;
 }) {
@@ -319,6 +368,7 @@ export function App({
         catalog={catalog}
         recognizer={recognizer}
         previewer={previewer}
+        priceRunner={priceRunner}
         demo={demo}
         focusOnMount={false}
       />
@@ -353,6 +403,7 @@ export function App({
       catalog={catalog}
       recognizer={recognizer}
       previewer={previewer}
+      priceRunner={priceRunner}
       onSignOut={() => void signOut()}
       focusOnMount={changed.current}
     />

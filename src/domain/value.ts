@@ -22,6 +22,8 @@ export interface Valuation {
   kind: ValueKind;
   /** Day of the price point ("Stand vom …") or of the estimate ("Eingetragen am …"). */
   asOf?: IsoDate;
+  /** Pieces sold behind a market value (few sales = an uncertain average, DATENQUELLEN.md). */
+  soldCount?: number;
   /** The market price in the other condition, for comparison ("Neu wäre sie … wert"). */
   otherCondition?: MarketPrice & { condition: Condition };
   /** Value minus purchase price; only if a purchase price is known. */
@@ -57,6 +59,7 @@ export function valueOfItem(
   const valuation: Valuation = market
     ? { cents: market.cents, kind: "market", asOf: market.date, ownValueMissing: false }
     : entered(item.manualValue, item.purchasePrice);
+  if (market?.soldCount !== undefined) valuation.soldCount = market.soldCount;
   const condition = otherCondition(item.condition);
   const other = marketPrice(item, condition, prices);
   if (other) valuation.otherCondition = { ...other, condition };

@@ -113,22 +113,35 @@ export function priceHistory(
     .reverse();
 }
 
-/** Every catalog item a price run has to ask BrickLink for, each once: owned objects and wishes. */
+/**
+ * What the price run asks BrickLink about (P11): official figures and sets of the collection and of
+ * the wishlist. Special parts are left out: their number does not say which kind of BrickLink item
+ * they are (set, part, gear), so they keep their own value or purchase price.
+ */
+function runCandidates(collection: Collection): Priceable[] {
+  return [...collection.minifigs, ...collection.sets, ...collection.wishlist];
+}
+
+/**
+ * Every catalog item a price run has to ask BrickLink for, each once (as the database's
+ * `price_run_begin` does).
+ */
 export function itemsToPrice(collection: Collection): CatalogItem[] {
   const items = new Map<string, CatalogItem>();
-  const all: Priceable[] = [
-    ...collection.minifigs,
-    ...collection.sets,
-    ...collection.specialParts,
-    ...collection.wishlist,
-  ];
-  for (const item of all) {
+  for (const item of runCandidates(collection)) {
     const bricklinkId = itemNumber(item);
     if (!hasMarketPrice(item) || bricklinkId === undefined) continue;
     const key = catalogKey(item.type, bricklinkId);
     if (!items.has(key)) items.set(key, { itemType: item.type, bricklinkId });
   }
   return [...items.values()];
+}
+
+/** Official figures, sets and wishes without a number: the run skips them (`skipped`). */
+export function itemsWithoutNumber(collection: Collection): number {
+  return runCandidates(collection).filter(
+    (item) => item.manufacturer.kind === "lego" && itemNumber(item) === undefined,
+  ).length;
 }
 
 /** What a price run brought back for one catalog item. */

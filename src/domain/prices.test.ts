@@ -4,6 +4,7 @@ import {
   catalogKey,
   hasMarketPrice,
   itemsToPrice,
+  itemsWithoutNumber,
   marketPrice,
   type PriceResult,
   priceHistory,
@@ -30,15 +31,34 @@ describe("F10 Preisabruf", () => {
     ]);
   });
 
-  it("F10 Auch Wünsche und Sonderteile von LEGO bekommen einen Marktpreis", () => {
+  it("F10 Auch Wünsche von LEGO bekommen einen Marktpreis; Sonderteile fragt der Abruf nicht ab (P11)", () => {
     const withWish = aCollection({
-      wishlist: [aWish({ bricklinkId: "sw0196" }), aWish({ manufacturer: { kind: "bluebrixx" } })],
+      wishlist: [
+        aWish({ bricklinkId: "sw0196" }),
+        aWish({ type: "legoSet", setNumber: "75372-1" }),
+        aWish({ manufacturer: { kind: "bluebrixx" } }),
+      ],
       specialParts: [aSpecialPart({ number: "5008889" }), aSpecialPart()],
     });
     expect(itemsToPrice(withWish)).toEqual([
-      { itemType: "specialPart", bricklinkId: "5008889" },
       { itemType: "minifig", bricklinkId: "sw0196" },
+      { itemType: "legoSet", bricklinkId: "75372-1" },
     ]);
+  });
+
+  it("P11 Objekte ohne BrickLink-Nummer werden übersprungen und gezählt", () => {
+    const { bricklinkId: _custom, ...customWithout } = custom;
+    const { setNumber: _set, ...setWithout } = aSet();
+    const { bricklinkId: _wish, ...wishWithout } = aWish();
+    const withGaps = aCollection({
+      minifigs: [rex, aMinifig({ bricklinkId: " " }), customWithout],
+      sets: [setWithout],
+      wishlist: [wishWithout],
+      specialParts: [aSpecialPart()],
+    });
+    expect(itemsToPrice(withGaps)).toEqual([{ itemType: "minifig", bricklinkId: "sw0194" }]);
+    // A custom figure has no market value at all, so it is not "skipped".
+    expect(itemsWithoutNumber(withGaps)).toBe(3);
   });
 
   it("F10 Nach jedem Abruf gibt es je offiziellem Objekt genau einen neuen Preisstand mit Datum", () => {

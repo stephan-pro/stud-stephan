@@ -31,6 +31,12 @@ export function list(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
+/** "12.3400" (BrickLink sends prices as text) → 1234 whole cents; `undefined` if not a price. */
+export function toCents(value: unknown): number | undefined {
+  const amount = typeof value === "number" ? value : Number(str(value));
+  return Number.isFinite(amount) && amount >= 0 ? Math.round(amount * 100) : undefined;
+}
+
 /** A year from 1900 to 2100, else nothing. */
 export function year(value: unknown): number | undefined {
   const number = num(value);

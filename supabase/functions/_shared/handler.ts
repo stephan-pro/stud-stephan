@@ -1,5 +1,5 @@
-// The HTTP side of the two functions: sign-in check, reading the request, mapping failures to
-// answers. The functions' `index.ts` only connects this to `Deno.serve` and the environment.
+// The HTTP side of the functions: sign-in check, reading the request, mapping failures to answers.
+// The functions' `index.ts` only connects this to `Deno.serve` and the environment.
 
 import type { BricklinkClient } from "./bricklinkClient.ts";
 import type { Brickognize } from "./brickognizeClient.ts";
@@ -13,6 +13,13 @@ import {
 } from "./catalogTypes.ts";
 import { CatalogError, type Fetch, isRecord, str } from "./json.ts";
 import { type LinkAnswer, LinkError, type LinkImageAnswer, MAX_LINK_LENGTH } from "./linkTypes.ts";
+import {
+  MANUAL_BUDGET_MS,
+  type PriceRunDeps,
+  SCHEDULED_BUDGET_MS,
+  workOnPriceRuns,
+} from "./priceRunService.ts";
+import type { PriceRunAnswer } from "./priceRunTypes.ts";
 import { MAX_PHOTO_BYTES, type RecognizeAnswer } from "./recognizeTypes.ts";
 
 const CORS = {
@@ -218,17 +225,100 @@ export function handleLinkPreview(request: Request, deps: LinkHandlerDeps): Prom
   });
 }
 
+/** The id of the signed-in person the token belongs to, or nothing (like `isSignedIn`). */
+export async function signedInUser(
+  request: Request,
+  authUrl: string,
+  send: Fetch,
+): Promise<string | undefined> {
+  const token = request.headers.get("Authorization");
+  const apikey = request.headers.get("apikey");
+  if (!token || !apikey) return undefined;
+  try {
+    const response = await send(`${authUrl}/auth/v1/user`, {
+      headers: { Authorization: token, apikey },
+    });
+    if (!response.ok) return undefined;
+    const user: unknown = await response.json();
+    return isRecord(user) ? str(user.id) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The header the cron job proves itself with (P11): the secret `PRICE_RUN_SECRET`. */
+export const RUN_SECRET_HEADER = "x-price-run-secret";
+/** Shorter secrets are not taken: the value is made with 32 random bytes (64 hex digits). */
+export const MIN_SECRET_LENGTH = 32;
+
+/** Compares without stopping at the first difference, so the time says nothing about the secret. */
+export function sameSecret(given: string, expected: string): boolean {
+  if (given.length !== expected.length) return false;
+  let difference = 0;
+  for (let index = 0; index < given.length; index++) {
+    difference |= given.charCodeAt(index) ^ expected.charCodeAt(index);
+  }
+  return difference === 0;
+}
+
 export interface BricklinkHandlerDeps {
   readonly signedIn: HandlerDeps["signedIn"];
+  /** The id of the signed-in person (asked once per request). */
+  readonly user: (request: Request) => Promise<string | undefined>;
   readonly client: () => BricklinkClient | undefined;
+  /** The price run (P11); nothing if the BrickLink secrets or the database are missing. */
+  readonly priceRun: () => PriceRunDeps | undefined;
+  /** `PRICE_RUN_SECRET`, the cron job's proof; without it the cron job is turned away. */
+  readonly runSecret: string | undefined;
+}
+
+/** The cron job's call (pg_net with the secret from the Vault): work on every open run. */
+async function scheduledRun(request: Request, deps: BricklinkHandlerDeps): Promise<Response> {
+  const expected = deps.runSecret?.trim() ?? "";
+  const given = request.headers.get(RUN_SECRET_HEADER)?.trim() ?? "";
+  if (expected.length < MIN_SECRET_LENGTH || !sameSecret(given, expected)) {
+    return failure("not_signed_in");
+  }
+  const run = deps.priceRun();
+  if (!run) return failure("unavailable");
+  try {
+    return answer(200, await workOnPriceRuns(run, { budgetMs: SCHEDULED_BUDGET_MS }));
+  } catch (error) {
+    return failure(error instanceof CatalogError ? error.failure : "unavailable");
+  }
+}
+
+/**
+ * "Jetzt aktualisieren" (S12): `{op: "priceRun", start}`. With `start` a run begins unless one is
+ * open; then a portion of the person's open run is done and the run's state comes back.
+ */
+async function manualRun(
+  request: Request,
+  body: Record<string, unknown>,
+  deps: BricklinkHandlerDeps,
+): Promise<Response> {
+  if (body.start !== undefined && typeof body.start !== "boolean") return failure("bad_request");
+  const owner = await deps.user(request);
+  if (owner === undefined) return failure("not_signed_in");
+  const run = deps.priceRun();
+  if (!run) return failure("unavailable");
+  if (body.start === true) await run.store.begin(owner, "manual");
+  await workOnPriceRuns(run, { owner, budgetMs: MANUAL_BUDGET_MS });
+  const result: PriceRunAnswer = { status: await run.store.status(owner) };
+  return answer(200, result);
 }
 
 /**
  * The function `bricklink`: the catalog calls of the BrickLink client on their own (item, minifigs
- * of a set, sets of a minifig). P11 adds the price guide here.
+ * of a set, sets of a minifig) and the price run (P11): from the cron job with the header
+ * `x-price-run-secret`, from the app with the person's sign-in (`{op: "priceRun", start}`).
  */
 export function handleBricklink(request: Request, deps: BricklinkHandlerDeps): Promise<Response> {
+  if (request.method === "POST" && request.headers.has(RUN_SECRET_HEADER)) {
+    return scheduledRun(request, deps);
+  }
   return serve(request, deps, async (body) => {
+    if (isRecord(body) && body.op === "priceRun") return manualRun(request, body, deps);
     const number = isRecord(body) ? str(body.number) : undefined;
     if (!isRecord(body) || number === undefined || !/^[A-Za-z0-9._-]{1,50}$/.test(number)) {
       return failure("bad_request");

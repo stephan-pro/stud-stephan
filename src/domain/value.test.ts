@@ -31,6 +31,15 @@ describe("F10 Wert offizieller Objekte", () => {
     expect(valueOfItem(changed, BRICKLINK).cents).toBe(1800);
   });
 
+  it("P11 Der Marktwert nennt, aus wie vielen Verkäufen er stammt", () => {
+    const sold = [{ ...aPrice("sw0194", "2026-11-02", { used: 6739 }), soldCount: { used: 97 } }];
+    expect(valueOfItem(aMinifig({ condition: "used" }), sold)).toMatchObject({
+      cents: 6739,
+      soldCount: 97,
+    });
+    expect(valueOfItem(aMinifig({ condition: "used" }), BRICKLINK).soldCount).toBeUndefined();
+  });
+
   it("F10 Der Preis im anderen Zustand steht zum Vergleich daneben", () => {
     expect(valueOfItem(aMinifig({ condition: "used" }), BRICKLINK).otherCondition).toEqual({
       condition: "new",

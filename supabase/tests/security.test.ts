@@ -21,6 +21,9 @@ const TABLES = [
 /** The tables of the catalog functions (P7): closed to the app, open to the service role only. */
 const CATALOG_TABLES = ["catalog_cache", "catalog_usage"] as const;
 
+/** The queue of the price run (P11): the owner reads, only its functions write (`priceRun.test.ts`). */
+const PRICE_RUN_TABLES = ["price_run_items", "price_runs"] as const;
+
 const bytes = new Uint8Array([1, 2, 3, 4, 5]);
 
 let owner: Person;
@@ -248,7 +251,9 @@ describe("Datenbank", () => {
       "select c.relname, c.relrowsecurity, has_table_privilege('anon', c.oid, 'select,insert,update,delete') " +
         "from pg_class c where c.relnamespace = 'public'::regnamespace and c.relkind = 'r' order by 1",
     );
-    expect(tables).toEqual([...TABLES, ...CATALOG_TABLES].sort().map((table) => `${table}|t|f`));
+    expect(tables).toEqual(
+      [...TABLES, ...CATALOG_TABLES, ...PRICE_RUN_TABLES].sort().map((table) => `${table}|t|f`),
+    );
   });
 
   it("Katalog-Cache und Aufrufzähler sind für die App gesperrt, auch angemeldet", async () => {

@@ -63,7 +63,9 @@ export function ValueCard({ valuation, condition, purchasePrice, history, id }: 
   else if (valuation.kind === "manual") notes.push(T.noMarket);
   if (valuation.asOf) {
     const date = formatDate(valuation.asOf);
-    notes.push(valuation.kind === "market" ? T.asOfMarket(date) : T.asOfManual(date));
+    if (valuation.kind !== "market") notes.push(T.asOfManual(date));
+    else if (valuation.soldCount === undefined) notes.push(T.asOfMarket(date));
+    else notes.push(T.asOfMarketSold(date, valuation.soldCount));
   }
   const other = valuation.otherCondition;
 

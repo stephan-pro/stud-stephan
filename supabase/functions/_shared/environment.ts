@@ -12,9 +12,12 @@ import {
   isSignedIn,
   type LinkHandlerDeps,
   type RecognizeHandlerDeps,
+  signedInUser,
 } from "./handler.ts";
 import { CatalogError, type Fetch } from "./json.ts";
 import { fetchLinkImage, previewLink } from "./linkService.ts";
+import type { PriceRunDeps } from "./priceRunService.ts";
+import { supabasePriceRunStore } from "./priceRunStore.ts";
 import { createRebrickable } from "./rebrickableClient.ts";
 import type { Resolve } from "./safeFetch.ts";
 
@@ -23,25 +26,36 @@ export const BRICKLINK_DAILY_CAP = 4500;
 
 export type Environment = (name: string) => string | undefined;
 
-function bricklinkOf(env: Environment, send: Fetch, store: CatalogStore, now: () => Date) {
-  const credentials = {
-    consumerKey: env("BRICKLINK_CONSUMER_KEY"),
-    consumerSecret: env("BRICKLINK_CONSUMER_SECRET"),
-    tokenValue: env("BRICKLINK_TOKEN_VALUE"),
-    tokenSecret: env("BRICKLINK_TOKEN_SECRET"),
-  };
-  const { consumerKey, consumerSecret, tokenValue, tokenSecret } = credentials;
+/** BrickLink's day, as it is counted: the UTC date. */
+function countDay(now: () => Date): string {
+  return now().toISOString().slice(0, 10);
+}
+
+/** A BrickLink client whose every call is counted first with `count` (false = day used up). */
+function bricklinkOf(
+  env: Environment,
+  send: Fetch,
+  count: (day: string) => Promise<boolean>,
+  now: () => Date,
+) {
+  const consumerKey = env("BRICKLINK_CONSUMER_KEY");
+  const consumerSecret = env("BRICKLINK_CONSUMER_SECRET");
+  const tokenValue = env("BRICKLINK_TOKEN_VALUE");
+  const tokenSecret = env("BRICKLINK_TOKEN_SECRET");
   if (!consumerKey || !consumerSecret || !tokenValue || !tokenSecret) return undefined;
   return createBricklink({
     fetch: send,
     credentials: { consumerKey, consumerSecret, tokenValue, tokenSecret },
     beforeCall: async () => {
-      const day = now().toISOString().slice(0, 10);
-      if (!(await store.countCall("bricklink", day, BRICKLINK_DAILY_CAP))) {
+      if (!(await count(countDay(now)))) {
         throw new CatalogError("limit_reached", "Tageslimit für BrickLink erreicht");
       }
     },
   });
+}
+
+function catalogCount(store: CatalogStore) {
+  return (day: string) => store.countCall("bricklink", day, BRICKLINK_DAILY_CAP);
 }
 
 function storeOf(env: Environment, send: Fetch): CatalogStore {
@@ -63,7 +77,7 @@ export function catalogHandlerDeps(
     signedIn: (request) => isSignedIn(request, env("SUPABASE_URL") ?? "", send),
     services(): CatalogDeps | undefined {
       const store = storeOf(env, send);
-      const bricklink = bricklinkOf(env, send, store, now);
+      const bricklink = bricklinkOf(env, send, catalogCount(store), now);
       const key = env("REBRICKABLE_API_KEY");
       if (!bricklink || !key) return undefined;
       return { bricklink, rebrickable: createRebrickable({ fetch: send, key }), store, now };
@@ -91,13 +105,39 @@ export function linkHandlerDeps(env: Environment, send: Fetch, resolve: Resolve)
   };
 }
 
+/**
+ * The price run (P11) needs the database (its queue, with the service role) and the BrickLink
+ * secrets; its calls count on the price run's share of the day (`price_count_call`).
+ */
+function priceRunOf(env: Environment, send: Fetch, now: () => Date): PriceRunDeps | undefined {
+  const url = env("SUPABASE_URL");
+  const serviceRoleKey = env("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !serviceRoleKey) return undefined;
+  const store = supabasePriceRunStore({ url, serviceRoleKey }, send);
+  const bricklink = bricklinkOf(env, send, (day) => store.countCall(day), now);
+  return bricklink ? { store, bricklink, now } : undefined;
+}
+
 export function bricklinkHandlerDeps(
   env: Environment,
   send: Fetch,
   now = () => new Date(),
 ): BricklinkHandlerDeps {
+  // The sign-in is asked once per request, also when both the check and the id are needed.
+  const users = new WeakMap<Request, Promise<string | undefined>>();
+  const user = (request: Request) => {
+    let found = users.get(request);
+    if (found === undefined) {
+      found = signedInUser(request, env("SUPABASE_URL") ?? "", send);
+      users.set(request, found);
+    }
+    return found;
+  };
   return {
-    signedIn: (request) => isSignedIn(request, env("SUPABASE_URL") ?? "", send),
-    client: () => bricklinkOf(env, send, storeOf(env, send), now),
+    signedIn: async (request) => (await user(request)) !== undefined,
+    user,
+    client: () => bricklinkOf(env, send, catalogCount(storeOf(env, send)), now),
+    priceRun: () => priceRunOf(env, send, now),
+    runSecret: env("PRICE_RUN_SECRET"),
   };
 }

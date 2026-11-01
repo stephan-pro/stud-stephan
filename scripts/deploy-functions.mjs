@@ -1,6 +1,6 @@
-// `npm run deploy:functions` – sets the secrets of the catalog functions in the Supabase project and
-// deploys all functions (P7 catalog, bricklink; P8 recognize; P9 link-preview). Only for the PO, in his own
-// terminal; a missing `npx supabase login` is done on the way.
+// `npm run deploy:functions` – sets the secrets of the functions in the Supabase project and
+// deploys all functions (P7 catalog, bricklink; P8 recognize; P9 link-preview; P11 price run in
+// bricklink). Only for the PO, in his own terminal; a missing `npx supabase login` is done on the way.
 // The keys are read from .env.local and handed to the Supabase CLI through a temporary file that is
 // deleted afterwards; they are never printed. No database password and no Docker are needed.
 // `npm run deploy:functions -- --project-ref=<Kennung>` for another project.
@@ -19,6 +19,8 @@ const SECRET_NAMES = [
   "BRICKLINK_CONSUMER_SECRET",
   "BRICKLINK_TOKEN_VALUE",
   "BRICKLINK_TOKEN_SECRET",
+  // P11: the cron job's proof; the same value lies in the Vault as `price_run_secret`.
+  "PRICE_RUN_SECRET",
 ];
 
 if (!existsSync(".env.local")) {
@@ -32,6 +34,14 @@ process.loadEnvFile(".env.local");
 const missing = SECRET_NAMES.filter((name) => !process.env[name]?.trim());
 if (missing.length > 0) {
   console.error(`❌ In .env.local fehlt ein Wert für: ${missing.join(", ")}`);
+  process.exit(1);
+}
+
+// The function turns shorter values away (`MIN_SECRET_LENGTH`); made with 32 random bytes = 64 hex digits.
+if (!/^[0-9a-f]{64}$/i.test(process.env.PRICE_RUN_SECRET.trim())) {
+  console.error(
+    "❌ PRICE_RUN_SECRET in .env.local muss 64 Zeichen 0–9 und a–f haben (Befehl dafür im Bericht zu P11).",
+  );
   process.exit(1);
 }
 
@@ -91,5 +101,5 @@ console.log("\n2/2 Funktionen catalog, bricklink, recognize und link-preview ber
 supabase(["functions", "deploy", "--project-ref", project, "--use-api", "--no-verify-jwt"]);
 
 console.log(
-  "\n✅ Fertig. Prüfung in der App: Erfassen → Figur → Foto (Foto-Erkennung), Nummer oder Suche, oder Set → Link einfügen.",
+  "\n✅ Fertig. Prüfung in der App: Einstellungen → Preisabruf → „Jetzt aktualisieren“, oder Erfassen → Figur → Foto, Nummer oder Suche.",
 );

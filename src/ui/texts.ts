@@ -47,7 +47,7 @@ export const TEXTS = {
     settings: {
       label: "Einstellungen",
       comingSoon:
-        "Hier findest du bald den Stand der Datenquellen und des Preisabrufs, die Datensicherung und die Version der App.",
+        "Hier findest du bald den Stand der Datenquellen, die Datensicherung und die Version der App.",
     },
   } satisfies Record<Route, RouteTexts>,
   /** S0 sign-in (P4b): address, then the code from the mail. */
@@ -94,6 +94,43 @@ export const TEXTS = {
     meter: "Belegter Speicherplatz",
     failed: "Der Speicherplatz konnte gerade nicht gelesen werden.",
     retry: "Noch einmal versuchen",
+  },
+  /** The price run card in the settings (S12, P11). */
+  priceRun: {
+    title: "Preisabruf",
+    loading: "Wird geladen …",
+    failedToLoad: "Der Stand des Preisabrufs konnte gerade nicht gelesen werden.",
+    retry: "Noch einmal versuchen",
+    lastRun: "Letzter Lauf",
+    result: "Ergebnis",
+    skipped: "Übersprungen",
+    failedNumbers: "Fehlgeschlagen",
+    nextRun: "Nächster Lauf",
+    never: "noch keiner",
+    started: (time: string, manual: boolean) => (manual ? `${time} · von Hand` : time),
+    done: (updated: number, failed: number, empty: number) =>
+      [
+        `${updated} aktualisiert`,
+        `${failed} fehlgeschlagen`,
+        ...(empty > 0 ? [`${empty} ohne Verkäufe`] : []),
+      ].join(", "),
+    nothingToAsk: "Keine Figuren oder Sets mit BrickLink-Nummer",
+    running: (done: number, total: number) => `läuft: ${done} von ${total} abgefragt`,
+    paused: (done: number, total: number, until: string) =>
+      `${done} von ${total} abgefragt. Das Tageslimit von BrickLink ist erreicht, es geht am ${until} weiter.`,
+    withoutNumber: (count: number) =>
+      count === 1 ? "1 ohne BrickLink-Nummer" : `${count} ohne BrickLink-Nummer`,
+    note: "Jeden Montag fragt die App die Marktwerte deiner offiziellen Figuren, Sets und Wünsche bei BrickLink ab. Mit dem Knopf geht es sofort; das dauert etwa eine Sekunde je Eintrag.",
+    update: "Jetzt aktualisieren",
+    updating: "Wird aktualisiert …",
+    progress: (done: number, total: number) => `${done} von ${total} abgefragt …`,
+    finished: "Der Preisabruf ist fertig.",
+    failures: {
+      offline: "Keine Verbindung zum Server. Prüf das Internet und versuch es noch einmal.",
+      limit_reached:
+        "Für heute sind alle BrickLink-Abfragen verbraucht. Der Abruf geht morgen von selbst weiter.",
+      unavailable: "Der Preisabruf ist gerade nicht erreichbar. Versuch es später noch einmal.",
+    },
   },
   manufacturers: { lego: "LEGO", bluebrixx: "Bluebrixx" },
   conditions: { new: "Neu", used: "Gebraucht" },
@@ -207,6 +244,9 @@ export const TEXTS = {
       difference: "Differenz",
       otherCondition: (condition: string, price: string) => `${condition}: ${price}`,
       asOfMarket: (date: string) => `Stand vom ${date} · BrickLink`,
+      /** P11: how many sales the average stands on (few = uncertain). */
+      asOfMarketSold: (date: string, sold: number) =>
+        `Stand vom ${date} · BrickLink · Ø aus ${sold} ${sold === 1 ? "Verkauf" : "Verkäufen"}`,
       asOfManual: (date: string) => `Eingetragen am ${date}`,
       noMarket: "Kein Marktpreis verfügbar",
       noMarketPurchase: "Kein Marktpreis verfügbar. Der Kaufpreis gilt als Wert.",

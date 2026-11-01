@@ -1,6 +1,6 @@
 // Days as the interface shows them. Days are "YYYY-MM-DD" everywhere else (types.ts).
 
-import type { IsoDate } from "./types";
+import type { IsoDate, Timestamp } from "./types";
 
 const MONTHS = [
   "Januar",
@@ -29,6 +29,22 @@ function parts(day: IsoDate): { year: string; month: number; date: string } | un
 export function formatDate(day: IsoDate): string {
   const found = parts(day);
   return found ? `${found.date}.${String(found.month).padStart(2, "0")}.${found.year}` : day;
+}
+
+// Stephan lives in Germany; the server counts in UTC.
+const GERMAN_TIME = new Intl.DateTimeFormat("de-DE", {
+  timeZone: "Europe/Berlin",
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+/** "2026-11-02T02:00:00Z" → "02.11.2026, 03:00" (German time); text that is no time stays. */
+export function formatDateTime(time: Timestamp): string {
+  const date = new Date(time);
+  return Number.isNaN(date.getTime()) ? time : GERMAN_TIME.format(date);
 }
 
 /** "2025-03-14" → "März 2025" ("Erworben"); text that is no day stays as it is. */

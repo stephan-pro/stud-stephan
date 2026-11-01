@@ -65,6 +65,7 @@ npx supabase db push
 |---|---|---|
 | `20261031120000_collection.sql` (P4a) | Tabellen, Zeilenschutz, Funktionen, Dateiablagen `photos` und `studio-files`, `ping` | eingespielt (31.10.2026); Security Advisor vom PO geprüft, Zugriff ohne Anmeldung von außen gesperrt (nur `ping`) |
 | `20261101120000_catalog.sql` (P7) | Tabellen `catalog_cache` und `catalog_usage` (nur für die Edge Functions, für die App gesperrt), Funktion `catalog_count_call` | offen (PO: im SQL Editor des Dashboards einspielen, siehe Bericht zu P7); die Datei darf mehrfach laufen |
+| `20261102120000_price_run.sql` (P11) | Erweiterungen `pg_cron` und `pg_net`; Tabellen `price_runs` und `price_run_items` (Besitzer liest, nur die Funktionen schreiben); Warteschlange `price_run_begin/claim/finish/release`, Zähler `price_count_call`, Stand `price_run_status`; Aufruf der Funktion `price_run_call` (Geheimnis aus dem Vault); drei Cron-Jobs | offen (PO: zusammen mit der P7-Datei im SQL Editor einspielen, siehe Bericht zu P11); die Datei darf mehrfach laufen |
 
 ## Edge Functions (P7)
 
@@ -72,6 +73,14 @@ npx supabase db push
 - Geheimnisse (nur auf dem Server, als Supabase-Secrets): `REBRICKABLE_API_KEY`, `BRICKLINK_CONSUMER_KEY`, `BRICKLINK_CONSUMER_SECRET`, `BRICKLINK_TOKEN_VALUE`, `BRICKLINK_TOKEN_SECRET`. `SUPABASE_URL` und `SUPABASE_SERVICE_ROLE_KEY` legt Supabase jeder Funktion selbst hinein; der Service-Role-Key bleibt dort.
 - Setzen und Bereitstellen (PO, eigenes Terminal, kein Datenbank-Passwort, kein Docker): `npx supabase login`, dann `npm run deploy:functions` (`scripts/deploy-functions.mjs` liest die fünf Werte aus `.env.local`, übergibt sie über eine kurzzeitige Datei und zeigt sie nie an).
 - Aufruf aus der App: `supabase.functions.invoke("catalog", …)` mit der Anmeldung des Nutzers; die Funktion fragt bei `…/auth/v1/user` nach, ob sie gültig ist.
+
+## Preisabruf (P11)
+
+- **Zeitplan (pg_cron, UTC):** `stud-stephan-price-run` Montag 02:00 (`price_run_weekly`: ein Lauf je Besitzer mit Sammlung, dann ein Aufruf), `stud-stephan-price-run-continue` alle 5 Minuten (`price_run_continue`: ruft nur, wenn ein Lauf offen und nicht pausiert ist), `stud-stephan-cron-cleanup` täglich 03:30 (Protokoll älter als 14 Tage löschen). Ansehen: `…/integrations/cron/jobs` im Dashboard oder `select * from cron.job;`.
+- **Aufruf:** `price_run_call` schickt per pg_net `POST …/functions/v1/bricklink` mit `{op: "priceRun"}` und dem Kopf `x-price-run-secret`.
+- **Geheimnis:** derselbe Wert zweimal, nie im Repo, nie im Chat: im **Vault** unter dem Namen `price_run_secret` (`…/integrations/vault/secrets`) und als Supabase-Secret `PRICE_RUN_SECRET` der Funktion (`npm run deploy:functions` liest es aus `.env.local`). Fehlt der Vault-Eintrag, ruft die Datenbank nichts auf. Optional `project_url` im Vault, sonst `https://ohuqwiypmoqyuxsgouxw.supabase.co`.
+- **Tageslimit:** gemeinsamer Zähler mit dem Katalog in `catalog_usage` (`bricklink` gesamt, `bricklink-prices` nur Preise): Katalog bis 4.500, Preise bis 4.950 gesamt und höchstens 2.500 eigene.
+- **Prüfen, ob es läuft:** In der App Einstellungen → Preisabruf (Letzter Lauf, Ergebnis). Im Dashboard `…/integrations/cron/jobs` → Job → „History“; Antworten der Funktion unter `…/functions/bricklink/logs`.
 
 ## Kostenloser Tarif: Grenzen
 
@@ -85,5 +94,5 @@ npx supabase db push
 Alle Adressen beginnen mit `https://supabase.com/dashboard/project/ohuqwiypmoqyuxsgouxw`. Nur ansehen; keine Schlüssel oder Passwörter in Chat oder Bildschirmfotos.
 
 1. **Security Advisor:** `…/advisors/security` → „Refresh“. *Soll:* 0 Fehler. Warnungen und Hinweise: Text kopieren und Claude geben, nichts auf eigene Faust „beheben“.
-2. **Tabellen:** `…/editor`, Schema „public“. *Soll:* die acht Tabellen aus „Aufbau“ (ab P7 dazu `catalog_cache` und `catalog_usage`), bei keiner der Hinweis „RLS disabled“.
+2. **Tabellen:** `…/editor`, Schema „public“. *Soll:* die acht Tabellen aus „Aufbau“ (ab P7 dazu `catalog_cache` und `catalog_usage`, ab P11 `price_runs` und `price_run_items`), bei keiner der Hinweis „RLS disabled“.
 3. **Dateiablagen:** `…/storage/buckets`. *Soll:* `photos` und `studio-files`, beide ohne „Public“.

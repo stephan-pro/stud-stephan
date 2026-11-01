@@ -12,10 +12,12 @@ import { type Catalog, SupabaseCatalog } from "./backend/catalog";
 import { FakeCatalog } from "./backend/fakeCatalog";
 import { createFakeHttpRemote } from "./backend/fakeHttpRemote";
 import { FakeLinkPreviewer, type LinkControl } from "./backend/fakeLinkPreviewer";
+import { FakePriceRunner, type PriceRunControl } from "./backend/fakePriceRun";
 import { FakeRecognizer, type RecognitionControl } from "./backend/fakeRecognizer";
 import { FakeRemote } from "./backend/fakeRemote";
 import { FakeStore } from "./backend/fakeStore";
 import { type LinkPreviewer, SupabaseLinkPreviewer } from "./backend/linkPreview";
+import { type PriceRunner, SupabasePriceRunner } from "./backend/priceRun";
 import { type Recognizer, SupabaseRecognizer } from "./backend/recognition";
 import type { Remote } from "./backend/remote";
 import { SupabaseRemote } from "./backend/supabaseRemote";
@@ -68,6 +70,18 @@ function fakeLink(): LinkControl {
   }
 }
 
+/** Lets an end-to-end test steer the example price run: `localStorage["stud-stephan-fake:price-run-control"]`. */
+function fakePriceRunControl(): PriceRunControl {
+  try {
+    const value = localStorage.getItem("stud-stephan-fake:price-run-control");
+    return value === "offline" || value === "unavailable" || value === "limit_reached"
+      ? value
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Sign-in and data of the server this build runs on (`src/backend/mode.ts`); none in the demo. */
 function createBackend(): {
   auth: Auth;
@@ -75,19 +89,26 @@ function createBackend(): {
   catalog: Catalog;
   recognizer: Recognizer;
   previewer: LinkPreviewer;
+  priceRunner: PriceRunner;
 } | null {
   if (__BACKEND__ === "demo") return null;
   if (__BACKEND__ === "fake") {
+    const remote = createFakeHttpRemote({
+      baseUrl: __FAKE_SERVER__,
+      token: () => fakeAuthToken(localStorage) ?? "",
+    });
     return {
       auth: new FakeHttpAuth({ baseUrl: __FAKE_SERVER__, store: localStorage }),
-      remote: createFakeHttpRemote({
-        baseUrl: __FAKE_SERVER__,
-        token: () => fakeAuthToken(localStorage) ?? "",
-      }),
+      remote,
       // The catalog functions are not part of the fake server: a few example entries in memory.
       catalog: new FakeCatalog(DEMO_CATALOG, fakeCatalogFailure),
       recognizer: new FakeRecognizer(DEMO_SUGGESTIONS, fakeRecognition),
       previewer: new FakeLinkPreviewer(DEMO_LINK_PAGES, fakeLink),
+      // The price run writes its price points through the fake server like the real one.
+      priceRunner: new FakePriceRunner(remote, {
+        control: fakePriceRunControl,
+        storage: localStorage,
+      }),
     };
   }
   // `vite.config.ts` stops the build if one of the two values is missing.
@@ -102,6 +123,7 @@ function createBackend(): {
     catalog: new SupabaseCatalog(client),
     recognizer: new SupabaseRecognizer(client),
     previewer: new SupabaseLinkPreviewer(client),
+    priceRunner: new SupabasePriceRunner(client),
   };
 }
 
@@ -131,6 +153,7 @@ render(
       backend?.previewer ??
       (__BACKEND__ === "demo" ? new FakeLinkPreviewer(DEMO_LINK_PAGES, fakeLink) : undefined)
     }
+    priceRunner={backend?.priceRunner}
     demo={__BACKEND__ === "demo" ? DEMO_COLLECTION : undefined}
   />,
   root,

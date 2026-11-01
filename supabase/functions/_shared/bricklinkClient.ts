@@ -1,11 +1,23 @@
-// BrickLink Store API v1, the catalog part: item by number, the minifigs in a set (subsets), the
-// sets a minifig comes in (supersets), categories. Prices come with P11 through the same client.
-// BrickLink puts its own status into `meta.code`, also on HTTP 200.
+// BrickLink Store API v1: item by number, the minifigs in a set (subsets), the sets a minifig comes
+// in (supersets), categories (P7) and the price guide (P11). BrickLink puts its own status into
+// `meta.code`, also on HTTP 200.
 
-import { CatalogError, type Fetch, isRecord, list, num, secureUrl, str, year } from "./json.ts";
+import {
+  CatalogError,
+  type Fetch,
+  isRecord,
+  list,
+  num,
+  secureUrl,
+  str,
+  toCents,
+  year,
+} from "./json.ts";
 import { type OAuthCredentials, oauthHeader } from "./oauth.ts";
 
 const BASE = "https://api.bricklink.com/api/store/v1";
+/** How long one BrickLink call may take. */
+const CALL_TIMEOUT_MS = 20_000;
 
 export type ItemType = "MINIFIG" | "SET";
 
@@ -29,6 +41,14 @@ export interface BricklinkCategory {
   parentId?: number;
 }
 
+/** The price guide in one condition: average sale price of the last 6 months in EUR. */
+export interface BricklinkPrice {
+  /** Missing if nothing was sold. */
+  cents?: number;
+  /** Pieces sold behind the average. */
+  soldCount: number;
+}
+
 export interface BricklinkClient {
   item(type: ItemType, number: string): Promise<BricklinkItem>;
   /** The minifigs in a set. */
@@ -36,6 +56,8 @@ export interface BricklinkClient {
   /** The sets a minifig comes in. */
   setsOfMinifig(number: string): Promise<BricklinkEntry[]>;
   category(id: number): Promise<BricklinkCategory>;
+  /** Price guide "sold", last 6 months, EUR (as checked in P2). */
+  price(type: ItemType, number: string, condition: "new" | "used"): Promise<BricklinkPrice>;
 }
 
 export interface BricklinkOptions {
@@ -94,6 +116,8 @@ export function createBricklink(options: BricklinkOptions): BricklinkClient {
     try {
       response = await options.fetch(`${url}${query}`, {
         headers: { Authorization: header, Accept: "application/json" },
+        // A hanging answer must not use up the time of the function (price run: many calls).
+        signal: AbortSignal.timeout(CALL_TIMEOUT_MS),
       });
     } catch (error) {
       throw new CatalogError("unavailable", `BrickLink nicht erreichbar: ${String(error)}`);
@@ -149,6 +173,25 @@ export function createBricklink(options: BricklinkOptions): BricklinkClient {
       }
       const parentId = num(data.parent_id);
       return parentId ? { name, parentId } : { name };
+    },
+
+    async price(type, number, condition) {
+      const data = await get(`/items/${type}/${enc(number)}/price`, {
+        guide_type: "sold",
+        new_or_used: condition === "new" ? "N" : "U",
+        currency_code: "EUR",
+      });
+      if (!isRecord(data)) throw new CatalogError("unavailable", "BrickLink: Preis ohne Daten");
+      const currency = str(data.currency_code);
+      if (currency !== undefined && currency !== "EUR") {
+        throw new CatalogError("unavailable", `BrickLink: Preis in ${currency} statt EUR`);
+      }
+      const soldCount = num(data.total_quantity) ?? 0;
+      const cents = toCents(data.avg_price);
+      // Without a sale BrickLink answers an average of 0.
+      return soldCount > 0 && cents !== undefined && cents > 0
+        ? { cents, soldCount }
+        : { soldCount: 0 };
     },
   };
 }
