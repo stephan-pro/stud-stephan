@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { createBricklink } from "./bricklinkClient.ts";
 import {
+  brickLink,
   brickLinkFailure,
   CREDENTIALS,
   fakeFetch,
@@ -187,6 +188,39 @@ describe("P12 Aufbau in Portionen", () => {
     expect(store.state(`${summary.id}|75372-1`)).toBe("failed");
     expect(store.state(`${summary.id}|75345-1`)).toBe("open");
     expect(store.state(`${summary.id}|7675-1`)).toBe("done");
+  });
+
+  it("F13 Eine Sammelserie enthält ein Set je Figur; die Figuren werden eine Ebene tiefer gelesen", async () => {
+    const inner = (no: string, type: string, name: string) => ({
+      match_no: "0",
+      entries: [{ item: { no, name, type }, quantity: 1 }],
+    });
+    const store = new MemorySeriesStore();
+    const deps = seriesDeps(store, {
+      extra: [
+        [
+          "/items/SET/71017-1/subsets",
+          brickLink([
+            inner("coltlbm-1", "SET", "Batman Set"),
+            inner("coltlbm-2", "SET", "Glam Set"),
+          ]),
+        ],
+        [
+          "/items/SET/coltlbm-1/subsets",
+          brickLink([inner("coltlbm01", "MINIFIG", "Lobster-Lovin' Batman")]),
+        ],
+        [
+          "/items/SET/coltlbm-2/subsets",
+          brickLink([inner("coltlbm02", "MINIFIG", "Glam Metal Batman")]),
+        ],
+      ],
+    });
+    const summary = await startSeries(deps, "stephan", 5);
+    await workOnSeries(deps, { budgetMs: 50_000 });
+    const detail = await store.detail("stephan", summary.id, false);
+    expect(detail?.figures.map((figure) => figure.number)).toEqual(["coltlbm01", "coltlbm02"]);
+    // The set and its two inner sets: three counted calls.
+    expect([...deps.cache.counts.values()]).toEqual([3]);
   });
 
   it("Eine Person arbeitet nur an ihren Reihen", async () => {

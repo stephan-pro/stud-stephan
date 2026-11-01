@@ -21,7 +21,7 @@ export interface SeriesDeps {
   readonly cache: CatalogStore;
   readonly rebrickable: RebrickableClient;
   /** A client that counts its calls on the day's limit (`beforeCall`). */
-  readonly bricklink: Pick<BricklinkClient, "minifigsOfSet">;
+  readonly bricklink: Pick<BricklinkClient, "contentsOfSet">;
   readonly now: () => Date;
 }
 
@@ -184,17 +184,41 @@ export interface SeriesWork {
   readonly paused: boolean;
 }
 
-/** The figures of one set: from the cache, else BrickLink (one counted call). */
-async function figuresOfSet(deps: SeriesDeps, setNumber: string): Promise<SeriesFigureInfo[]> {
+/** Sets inside a set that are looked into for figures (a collectible series has about 20). */
+const MAX_INNER_SETS = 40;
+
+/**
+ * The figures of one set: from the cache, else BrickLink (one counted call). A set that holds no
+ * minifig itself but sets (collectible minifigure series: one set per figure) is looked into one
+ * level deeper, one call per inner set, each cached on its own.
+ */
+async function figuresOfSet(
+  deps: SeriesDeps,
+  setNumber: string,
+  inner = true,
+): Promise<SeriesFigureInfo[]> {
   return cached(
     deps,
     `series:figures:${setNumber}`,
-    async () =>
-      (await deps.bricklink.minifigsOfSet(setNumber)).map((entry) => ({
-        number: entry.number,
-        name: entry.name,
-        ...(entry.imageUrl === undefined ? {} : { imageUrl: entry.imageUrl }),
-      })),
+    async () => {
+      const { minifigs, sets } = await deps.bricklink.contentsOfSet(setNumber);
+      const found = new Map<string, SeriesFigureInfo>();
+      for (const entry of minifigs) {
+        found.set(entry.number, {
+          number: entry.number,
+          name: entry.name,
+          ...(entry.imageUrl === undefined ? {} : { imageUrl: entry.imageUrl }),
+        });
+      }
+      if (minifigs.length === 0 && inner) {
+        for (const set of sets.slice(0, MAX_INNER_SETS)) {
+          for (const figure of await figuresOfSet(deps, set.number, false)) {
+            if (!found.has(figure.number)) found.set(figure.number, figure);
+          }
+        }
+      }
+      return [...found.values()];
+    },
     isFigureList,
   );
 }

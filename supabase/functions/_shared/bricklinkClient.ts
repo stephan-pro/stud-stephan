@@ -53,6 +53,11 @@ export interface BricklinkClient {
   item(type: ItemType, number: string): Promise<BricklinkItem>;
   /** The minifigs in a set. */
   minifigsOfSet(setNumber: string): Promise<BricklinkEntry[]>;
+  /**
+   * What a set holds in one call: its minifigs and its sets. Collectible minifigure series hold
+   * one set per figure ("coltlbm-1"), and only that set holds the minifig (P12).
+   */
+  contentsOfSet(setNumber: string): Promise<{ minifigs: BricklinkEntry[]; sets: BricklinkEntry[] }>;
   /** The sets a minifig comes in. */
   setsOfMinifig(number: string): Promise<BricklinkEntry[]>;
   category(id: number): Promise<BricklinkCategory>;
@@ -151,14 +156,21 @@ export function createBricklink(options: BricklinkOptions): BricklinkClient {
     },
 
     async minifigsOfSet(setNumber) {
+      return (await this.contentsOfSet(setNumber)).minifigs;
+    },
+
+    async contentsOfSet(setNumber) {
       const data = await get(`/items/SET/${enc(setNumber)}/subsets`, {
         break_minifigs: "false",
         break_build: "false",
       });
-      return entriesOf(data, "MINIFIG").map((entry) => ({
-        ...entry,
-        imageUrl: minifigImage(entry.number),
-      }));
+      return {
+        minifigs: entriesOf(data, "MINIFIG").map((entry) => ({
+          ...entry,
+          imageUrl: minifigImage(entry.number),
+        })),
+        sets: entriesOf(data, "SET"),
+      };
     },
 
     async setsOfMinifig(number) {
