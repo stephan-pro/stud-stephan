@@ -131,7 +131,7 @@ export class FakeHttpAuth implements Auth {
       const failure: AuthFailure = isAuthFailure(given)
         ? given
         : response.status >= 500
-          ? "offline"
+          ? "serviceFailed"
           : "unknown";
       throw new AuthError(failure);
     }

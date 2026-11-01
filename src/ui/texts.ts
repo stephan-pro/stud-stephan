@@ -81,6 +81,8 @@ export const TEXTS = {
       expiredCode: "Der Code ist abgelaufen oder schon benutzt. Fordere bitte einen neuen Code an.",
       tooManyTries: "Zu viele Versuche. Warte eine Minute und versuch es dann noch einmal.",
       offline: "Keine Verbindung zum Server. Prüf das Internet und versuch es noch einmal.",
+      serviceFailed:
+        "Der Code konnte gerade nicht verschickt oder geprüft werden. Versuch es in ein paar Minuten noch einmal.",
       unknown: "Das hat nicht geklappt. Versuch es bitte später noch einmal.",
     } satisfies Record<AuthFailure, string>,
   },

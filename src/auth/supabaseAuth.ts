@@ -146,7 +146,8 @@ export class SupabaseAuth implements Auth {
     address: string,
   ): AuthFailure {
     if (isAuthRetryableFetchError(error)) {
-      return "offline";
+      // supabase-js gives status 0 when no answer came at all, else the 5xx status of the service.
+      return error.status >= 500 ? "serviceFailed" : "offline";
     }
     const code = isAuthApiError(error) ? error.code : undefined;
     if (code === "otp_expired") {

@@ -131,7 +131,7 @@ describe("FakeHttpAuth und die Anmeldung am Fake-Server", () => {
     expect(await failureOf(answering(Response.json({})).verifyCode("a@b.de", "1"))).toBe("unknown");
     expect(
       await failureOf(answering(new Response("x", { status: 502 })).requestCode("a@b.de")),
-    ).toBe("offline");
+    ).toBe("serviceFailed");
     expect(
       await failureOf(
         answering(Response.json({ failure: "?" }, { status: 400 })).requestCode("a@b.de"),

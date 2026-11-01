@@ -27,7 +27,8 @@ export interface Session {
  * - `wrongCode`: the code is wrong.
  * - `expiredCode`: the code was valid once but its time ran out, or it was used up.
  * - `tooManyTries`: too many tries, or a new code asked for too soon.
- * - `offline`: no connection to the sign-in service (no network, or it does not answer).
+ * - `offline`: no connection to the sign-in service (the request never got an answer).
+ * - `serviceFailed`: the service answered with a server error (5xx), e.g. its mail sending broke.
  * - `unknown`: anything else the service refused.
  *
  * There is no failure for an address without an account: asking a code for it looks exactly like
@@ -39,6 +40,7 @@ export const AUTH_FAILURES = [
   "expiredCode",
   "tooManyTries",
   "offline",
+  "serviceFailed",
   "unknown",
 ] as const;
 
