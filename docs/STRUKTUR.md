@@ -71,7 +71,7 @@ Reihenfolge von oben:
 2. Name, Katalognummer, Hersteller, Thema/Reihe; Marker Zustand und „Modifiziert“.
 3. **Wert-Karte:** aktueller Wert groß, darunter Kaufpreis und Differenz, Mini-Verlauf, Preis im anderen Zustand, „Stand vom …“.
 4. **Herkunft:** Quelle, Datum, Kaufpreis; „Stammt aus Set“ (verlinkt zu S3, falls in der Sammlung).
-5. **Steht in:** das Diorama (verlinkt zu S6) oder das eigene Set (verlinkt zu S3) mit Vorschaubild und Namen, dazu „Aus dem Diorama nehmen“ bzw. „Aus dem Set nehmen“. Steht die Figur nirgends: „Diese Figur ist nicht ausgestellt“ und der Knopf „Diorama oder Set wählen“ (Blatt mit Umschalter Diorama · Set, bei Sets Suche und Bild). Stammt die Figur aus einem eigenen Set mit Status „vollständig“ und hat keinen eigenen Ort, steht sie automatisch in diesem Set („Set, automatisch“, ohne „Aus dem Set nehmen“, dafür „Woanders ausstellen“).
+5. **Steht in:** das Diorama (verlinkt zu S6) oder das eigene Set (verlinkt zu S3) mit Vorschaubild und Namen, dazu „Aus dem Diorama nehmen“ bzw. „Aus dem Set nehmen“. Steht die Figur nirgends: „Diese Figur ist nicht ausgestellt“ und der Knopf „Diorama oder Set wählen“ (Blatt mit Umschalter Diorama · Set, bei Sets Suche und Bild). Stammt die Figur aus einem eigenen Set mit Status „vollständig“ und hat keinen eigenen Ort, steht sie automatisch in diesem Set („Set, automatisch“). Auch dann gibt es „Aus dem Set nehmen“ (die Figur bleibt bewusst „nicht ausgestellt“, der Status des Sets bleibt) und „Woanders ausstellen“.
 6. **Modifikationen:** Liste der getauschten Teile mit Position, Anbieter, Preis; Summe „Ausgaben für Mods“.
 7. **Weitere Exemplare:** kleine Kacheln der anderen Exemplare (falls vorhanden).
 8. Notiz.

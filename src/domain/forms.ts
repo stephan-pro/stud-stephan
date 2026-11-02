@@ -464,7 +464,7 @@ export function buildItem(type: FormType, values: FormValues, context: BuildCont
       ...(number ? { bricklinkId: number } : {}),
       ...(fromSet ? { fromSet } : {}),
       ...(previous?.dioramaId ? { dioramaId: previous.dioramaId } : {}),
-      ...(previous?.standsInSetId ? { standsInSetId: previous.standsInSetId } : {}),
+      ...(previous?.standsInSetId !== undefined ? { standsInSetId: previous.standsInSetId } : {}),
     };
   }
   if (type === "legoSet") {

@@ -78,6 +78,8 @@ export async function fillCollection(remote: Remote): Promise<Collection> {
       photos: [rexOne, rexTwo],
       photoFocus: { [rexTwo]: { x: 30, y: 70 } },
       dioramaId: "diorama-umbara",
+      // The deliberate "nicht ausgestellt" travels with the backup, too.
+      standsInSetId: null,
       fromSet: { label: "75372-1", setId: "set-75372" },
       mods: [{ id: "mod-1", position: "head", description: "Neuer Kopf", price: 450 }],
     }),

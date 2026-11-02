@@ -5,7 +5,9 @@
 -- fine. Two rules are added, as triggers like `check_photo_focus` (they work for `save_object`
 -- and for every other way into the table), and they match `isPlace` in `src/backend/rules.ts`:
 --
---   1. `standsInSetId` is a text of 1 to 100 characters, and the figure has no `dioramaId` then.
+--   1. `standsInSetId` is a text of 1 to 100 characters, and the figure has no `dioramaId` then;
+--      or it is JSON null, the figure's deliberate "nicht ausgestellt" that overrules the
+--      automatic place of a complete own set.
 --   2. Deleting a set takes the figures out of it again: `standsInSetId` is removed from the
 --      figures that stood in it. The figures stay in the collection.
 
@@ -13,7 +15,8 @@ create or replace function public.check_minifig_place()
 returns trigger
 language plpgsql security invoker set search_path = '' as $$
 begin
-  if new.data -> 'standsInSetId' is not null then
+  -- A JSON null is the figure's own "nicht ausgestellt" (it overrules the automatic place).
+  if jsonb_typeof(new.data -> 'standsInSetId') not in ('null') and new.data -> 'standsInSetId' is not null then
     if jsonb_typeof(new.data -> 'standsInSetId') <> 'string'
       or length(new.data ->> 'standsInSetId') not between 1 and 100
       or coalesce(jsonb_typeof(new.data -> 'dioramaId'), 'null') <> 'null' then

@@ -135,7 +135,7 @@ function wrongField(kind: ObjectKind, object: Json): string | undefined {
         ),
         missing("fromSet", isObject),
         missing("dioramaId", isText),
-        missing("standsInSetId", isText),
+        missing("standsInSetId", (v) => v === null || isText(v)),
       );
     }
     if (kind === "legoSet") {
@@ -296,7 +296,10 @@ function checkCollection(
     if (figure.dioramaId !== undefined && !ids.get("diorama")?.has(figure.dioramaId)) {
       throw new BackupError("invalidData", { kind: "minifig", id: figure.id, reason: "dioramaId" });
     }
-    if (figure.standsInSetId !== undefined && !ids.get("legoSet")?.has(figure.standsInSetId)) {
+    if (
+      typeof figure.standsInSetId === "string" &&
+      !ids.get("legoSet")?.has(figure.standsInSetId)
+    ) {
       throw new BackupError("invalidData", {
         kind: "minifig",
         id: figure.id,

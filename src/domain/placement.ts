@@ -1,7 +1,8 @@
 // Where a figure is displayed ("Steht in"): in one diorama, or in one own set, or nowhere. The
 // minifig holds the place itself (`dioramaId` or `standsInSetId`, never both), so a figure can
 // never be displayed in two places. A figure that came out of an own set with the status
-// "vollständig" and has no place of its own counts as displayed in that set (automatic).
+// "vollständig" and has no place of its own counts as displayed in that set (automatic), unless
+// `standsInSetId` is `null`: the person took it out of the set on purpose.
 
 import type { Collection, Diorama, Id, LegoSet, Minifig } from "./types";
 
@@ -25,6 +26,8 @@ export function placeOf(collection: Collection, minifig: Minifig): Place | undef
     ? collection.sets.find((candidate) => candidate.id === minifig.standsInSetId)
     : undefined;
   if (chosen) return { kind: "set", set: chosen, automatic: false };
+  // `null` is the deliberate "nicht ausgestellt": no automatic place then.
+  if (minifig.standsInSetId === null) return undefined;
   const origin = minifig.fromSet?.setId
     ? collection.sets.find((candidate) => candidate.id === minifig.fromSet?.setId)
     : undefined;
@@ -114,6 +117,14 @@ export function assignableFigures(
 export function figureWithoutPlace(minifig: Minifig): Minifig {
   const { dioramaId: _, standsInSetId: __, ...rest } = minifig;
   return rest;
+}
+
+/**
+ * The figure as it must be saved after "Aus dem Set nehmen": displayed nowhere on purpose
+ * (`standsInSetId: null`), which also overrules the automatic place of a complete set.
+ */
+export function figureTakenFromSet(minifig: Minifig): Minifig {
+  return { ...figureWithoutPlace(minifig), standsInSetId: null };
 }
 
 /** The figure as it must be saved to stand there; its other place goes (never both). */

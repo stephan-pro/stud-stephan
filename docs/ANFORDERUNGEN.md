@@ -101,6 +101,7 @@ Akzeptanzkriterien:
 - Diorama löschen → zugeordnete Figuren bleiben erhalten und sind wieder „nicht ausgestellt“.
 - Figur einem Set zuordnen → sie steht nicht mehr in ihrem Diorama (nie beides), erscheint unter „Ausgestellte Figuren“ des Sets und verschwindet aus dem Filter „nicht ausgestellt“.
 - Eine Figur aus einem eigenen, vollständigen Set ohne eigenen Ort steht automatisch in diesem Set; wird der Status „Figuren entnommen“ oder „zerlegt“, nicht mehr.
+- Eine automatisch ausgestellte Figur „aus dem Set nehmen“ → nur sie ist nicht mehr ausgestellt, die anderen Figuren und der Status des Sets bleiben.
 - Set löschen → Figuren, die darin standen, bleiben erhalten und stehen nicht mehr in einem Set.
 - Hochgeladene Studio-Datei herunterladen → die Datei ist byte-gleich mit dem Original.
 

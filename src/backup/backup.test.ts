@@ -313,6 +313,11 @@ describe("Prüfung vor dem Import", () => {
     ).toBe("invalidData");
     expect(
       await broken((p) => {
+        (p.manifest.collection.minifigs[0] as { standsInSetId: unknown }).standsInSetId = 5;
+      }),
+    ).toBe("invalidData");
+    expect(
+      await broken((p) => {
         // Steht in: a diorama and a set at the same time is not a place.
         const cody = p.manifest.collection.minifigs.find((m) => m.id === "minifig-cody");
         (cody as { dioramaId: string }).dioramaId = "diorama-umbara";

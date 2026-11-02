@@ -356,7 +356,7 @@ export const TEXTS = {
       kinds: { diorama: "Diorama", set: "Set" },
       automatic: "Set, automatisch (vollständig)",
       automaticHint:
-        "Die Figur stammt aus diesem Set und das Set ist vollständig, also gilt sie als ausgestellt. Hast du sie entnommen, setz den Status des Sets auf „Figuren entnommen“.",
+        "Die Figur stammt aus diesem Set und das Set ist vollständig, also gilt sie als ausgestellt. Hast du nur diese Figur entnommen, nimm sie aus dem Set; der Status des Sets bleibt.",
       openDiorama: "Diorama ansehen",
       openSet: "Set ansehen",
       takeFromDiorama: "Aus dem Diorama nehmen",

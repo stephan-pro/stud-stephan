@@ -9,6 +9,7 @@ import {
   figuresNotOnDisplay,
   figuresToMove,
   figuresToSave,
+  figureTakenFromSet,
   figureWithoutPlace,
   idsNotOnDisplay,
   placeName,
@@ -66,6 +67,41 @@ describe("Steht in: der Ort einer Figur", () => {
       expect(ids(figuresNotOnDisplay(collection))).toEqual(["mickey"]);
       expect(figuresInSet(collection, "castle")).toEqual([]);
     }
+  });
+
+  it("Aus dem Set nehmen: „null“ überstimmt die Automatik, ohne den Status des Sets zu ändern", () => {
+    const own = aMinifig({ id: "own", fromSet: { setId: "castle" } });
+    const mickey = aMinifig({ id: "mickey", fromSet: { setId: "castle" } });
+    const taken = figureTakenFromSet(mickey);
+    expect(taken.standsInSetId).toBeNull();
+    const collection = aCollection({ sets: [castle], minifigs: [own, taken] });
+    expect(placeOf(collection, taken)).toBeUndefined();
+    expect(ids(figuresNotOnDisplay(collection))).toEqual(["mickey"]);
+    // The other figure of the complete set still stands there, the set is unchanged.
+    expect(figuresInSet(collection, "castle").map(({ minifig }) => minifig.id)).toEqual(["own"]);
+    expect(collection.sets[0]?.status).toBe("complete");
+  });
+
+  it("Aus dem Set nehmen: ein gewähltes Set geht ebenfalls, und ein neuer Ort ersetzt das „null“", () => {
+    const chosen = aMinifig({ id: "c", standsInSetId: "castle", fromSet: { setId: "castle" } });
+    const taken = figureTakenFromSet(chosen);
+    expect(taken.standsInSetId).toBeNull();
+    expect(taken).not.toHaveProperty("dioramaId");
+    expect(figureAt(taken, { kind: "set", id: "castle" }).standsInSetId).toBe("castle");
+    const toDiorama = figureAt(taken, { kind: "diorama", id: "umbara" });
+    expect(toDiorama).not.toHaveProperty("standsInSetId");
+    const collection = aCollection({ sets: [castle], minifigs: [taken] });
+    expect(figuresToSave(collection, { kind: "set", id: "castle" }, ["c"])).toHaveLength(1);
+    expect(figuresToMove(collection, { kind: "set", id: "castle" }, ["c"])).toEqual([]);
+  });
+
+  it("Das „null“ bleibt, wenn das Set gelöscht wird und beim Rückgängig", () => {
+    const taken = figureTakenFromSet(aMinifig({ id: "t", fromSet: { setId: "castle" } }));
+    const collection = aCollection({ sets: [castle], minifigs: [taken] });
+    const deleted = withoutObject(collection, "legoSet", "castle");
+    expect(figureOf(deleted, "t").standsInSetId).toBeNull();
+    const back = withRestored(deleted, collection, "legoSet", "castle");
+    expect(placeOf(back, figureOf(back, "t"))).toBeUndefined();
   });
 
   it("Automatik: Ohne Verknüpfung zu einem eigenen Set (nur Katalogangabe) gibt es keine", () => {

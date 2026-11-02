@@ -137,9 +137,8 @@ test.describe("Steht in: Seite einer Figur", () => {
         S.automatic,
       );
       await expect(stand).toContainText(S.automaticHint);
-      // An automatic place cannot be "taken out"; another place can be chosen.
-      await expect(stand.getByRole("button", { name: S.takeFromSet })).toHaveCount(0);
       await expect(stand.getByRole("button", { name: S.chooseElsewhere })).toBeVisible();
+      await expect(stand.getByRole("button", { name: S.takeFromSet })).toBeVisible();
       await expectNoAccessibilityViolations(page);
 
       await page.goto("#/vitrine/set/set-castle");
@@ -150,6 +149,29 @@ test.describe("Steht in: Seite einer Figur", () => {
       await expectNoAccessibilityViolations(page);
     });
   }
+
+  test("Steht in: Eine automatisch ausgestellte Figur lässt sich aus dem Set nehmen, der Status des Sets bleibt", async ({
+    page,
+  }) => {
+    await page.goto(`#/vitrine/figur/${mickey.id}`);
+    await page.getByRole("button", { name: S.takeFromSet }).click();
+    await expect(section(page, S.title)).toContainText(S.none);
+    await page.reload();
+    await expect(section(page, S.title)).toContainText(S.none);
+    await expect(section(page, S.title).getByRole("button", { name: S.choose })).toBeVisible();
+
+    await page.goto("#/vitrine/set/set-castle");
+    await expect(section(page, TEXTS.detail.set.displayedTitle)).not.toContainText("Mickey Mouse");
+    await expect(page.getByText(TEXTS.setStatus.complete).first()).toBeVisible();
+    // Back into the set on purpose: the choice replaces the "no".
+    await page.goto(`#/vitrine/set/set-castle/zuordnen`);
+    await page.getByLabel(TEXTS.dioramas.assign.searchLabel, { exact: true }).fill("Mickey");
+    await page.locator(".pick", { hasText: "Mickey Mouse" }).click();
+    await page.getByRole("button", { name: TEXTS.dioramas.assign.submit(1) }).click();
+    await expect(
+      section(page, TEXTS.detail.set.displayedTitle).getByRole("link", { name: /Mickey Mouse/ }),
+    ).toBeVisible();
+  });
 
   test("Steht in: Setzt der PO den Status auf „Figuren entnommen“, ist die Figur nicht mehr ausgestellt", async ({
     page,

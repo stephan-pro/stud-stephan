@@ -223,6 +223,16 @@ export function describeRemoteContract(name: string, setup: () => Promise<Contra
         expect((await a.load()).minifigs.map((minifig) => minifig.id)).toEqual(["mickey"]);
       });
 
+      it("Steht in: null ist die bewusste Abwahl und wird gespeichert, auch neben einem Diorama", async () => {
+        await a.save("minifig", aMinifig({ id: "out", standsInSetId: null }));
+        await a.save("minifig", aMinifig({ id: "dio", standsInSetId: null, dioramaId: "umbara" }));
+        const { minifigs } = await a.load();
+        expect(minifigs.map((minifig) => [minifig.id, minifig.standsInSetId])).toEqual([
+          ["dio", null],
+          ["out", null],
+        ]);
+      });
+
       it("Steht in: Set löschen → die Figur bleibt und steht nirgends mehr", async () => {
         await a.save("legoSet", aSet({ id: "castle" }));
         await a.save("legoSet", aSet({ id: "other" }));

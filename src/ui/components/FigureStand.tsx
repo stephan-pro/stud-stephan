@@ -2,7 +2,13 @@ import { useState } from "preact/hooks";
 import type { Remote } from "../../backend/remote";
 import { withSaved } from "../../domain/collectionEdit";
 import { dioramaImages } from "../../domain/dioramas";
-import { figureAt, figureWithoutPlace, type Place, placeOf } from "../../domain/placement";
+import {
+  figureAt,
+  figureTakenFromSet,
+  figureWithoutPlace,
+  type Place,
+  placeOf,
+} from "../../domain/placement";
 import { galleryImages, normalize } from "../../domain/showcase";
 import type { Collection, Diorama, LegoSet, Minifig } from "../../domain/types";
 import { detailHash, dioramaHash, formHash } from "../route";
@@ -108,12 +114,16 @@ export function FigureStand({
     <Section id="stand" title={T.title}>
       {place ? <PlaceRow place={place} /> : <p class="card__text">{T.none}</p>}
       {automatic && <p class="card__text">{T.automaticHint}</p>}
-      {place && !automatic && (
+      {place && (
         <button
           type="button"
           class="button button--secondary pressable"
           disabled={busy || off}
-          onClick={() => void store(figureWithoutPlace(minifig))}
+          onClick={() =>
+            void store(
+              place.kind === "diorama" ? figureWithoutPlace(minifig) : figureTakenFromSet(minifig),
+            )
+          }
         >
           {place.kind === "diorama" ? T.takeFromDiorama : T.takeFromSet}
         </button>

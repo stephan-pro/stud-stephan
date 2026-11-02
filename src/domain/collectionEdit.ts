@@ -101,7 +101,9 @@ export function withoutObject(collection: Collection, kind: ObjectKind, id: Id):
       minifigs: rest.minifigs.map((figure) => {
         if (figure.standsInSetId !== id && figure.fromSet?.setId !== id) return figure;
         // A deleted set no longer displays figures; they stay, displayed nowhere of their own.
-        const { standsInSetId: _, ...minifig } = figure;
+        // (A `null`, the deliberate "nicht ausgestellt", stays.)
+        const { standsInSetId, ...rest } = figure;
+        const minifig = standsInSetId === id ? rest : figure;
         if (minifig.fromSet?.setId !== id) return minifig;
         const { setId: __, ...fromSet } = minifig.fromSet;
         const { fromSet: ___, ...without } = minifig;

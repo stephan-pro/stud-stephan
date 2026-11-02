@@ -189,7 +189,7 @@ export interface SplitObject {
  */
 function isPlace(minifig: Json): boolean {
   const { standsInSetId, dioramaId } = minifig;
-  if (standsInSetId === undefined) return true;
+  if (standsInSetId === undefined || standsInSetId === null) return true;
   return isText(standsInSetId, LIMITS.idLength) && (dioramaId === undefined || dioramaId === null);
 }
 

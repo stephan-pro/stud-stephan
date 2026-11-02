@@ -100,7 +100,8 @@ export interface Minifig extends ItemBase {
   /** The one diorama the figure stands in (F8); none if missing. Never together with `standsInSetId`. */
   dioramaId?: Id;
   /** The own set the figure is displayed in instead of a diorama ("Steht in"); never with `dioramaId`. */
-  standsInSetId?: Id;
+  standsInSetId?: Id | null;
+  /** `null` = deliberately displayed nowhere; it overrules the automatic place of a complete set. */
 }
 
 /** A figure as the BrickLink catalog lists it: in a set (F7) or in a series (F13). */
