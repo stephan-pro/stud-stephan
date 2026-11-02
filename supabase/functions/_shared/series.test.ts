@@ -536,6 +536,13 @@ describe("P12 Aufrufe der App", () => {
     expect(parseSeriesRequest({ op: "series", action: "plan", themeId: 2 })).toMatchObject({
       themeId: 2,
     });
+    // The id of a single set has ten digits (Nur dieses Set) but must still fit the database column.
+    for (const action of ["plan", "start"] as const) {
+      expect(
+        parseSeriesRequest({ op: "series", action, themeId: singleSetId("75455-1") }),
+      ).toMatchObject({ themeId: 1_000_754_550 });
+      expect(parseSeriesRequest({ op: "series", action, themeId: 2_147_483_648 })).toBeUndefined();
+    }
     expect(parseSeriesRequest({ op: "series", action: "get", id: 4, touch: false })).toMatchObject({
       touch: false,
     });

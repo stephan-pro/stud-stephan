@@ -300,11 +300,13 @@ export interface BricklinkHandlerDeps {
   readonly runSecret: string | undefined;
 }
 
-const THEME_ID = /^\d{1,9}$/;
+/** Up to 10 digits: the id of a single set (`singleSetId`) is above 1,000,000,000. */
+const THEME_ID = /^\d{1,10}$/;
+const MAX_INT = 2_147_483_647;
 
 function wholeId(value: unknown): number | undefined {
   const text = typeof value === "number" ? String(value) : "";
-  return THEME_ID.test(text) ? Number(text) : undefined;
+  return THEME_ID.test(text) && Number(text) <= MAX_INT ? Number(text) : undefined;
 }
 
 /** The series request of the app, or nothing if it is not one. */
