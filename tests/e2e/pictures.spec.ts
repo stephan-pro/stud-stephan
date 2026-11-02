@@ -4,8 +4,7 @@ import type { Collection } from "../../src/domain/types";
 import { expectNoAccessibilityViolations, PC, PHONE, signInDirectly, style } from "./helpers";
 
 // Pictures are shown whole (figures are portrait): catalog images on white with some padding, own
-// photos on the detail page contained on the tint, own photos in small boxes cover from the top so
-// the head stays in. Checked on a portrait and a landscape catalog image, phone and PC.
+// photos on the detail page contained on the tint, own photos in small boxes cover around the middle. Checked on a portrait and a landscape catalog image, phone and PC.
 
 const svg = (width: number, height: number) =>
   `data:image/svg+xml,${encodeURIComponent(
@@ -53,7 +52,7 @@ for (const [size, viewport] of [
   }
 }
 
-test("P12 Eigene Fotos: auf der Detailseite ganz auf der Tönung, in Kacheln und kleinen Bildern von oben gefüllt", async ({
+test("Eigene Fotos: auf der Detailseite ganz auf der Tönung, in Kacheln und kleinen Bildern um die Mitte gefüllt", async ({
   page,
 }) => {
   await signInDirectly(page);
@@ -81,6 +80,6 @@ test("P12 Eigene Fotos: auf der Detailseite ganz auf der Tönung, in Kacheln und
   expect(result.hero.fit).toBe("contain");
   for (const key of ["tile", "small", "thumb"] as const) {
     expect(result[key].fit, key).toBe("cover");
-    expect(result[key].position, key).toBe("50% 0%");
+    expect(result[key].position, key).toBe("50% 50%");
   }
 });

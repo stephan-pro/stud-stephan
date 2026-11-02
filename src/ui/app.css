@@ -752,7 +752,8 @@ a.button {
 }
 
 /* Pictures are shown whole where they are meant to be seen (figures are portrait): catalog images
-   always, own photos on the detail page; own photos elsewhere fill the box but keep the head. */
+   always, own photos on the detail page; own photos elsewhere fill the box around their middle
+   (the figure of a phone photo stands there, the top is mostly wall or table). */
 
 .cover.cover--catalog {
   background: var(--surface);
@@ -765,7 +766,7 @@ a.button {
 }
 
 .cover--photo .cover__image {
-  object-position: center top;
+  object-position: center;
 }
 
 .cover--hero.cover--photo .cover__image {
