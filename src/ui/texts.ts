@@ -133,7 +133,8 @@ export const TEXTS = {
     },
     kinds: {
       title: "Nach Objektart",
-      figures: (count: number) => (count === 1 ? "1 Figur" : `${count} Figuren`),
+      figures: (count: number, inSets = 0) =>
+        `${count === 1 ? "1 Figur" : `${count} Figuren`}${inSets > 0 ? ` · ${inSets} im Set` : ""}`,
       sets: (count: number) => (count === 1 ? "1 Set" : `${count} Sets`),
       dioramas: (count: number) => (count === 1 ? "1 Diorama" : `${count} Dioramen`),
       specialParts: (count: number) => (count === 1 ? "1 Sonderteil" : `${count} Sonderteile`),
@@ -250,7 +251,8 @@ export const TEXTS = {
       lead: "Deine Sammlung ist",
       worth: "wert",
       week: (change: string) => `${change} Woche`,
-      figures: (count: number) => (count === 1 ? "1 Figur" : `${count} Figuren`),
+      figures: (count: number, inSets = 0) =>
+        `${count === 1 ? "1 Figur" : `${count} Figuren`}${inSets > 0 ? ` · ${inSets} im Set` : ""}`,
       sets: (count: number) => (count === 1 ? "1 Set" : `${count} Sets`),
       dioramas: (count: number) => (count === 1 ? "1 Diorama" : `${count} Dioramen`),
     },
@@ -339,6 +341,11 @@ export const TEXTS = {
       noValueAtAll: "Kein Marktpreis und kein Wert eingetragen. Zählt mit 0 €.",
       history: (from: string, fromDate: string, to: string, toDate: string) =>
         `Verlauf des Marktwerts: ${from} am ${fromDate}, ${to} am ${toDate}`,
+      /** The figure stands in its own complete set: its value is part of the set's value. */
+      inSet: "Wert im Set enthalten",
+      inSetNote: "Zählt nicht zusätzlich zum Gesamtwert, solange die Figur im Set steht.",
+      inSetLink: (name: string) => `Zum Set: ${name}`,
+      alone: (price: string) => `Einzeln wäre sie ${price} wert`,
     },
     origin: {
       title: "Herkunft",
@@ -415,6 +422,16 @@ export const TEXTS = {
       displayedNone: "In diesem Set ist noch keine Figur ausgestellt.",
       displayedAutomatic: "automatisch",
       displayedAssign: "Figuren zuordnen",
+      createAction: "Figuren einzeln anlegen",
+      createTitle: "Figuren einzeln anlegen",
+      createText:
+        "Diese Figuren sind nur „im Set“. Wähle die, die du als eigene Figur erfassen willst. Sie bekommen den Zustand des Sets, stehen im Set und haben keinen Kaufpreis.",
+      createClose: "Schließen",
+      createSubmit: (count: number) =>
+        count === 0 ? "Anlegen" : count === 1 ? "1 Figur anlegen" : `${count} Figuren anlegen`,
+      createOption: (name: string, missing: number) =>
+        missing > 1 ? `${name} (${missing}×)` : name,
+      createFailed: "Das Anlegen hat nicht geklappt. Bitte versuche es noch einmal.",
     },
   },
   /** Actions of a detail page (P6). */
@@ -1008,6 +1025,12 @@ export const TEXTS = {
       pricePlaceholder: "z. B. 25,00",
       fromSet: "Stammt aus Set",
       fromSetPlaceholder: "Setnummer oder leer lassen",
+      originSet: "Welches Set?",
+      originSetHint: "Mehrere deiner Sets haben diese Nummer. Wähle das, aus dem die Figur stammt.",
+      originSetNone: "Bitte wählen",
+      /** "Name · gebraucht · vollständig", to tell sets of the same number apart. */
+      originSetOption: (name: string, condition: string, status: string) =>
+        `${name} · ${condition} · ${status}`,
       manualValue: "Wert (selbst geschätzt)",
       manualValueHint:
         "Zählt nur, wenn es keinen Marktpreis gibt. Der Marktpreis geht vor, danach dein Wert, dann der Kaufpreis.",

@@ -1,5 +1,6 @@
 // The numbers of the whole collection (F10, F12): value, purchase sum, mod spend, counts.
 
+import { countsOnItsOwn, inSetFigureCount } from "./inSet";
 import { mainTheme, showcaseItems } from "./showcase";
 import type { Cents, Collection } from "./types";
 import { modSpend, valueOfItem } from "./value";
@@ -14,7 +15,14 @@ export interface Totals {
   modSpend: Cents;
   /** Figures, sets and special parts without market value and without entered value ("ohne Wert"). */
   withoutValue: number;
-  counts: { minifigs: number; sets: number; specialParts: number; dioramas: number };
+  counts: {
+    minifigs: number;
+    /** Figures in complete sets without a copy of their own ("im Set"), in addition to `minifigs`. */
+    minifigsInSets: number;
+    sets: number;
+    specialParts: number;
+    dioramas: number;
+  };
   /** Figures, sets and special parts per main theme, most first; objects without theme are left out. */
   themes: { theme: string; count: number }[];
 }
@@ -26,12 +34,14 @@ export function totals(collection: Collection): Totals {
   let withoutValue = 0;
   const themes = new Map<string, number>();
   for (const item of items) {
-    const valuation = valueOfItem(item, collection.prices);
-    value += valuation.cents;
     purchase += item.purchasePrice ?? 0;
-    if (valuation.ownValueMissing) withoutValue += 1;
     const theme = mainTheme(item.theme);
     if (theme) themes.set(theme, (themes.get(theme) ?? 0) + 1);
+    // A figure in its own complete set is worth what the set is worth: not counted twice.
+    if (!countsOnItsOwn(collection, item)) continue;
+    const valuation = valueOfItem(item, collection.prices);
+    value += valuation.cents;
+    if (valuation.ownValueMissing) withoutValue += 1;
   }
   // A diorama only adds a value Stephan estimated; without one it is not "ohne Wert", because its
   // figures are counted on their own.
@@ -44,6 +54,7 @@ export function totals(collection: Collection): Totals {
     withoutValue,
     counts: {
       minifigs: collection.minifigs.length,
+      minifigsInSets: inSetFigureCount(collection),
       sets: collection.sets.length,
       specialParts: collection.specialParts.length,
       dioramas: collection.dioramas.length,

@@ -233,6 +233,22 @@ describe("F5 Aus dem Formular wird eine Figur", () => {
     expect(formFromItem(item).photoFocus).toEqual({ "a.webp": { x: 30, y: 70 } });
   });
 
+  it("Stammt aus Set: genau ein eigenes Set mit der Nummer wird verknüpft, bei mehreren erst nach Wahl", () => {
+    const one = aSet({ id: "one", setNumber: "75647-1" });
+    const two = aSet({ id: "two", setNumber: "75647-1" });
+    const link = (sets: LegoSet[], originSetId?: string) => {
+      const item = buildItem("minifig", filled({ fromSet: "75647" }), {
+        ...context(),
+        sets,
+        originSetId,
+      });
+      return item.type === "minifig" ? item.fromSet : undefined;
+    };
+    expect(link([one])).toEqual({ label: "75647", setId: "one" });
+    expect(link([one, two])).toEqual({ label: "75647" });
+    expect(link([one, two], "two")).toEqual({ label: "75647", setId: "two" });
+  });
+
   it("F4 Leere Felder werden nicht gespeichert", () => {
     const item = buildItem("minifig", filled(), context());
     expect(Object.keys(item).sort()).toEqual(

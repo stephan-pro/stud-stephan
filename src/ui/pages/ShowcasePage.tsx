@@ -65,7 +65,7 @@ function CollectionCard({ collection }: { readonly collection: Collection }) {
           <span class="collection-card__worth">{T.worth}</span>
         </p>
         <ul class="pills">
-          <li class="pill">{T.figures(counts.minifigs)}</li>
+          <li class="pill">{T.figures(counts.minifigs, counts.minifigsInSets)}</li>
           <li class="pill">{T.sets(counts.sets)}</li>
           <li class="pill">{T.dioramas(counts.dioramas)}</li>
         </ul>

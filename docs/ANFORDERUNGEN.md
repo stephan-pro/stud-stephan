@@ -123,6 +123,8 @@ Akzeptanzkriterien:
 - Dieselbe Figur mit Mod-Teil für 5 € → Wert weiterhin 12 €; „Ausgaben für Mods“ 5 €.
 - Zustand von gebraucht auf neu geändert → Wert sofort 18 €, ohne neuen Abruf.
 - Nach jedem Abruf gibt es je offiziellem Objekt genau einen neuen Preisstand mit Datum.
+- Steht eine einzeln erfasste Figur (automatisch oder gewählt) in ihrem eigenen Herkunfts-Set mit Status „vollständig“, ist ihr Wert im Wert des Sets enthalten: Er zählt nicht zusätzlich zum Gesamtwert, zur Top 10, zu „ohne Wert“ und zum Verlauf; die Wert-Karte der Figur zeigt „Wert im Set enthalten“ mit Link zum Set. Ist das Set „Figuren entnommen“ oder „zerlegt“ oder steht die Figur woanders, zählt sie wieder selbst. Der Kaufpreis der Figur bleibt in der Summe der Kaufpreise.
+- Sammlungskarte und Dashboard nennen Figuren in vollständigen Sets ohne eigenes Exemplar zusätzlich: „4 Figuren · 3 im Set“.
 - Ein fehlgeschlagener Abruf überschreibt keinen vorhandenen Wert; das Objekt zeigt „Stand vom …“.
 - Objekte ohne Marktwert und ohne eingetragenen Wert zählen im Gesamtwert mit 0 € und werden als „ohne Wert“ ausgewiesen.
 

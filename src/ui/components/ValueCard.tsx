@@ -47,6 +47,8 @@ interface ValueCardProps {
   readonly condition: Condition;
   readonly purchasePrice?: Cents | undefined;
   readonly history: readonly PriceStep[];
+  /** The complete set whose value already holds this figure ("Wert im Set enthalten"). */
+  readonly includedIn?: { readonly name: string; readonly href: string } | undefined;
   readonly id: string;
 }
 
@@ -60,6 +62,7 @@ export function ValueCard({
   condition,
   purchasePrice,
   history,
+  includedIn,
   id,
 }: ValueCardProps) {
   const T = TEXTS.detail.value;
@@ -80,6 +83,26 @@ export function ValueCard({
     else notes.push(T.asOfMarketSold(date, valuation.soldCount));
   }
   const other = valuation.otherCondition;
+
+  if (includedIn) {
+    return (
+      <section class="value-card" aria-labelledby={`${id}-title`}>
+        <Scribbles id={`${id}-scribbles`} />
+        <div class="value-card__content">
+          <h2 class="value-card__label" id={`${id}-title`}>
+            {T.inSet}
+          </h2>
+          <p class="value-card__value">
+            <a href={includedIn.href}>{T.inSetLink(includedIn.name)}</a>
+          </p>
+          {!valuation.ownValueMissing && (
+            <p class="value-card__line">{T.alone(formatMoney(valuation.cents))}</p>
+          )}
+          <p class="value-card__note">{T.inSetNote}</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section class="value-card" aria-labelledby={`${id}-title`}>

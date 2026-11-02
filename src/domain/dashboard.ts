@@ -1,5 +1,6 @@
 // The lists of the dashboard (F12): the most valuable objects and the share per sub theme.
 
+import { countsOnItsOwn } from "./inSet";
 import { mainTheme, showcaseItems, subTheme } from "./showcase";
 import type { Collection, IsoDate, ShowcaseItem } from "./types";
 import { valueOfItem } from "./value";
@@ -18,6 +19,7 @@ export interface RankedItem {
 /** The most valuable figures, sets and special parts, each copy on its own; 0 € never ranks. */
 export function mostValuable(collection: Collection, limit = TOP_COUNT): RankedItem[] {
   return showcaseItems(collection)
+    .filter((item) => countsOnItsOwn(collection, item))
     .map((item) => ({ item, cents: valueOfItem(item, collection.prices).cents }))
     .filter((ranked) => ranked.cents > 0)
     .sort((a, b) => b.cents - a.cents || collator.compare(a.item.name, b.item.name))

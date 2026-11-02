@@ -8,6 +8,7 @@ import {
   setFigureProgress,
   setFigures,
 } from "../../domain/details";
+import { creatableFigures, setIncludingValue } from "../../domain/inSet";
 import { formatMoney } from "../../domain/money";
 import { figuresInSet } from "../../domain/placement";
 import { priceHistory } from "../../domain/prices";
@@ -29,6 +30,7 @@ import {
 } from "../../domain/wishForm";
 import { CopyRow } from "../components/CopyRow";
 import { Cover } from "../components/Cover";
+import { CreateFiguresSheet } from "../components/CreateFiguresSheet";
 import { BackBar, NoteAndLinks, originRows, Rows, Section } from "../components/DetailParts";
 import { FigureStand } from "../components/FigureStand";
 import { Gallery } from "../components/Gallery";
@@ -85,6 +87,7 @@ function MinifigDetail({
 }) {
   const valuation = valueOfItem(minifig, collection.prices);
   const set = ownSetOf(collection, minifig);
+  const includingSet = setIncludingValue(collection, minifig);
   const copies = otherCopies(collection, minifig);
   const fromSetLabel = minifig.fromSet?.label ?? set?.name;
   const rows = originRows([
@@ -133,6 +136,14 @@ function MinifigDetail({
         condition={minifig.condition}
         purchasePrice={minifig.purchasePrice}
         history={priceHistory(minifig, minifig.condition, collection.prices)}
+        includedIn={
+          includingSet
+            ? {
+                name: includingSet.name,
+                href: detailHash({ type: "legoSet", id: includingSet.id }),
+              }
+            : undefined
+        }
       />
       {rows.length > 0 && (
         <Section id="origin" title={T.origin.title}>
@@ -216,6 +227,9 @@ function SetDetail({
   /** The missing figure whose wish sheet is open (F13: from a figure of the set to the wishlist). */
   const [wishing, setWishing] = useState<CatalogFigure | undefined>();
   const wishingWish = wishing ? wishForFigure(collection.wishlist, wishing.bricklinkId) : undefined;
+  const [creating, setCreating] = useState(false);
+  const writable = useWritable();
+  const creatable = creatableFigures(collection, set);
   const valuation = valueOfItem(set, collection.prices);
   const figures = setFigures(collection, set);
   const progress = setFigureProgress(figures);
@@ -282,6 +296,18 @@ function SetDetail({
           )
         }
       >
+        {creatable.length > 0 && (
+          <button
+            type="button"
+            class="button button--secondary pressable"
+            disabled={!writable}
+            title={writable ? undefined : TEXTS.readOnlyShort}
+            onClick={() => setCreating(true)}
+          >
+            <Icon name="plus" size={20} />
+            {T.set.createAction}
+          </button>
+        )}
         {figures.length === 0 ? (
           <p class="card__text">{T.set.noFigures}</p>
         ) : (
@@ -389,6 +415,15 @@ function SetDetail({
         </Section>
       )}
       <NoteAndLinks item={set} />
+      {creating && (
+        <CreateFiguresSheet
+          set={set}
+          collection={collection}
+          remote={remote}
+          update={update}
+          onClose={() => setCreating(false)}
+        />
+      )}
       {wishing && (
         <WishSheet
           source={wishSourceOfFigure(wishing, { theme: set.theme })}

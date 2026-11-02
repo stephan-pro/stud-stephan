@@ -3,7 +3,7 @@ import { type Catalog, CatalogCallError } from "../../backend/catalog";
 import type { LinkPreviewer, PageFields } from "../../backend/linkPreview";
 import { type Remote, RemoteError, saveItem } from "../../backend/remote";
 import { type CatalogExtras, type CatalogForm, formFromCatalog } from "../../domain/catalog";
-import { withoutObject, withSavedItem } from "../../domain/collectionEdit";
+import { withoutObject, withSaved, withSavedItem } from "../../domain/collectionEdit";
 import { findItem } from "../../domain/details";
 import {
   buildItem,
@@ -19,6 +19,7 @@ import {
   formFromItem,
   validateForm,
 } from "../../domain/forms";
+import { figuresToLink, setsByNumber } from "../../domain/inSet";
 import { formFromLink, hasFields } from "../../domain/linkForm";
 import { formatMoney } from "../../domain/money";
 import { withFocus } from "../../domain/photoFocus";
@@ -218,6 +219,11 @@ function FormBody({
   // Without a connection (P15) the form stays as typed, only saving waits.
   const writable = useWritable();
   const [modSheet, setModSheet] = useState<{ part?: ModPart } | null>(null);
+  // Several own sets with the number of "Stammt aus Set": the person says which one it is.
+  const [originSetId, setOriginSetId] = useState<string>(
+    start.existing?.type === "minifig" ? (start.existing.fromSet?.setId ?? "") : "",
+  );
+  const originCandidates = type === "minifig" ? setsByNumber(collection.sets, values.fromSet) : [];
   const [summary, setSummary] = useState(0);
   // The id is made once; editing keeps the one the object has.
   const id = useRef(start.existing?.id ?? newId(type)).current;
@@ -338,6 +344,7 @@ function FormBody({
         createdAt: new Date().toISOString(),
         today: today(),
         sets: collection.sets,
+        originSetId,
         existing: start.existing,
         catalog: extras,
       },
@@ -352,6 +359,17 @@ function FormBody({
     // What the server has now is what was saved; nothing is left to clean up.
     unsaved.clear();
     update((current) => withSavedItem(current, item));
+    // Figures that name this set by number are linked to it now (one set with that number only).
+    if (item.type === "legoSet") {
+      for (const figure of figuresToLink(withSavedItem(collection, item), item)) {
+        try {
+          await remote?.save("minifig", figure);
+          update((current) => withSaved(current, "minifig", figure));
+        } catch {
+          // The link is made again the next time the figure is saved.
+        }
+      }
+    }
     // The wish is fulfilled; if taking it off fails it stays on the list, where it can be removed.
     if (fromWish) {
       try {
@@ -534,6 +552,25 @@ function FormBody({
               ? CT.fromSetHint(catalogForm.sets.map((set) => shortSetNumber(set.number)))
               : undefined,
           })}
+        {originCandidates.length > 1 && (
+          <>
+            <Choice
+              id="form-originSet"
+              legend={T.fields.originSet}
+              options={originCandidates.map((candidate) => ({
+                value: candidate.id,
+                label: T.fields.originSetOption(
+                  candidate.name,
+                  TEXTS.conditions[candidate.condition],
+                  TEXTS.setStatus[candidate.status],
+                ),
+              }))}
+              value={originCandidates.some((c) => c.id === originSetId) ? originSetId : ""}
+              onChange={setOriginSetId}
+            />
+            <p class="field__hint">{T.fields.originSetHint}</p>
+          </>
+        )}
       </FormCard>
 
       <FormCard id="value" title={T.sections.value}>

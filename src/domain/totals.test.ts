@@ -50,7 +50,13 @@ describe("F10/F12 Summen der Sammlung", () => {
   });
 
   it("F12 Anzahl je Objektart", () => {
-    expect(result.counts).toEqual({ minifigs: 3, sets: 1, specialParts: 2, dioramas: 2 });
+    expect(result.counts).toEqual({
+      minifigs: 3,
+      minifigsInSets: 0,
+      sets: 1,
+      specialParts: 2,
+      dioramas: 2,
+    });
   });
 
   it("F12 Verteilung nach Hauptthema, größte zuerst", () => {
@@ -68,7 +74,7 @@ describe("F10/F12 Summen der Sammlung", () => {
       difference: 0,
       modSpend: 0,
       withoutValue: 0,
-      counts: { minifigs: 0, sets: 0, specialParts: 0, dioramas: 0 },
+      counts: { minifigs: 0, minifigsInSets: 0, sets: 0, specialParts: 0, dioramas: 0 },
       themes: [],
     });
   });

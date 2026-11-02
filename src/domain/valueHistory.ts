@@ -3,6 +3,7 @@
 // On a day only the objects that were already in the collection count, each with the value that
 // held that day: market value, else the own value (if it was entered by then), else purchase price.
 
+import { countsOnItsOwn } from "./inSet";
 import { showcaseItems } from "./showcase";
 import type { Cents, Collection, Diorama, IsoDate, ShowcaseItem } from "./types";
 import { valueOfItem } from "./value";
@@ -88,6 +89,7 @@ export function valueAt(collection: Collection, day: IsoDate, today: IsoDate): C
   let sum = 0;
   for (const item of [...showcaseItems(collection), ...collection.dioramas]) {
     if (ownedSince(item, today) > day) continue;
+    if (item.type !== "diorama" && !countsOnItsOwn(collection, item)) continue;
     const known = { ...item };
     if (known.manualValue && known.manualValue.enteredOn > day) delete known.manualValue;
     sum += valueOfItem(known, prices).cents;

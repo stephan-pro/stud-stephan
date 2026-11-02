@@ -2502,6 +2502,27 @@ a.diorama-row .copy-row__name {
   height: 80px;
 }
 
+/* "Figuren einzeln anlegen": the figures "im Set" to choose from */
+
+.check-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.check-list .button {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.check-list .button[aria-pressed="true"] {
+  background: var(--tint-mint);
+}
+
 /* Figures of a diorama as round pictures with the name below (Diorama.dc.html) */
 
 .figure-grid--round .figure-tile {

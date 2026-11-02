@@ -55,7 +55,8 @@ for (const [size, viewport] of [
       ).toHaveText("3 / 3 · 1 einzeln erfasst");
       await expect(figures.getByText(D.inSet)).toHaveCount(2);
       await expect(figures.getByText(D.missing)).toHaveCount(0);
-      await expect(figures.getByRole("button")).toHaveCount(0);
+      await expect(figures.getByRole("button", { name: /Wunschliste/ })).toHaveCount(0);
+      await expect(figures.getByRole("button", { name: D.createAction })).toBeVisible();
       await expect(figures.locator(`img[src="${RANCOR_PICTURE}"]`)).toHaveCount(1);
       await expectNoAccessibilityViolations(page);
     });

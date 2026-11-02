@@ -95,7 +95,7 @@ describe("P3 Demo-Daten passen zum Klick-Dummy", () => {
 
   it("P3 Summen: Wert, „ohne Wert“ und Anzahl je Objektart", () => {
     const sum = totals(demo);
-    expect(sum.counts).toEqual({ minifigs: 15, sets: 1, specialParts: 1, dioramas: 3 });
+    expect(sum.counts).toMatchObject({ minifigs: 15, sets: 1, specialParts: 1, dioramas: 3 });
     expect(sum.withoutValue).toBe(1);
     expect(sum.modSpend).toBe(1450);
     expect(sum.themes[0]).toEqual({ theme: "Star Wars", count: 14 });

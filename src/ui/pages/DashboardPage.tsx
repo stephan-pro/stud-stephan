@@ -112,7 +112,7 @@ function Tiles({ collection }: { readonly collection: Collection }) {
 function Kinds({ collection }: { readonly collection: Collection }) {
   const { counts } = totals(collection);
   const kinds = [
-    T.kinds.figures(counts.minifigs),
+    T.kinds.figures(counts.minifigs, counts.minifigsInSets),
     T.kinds.sets(counts.sets),
     T.kinds.dioramas(counts.dioramas),
     T.kinds.specialParts(counts.specialParts),

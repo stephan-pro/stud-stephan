@@ -3,6 +3,7 @@
 // error is a code that the page turns into words.
 
 import type { CatalogExtras } from "./catalog";
+import { originSetFor } from "./inSet";
 import { parseMoney } from "./money";
 import { cleanFocus } from "./photoFocus";
 import { shortSetNumber } from "./showcase";
@@ -226,16 +227,6 @@ export function moneyText(cents: Cents | undefined): string {
   return `${euros},${String(cents % 100).padStart(2, "0")}`;
 }
 
-/** The set of the own collection that has this number (with or without the "-1" suffix). */
-function ownSetByNumber(sets: readonly LegoSet[], text: string): LegoSet | undefined {
-  const wanted = text.trim().toLowerCase();
-  if (wanted === "") return undefined;
-  return sets.find((set) => {
-    const number = set.setNumber?.toLowerCase();
-    return number !== undefined && (number === wanted || shortSetNumber(number) === wanted);
-  });
-}
-
 function manufacturerFields(
   manufacturer: Manufacturer,
 ): Pick<FormValues, "manufacturerKind" | "manufacturerName"> {
@@ -394,6 +385,8 @@ export interface BuildContext {
   readonly today: IsoDate;
   /** The own sets, to link "Stammt aus Set". */
   readonly sets: readonly LegoSet[];
+  /** The set chosen when several own sets carry the number of "Stammt aus Set". */
+  readonly originSetId?: Id | undefined;
   /** The object being edited: what the form does not show (diorama, catalog data …) stays. */
   readonly existing?: ShowcaseItem | undefined;
   /** The catalog data of a new object made from a catalog entry (F2), kept without a field. */
@@ -462,7 +455,13 @@ export function buildItem(type: FormType, values: FormValues, context: BuildCont
   if (type === "minifig") {
     const previous = existing?.type === "minifig" ? existing : undefined;
     const label = trimmed(values.fromSet);
-    const own = label === undefined ? undefined : ownSetByNumber(context.sets, label);
+    const own =
+      label === undefined
+        ? undefined
+        : originSetFor(context.sets, label, {
+            chosen: context.originSetId,
+            current: previous?.fromSet?.setId,
+          });
     const fromSet: FromSet | undefined =
       label === undefined ? undefined : { label, ...(own ? { setId: own.id } : {}) };
     // Only a part (a Big Fig) is stored; no type means a minifig. It belongs to the number.
