@@ -28,7 +28,12 @@ import {
   startSeries,
   workOnSeries,
 } from "./seriesService.ts";
-import { SERIES_MAX_SETS, SERIES_WARNING_SETS } from "./seriesTypes.ts";
+import {
+  SERIES_MAX_SETS,
+  SERIES_WARNING_SETS,
+  setNumberOfSingleId,
+  singleSetId,
+} from "./seriesTypes.ts";
 
 const NOW = new Date("2026-11-03T10:00:00Z");
 
@@ -202,6 +207,12 @@ describe("P12 Thema über eine Set- oder Figurennummer finden", () => {
       const found = await searchThemes(seriesDeps(), typed);
       expect(found.themes, typed).toEqual([
         {
+          id: singleSetId("75372-1"),
+          name: "75372-1",
+          selectable: true,
+          onlySet: { number: "75372-1", figureCount: 2 },
+        },
+        {
           id: 3,
           name: "Star Wars – Battle Packs",
           selectable: true,
@@ -236,9 +247,77 @@ describe("P12 Thema über eine Set- oder Figurennummer finden", () => {
     await searchThemes(deps, "sw0194");
     const first = log.length;
     await searchThemes(deps, "sw0194");
-    // The set of the minifig was asked about on the way, so its number is known, too.
+    // The set of the minifig was asked about on the way, so its theme is known, too.
     await searchThemes(deps, "75372");
-    expect(log).toHaveLength(first);
+    const second = log.length;
+    await searchThemes(deps, "75372");
+    expect(log).toHaveLength(second);
+    expect(first).toBeLessThan(second);
+  });
+
+  it("Nur dieses Set: der Treffer steht vor den Themen, mit der Zahl der Figuren, ohne Mehrfachabfragen", async () => {
+    const log: string[] = [];
+    const deps = seriesDeps(undefined, { log });
+    const found = await searchThemes(deps, "75345");
+    expect(found.themes[0]).toEqual({
+      id: singleSetId("75345-1"),
+      name: "75345-1",
+      selectable: true,
+      onlySet: { number: "75345-1", figureCount: 2 },
+    });
+    expect(found.themes[1]?.via).toEqual({ kind: "set", number: "75345-1" });
+    // One counted BrickLink call for the set; a second search reads everything from the cache.
+    expect(log.filter((line) => line.includes("/items/SET/75345-1/subsets"))).toHaveLength(1);
+    const asked = log.length;
+    await searchThemes(deps, "75345-1");
+    expect(log).toHaveLength(asked);
+  });
+
+  it("Nur dieses Set fehlt bei einem Set ohne Figuren, einem unbekannten und bei verbrauchtem Tageslimit", async () => {
+    // 7675-1 has no minifigs, 75000-1 is unknown to BrickLink here.
+    for (const typed of ["7675", "75000"]) {
+      const found = await searchThemes(seriesDeps(), typed);
+      expect(
+        found.themes.some((theme) => theme.onlySet !== undefined),
+        typed,
+      ).toBe(false);
+      expect(found.themes.length, typed).toBeGreaterThan(0);
+    }
+    const limited = await searchThemes(
+      seriesDeps(undefined, { cap: 0 }, () => NOW),
+      "75372",
+    ).catch((error: unknown) => error);
+    // The theme of the set is found without BrickLink; the set hit is simply left out.
+    expect(limited).toMatchObject({ themes: [{ id: 3 }] });
+  });
+
+  it("Die Kennung eines einzelnen Sets lässt sich lesen und verwechselt sich nie mit einem Thema", () => {
+    expect(singleSetId("75455-1")).toBe(1_000_754_550);
+    expect(setNumberOfSingleId(1_000_754_550)).toBe("75455-1");
+    expect(setNumberOfSingleId(singleSetId("10000-3") ?? 0)).toBe("10000-3");
+    expect(setNumberOfSingleId(2)).toBeUndefined();
+    expect(singleSetId("COMCON001-1")).toBeUndefined();
+    expect(singleSetId("123456789-1")).toBeUndefined();
+    expect(singleSetId("99999999-9")).toBeLessThan(2_147_483_647);
+  });
+
+  it("Plan und Anlegen für ein einzelnes Set: ein Set, eine Abfrage, eine Reihe mit seinem Namen", async () => {
+    const deps = seriesDeps();
+    const id = singleSetId("75372-1") ?? 0;
+    expect(await planSeries(deps, id)).toEqual({
+      theme: { id, name: "75372-1 Set 75372-1", selectable: true },
+      setCount: 1,
+    });
+    const summary = await startSeries(deps, "owner-1", id);
+    expect(summary).toMatchObject({ themeId: id, name: "75372-1 Set 75372-1", total: 1 });
+    const again = await startSeries(deps, "owner-1", id);
+    expect(again.id).toBe(summary.id);
+    await workOnSeries(deps, { owner: "owner-1", budgetMs: 10_000 });
+    expect(deps.store.sets).toMatchObject([{ setNumber: "75372-1", state: "done" }]);
+    expect(deps.store.sets[0]?.figures).toHaveLength(2);
+    // A set Rebrickable does not know is named by its number.
+    const unknown = await planSeries(seriesDeps(), singleSetId("99999-1") ?? 0);
+    expect(unknown.theme.name).toBe("99999-1");
   });
 
   it("Eine unbekannte Nummer gibt keine Treffer, kein Fehler", async () => {

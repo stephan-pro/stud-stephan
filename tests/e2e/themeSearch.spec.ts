@@ -1,6 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
+import { DEMO_COLLECTION } from "../../src/demo/collection";
 import { TEXTS } from "../../src/ui/texts";
-import { expectNoAccessibilityViolations, PC, PHONE, signInDirectly } from "./helpers";
+import { expectNoAccessibilityViolations, heading, PC, PHONE, signInDirectly } from "./helpers";
 
 // P12 (Nacharbeit): die Themensuche der Reihen (S10) findet auch nach Hauptthemen, Set- und
 // Figurennummern und deutschen Begriffen und sagt bei keinem Treffer, was man eingeben kann. Die
@@ -51,8 +52,29 @@ for (const [size, viewport] of [
         const hit = page.getByRole("button", { name: /Star Wars – The Clone Wars/ });
         await expect(hit).toBeVisible();
         await expect(hit).toContainText(R.foundBy.set("75372-1"));
-        await expect(page.locator(".series-results > li")).toHaveCount(1);
+        // "Nur dieses Set" first, then the theme of the set.
+        await expect(page.locator(".series-results > li")).toHaveCount(2);
       }
+      await expectNoAccessibilityViolations(page);
+    });
+
+    test(`${size}: „Nur dieses Set“ legt eine Reihe aus genau diesem Set an`, async ({ page }) => {
+      await signInDirectly(page, undefined, DEMO_COLLECTION);
+      await search(page, "75372");
+      const only = page.getByRole("button", { name: R.onlySet("75372-1", 2) });
+      await expect(page.locator(".series-results > li").first()).toContainText(R.onlySetNote);
+      await only.click();
+
+      const plan = page.getByRole("dialog", { name: R.plan.title });
+      await expect(plan).toContainText(R.onlySet("75372-1", 2));
+      await expect(plan).toContainText(R.plan.summary(R.plan.sets(1), R.plan.calls(1)));
+      await expectNoAccessibilityViolations(page);
+      await plan.getByRole("button", { name: R.plan.create }).click();
+
+      await expect(page).toHaveURL(/#\/wunschliste\/reihen\/\d+$/);
+      await expect(heading(page)).toBeFocused();
+      await expect(page.getByText("Captain Rex")).toBeVisible();
+      await expect(page.getByText("Clone Trooper Phase II")).toBeVisible();
       await expectNoAccessibilityViolations(page);
     });
 

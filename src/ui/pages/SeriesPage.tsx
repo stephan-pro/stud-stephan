@@ -29,6 +29,11 @@ function problemOf(error: unknown): Problem {
   return failure === "offline" || failure === "limit_reached" ? failure : "unavailable";
 }
 
+/** The name of a hit: "Nur dieses Set: 75455-1 (4 Figuren)" for a single set, else the theme's. */
+function themeLabel(theme: SeriesTheme): string {
+  return theme.onlySet ? T.onlySet(theme.onlySet.number, theme.onlySet.figureCount) : theme.name;
+}
+
 /** Whether the theme is one of the sub themes listed below a main theme that cannot be chosen. */
 function isBelowMain(themes: readonly SeriesTheme[], index: number): boolean {
   const name = themes[index]?.name ?? "";
@@ -133,7 +138,7 @@ function PlanSheet({
       )}
     >
       <p class="card__text">
-        <strong>{theme.name}</strong>
+        <strong>{themeLabel(theme)}</strong>
       </p>
       {plan === undefined && !failed && (
         <p class="card__text" role="status">
@@ -286,7 +291,8 @@ export function SeriesPage({
                   onClick={() => setChosen(theme)}
                 >
                   <span class="series-result__text">
-                    {theme.name}
+                    {themeLabel(theme)}
+                    {theme.onlySet && <span class="series-result__note">{T.onlySetNote}</span>}
                     {theme.via && (
                       <span class="series-result__note">
                         {T.foundBy[theme.via.kind](theme.via.number)}

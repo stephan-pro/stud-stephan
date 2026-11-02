@@ -36,13 +36,22 @@ describe("P12 Reihen im Speicher (Demo und E2E)", () => {
   it("findet das Thema über eine Set- oder Figurennummer", async () => {
     const fake = builder();
     for (const typed of ["75372", "75372-1", "sw0194"]) {
-      const { themes } = await fake.search(typed);
+      const found = (await fake.search(typed)).themes;
+      // A set number also offers "Nur dieses Set" first.
+      const themes = found.filter((theme) => theme.onlySet === undefined);
       expect(
         themes.map((theme) => theme.id),
         typed,
       ).toEqual([1]);
       expect(themes[0]?.via?.number, typed).toBe(typed === "sw0194" ? "sw0194" : "75372-1");
+      expect(found.length, typed).toBe(typed === "sw0194" ? 1 : 2);
     }
+    const [only] = (await fake.search("75372")).themes;
+    expect(only?.onlySet).toEqual({ number: "75372-1", figureCount: 2 });
+    const plan = await fake.plan(only?.id ?? 0);
+    expect(plan.setCount).toBe(1);
+    const series = await fake.start(only?.id ?? 0);
+    expect(series.total).toBe(1);
     expect((await fake.search("99999")).themes).toEqual([]);
   });
 

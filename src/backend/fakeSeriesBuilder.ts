@@ -4,6 +4,7 @@
 // and can be held back by the day's BrickLink limit. The state is kept in the device's storage, if
 // given, so it survives a reload like the real one.
 
+import { setNumberOfSingleId, singleSetId } from "../../supabase/functions/_shared/seriesTypes";
 import { classifyQuery, plain, searchWords } from "../../supabase/functions/_shared/themeQuery";
 import { CatalogCallError } from "./catalog";
 import {
@@ -100,7 +101,16 @@ export class FakeSeriesBuilder implements SeriesBuilder {
     const themes = this.catalog.themes.filter((theme) =>
       theme.sets.some((setNumber) => sets.includes(setNumber)),
     );
-    return themes.map((theme) => this.hit(theme, { kind, number }));
+    const only = kind === "set" ? this.onlySetHit(number) : undefined;
+    return [...(only ? [only] : []), ...themes.map((theme) => this.hit(theme, { kind, number }))];
+  }
+
+  /** "Nur dieses Set", as in the real function: only for a set with figures. */
+  private onlySetHit(number: string): SeriesTheme | undefined {
+    const id = singleSetId(number);
+    const figureCount = this.catalog.figuresOfSet[number]?.length ?? 0;
+    if (id === undefined || figureCount === 0) return undefined;
+    return { id, name: number, selectable: true, onlySet: { number, figureCount } };
   }
 
   private hit(theme: FakeTheme, via?: SeriesTheme["via"]): SeriesTheme {
@@ -223,6 +233,8 @@ export class FakeSeriesBuilder implements SeriesBuilder {
   }
 
   private theme(themeId: number): FakeTheme {
+    const only = setNumberOfSingleId(themeId);
+    if (only !== undefined) return { id: themeId, name: only, sets: [only] };
     const theme = this.catalog.themes.find((candidate) => candidate.id === themeId);
     // A main theme with sub themes is no series, as in the real function.
     if (!theme || theme.large === true) throw new CatalogCallError("Thema unbekannt", "not_found");

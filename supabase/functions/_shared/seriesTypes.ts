@@ -19,6 +19,31 @@ export interface SeriesTheme {
   selectable: boolean;
   /** The set or minifig number the theme was found by (the person typed a number). */
   via?: { kind: "set" | "figure"; number: string };
+  /**
+   * "Nur dieses Set": a series of this one set instead of a theme (the person typed its number).
+   * `id` is then `singleSetId(number)`, not a theme id of Rebrickable.
+   */
+  onlySet?: { number: string; figureCount: number };
+}
+
+/**
+ * Series ids of a single set share the id column of themes: `SINGLE_SET_BASE` + number * 10 +
+ * (variant - 1) for "75455-1". Rebrickable's theme ids are far below the base. A set number of
+ * another shape ("COMCON001-1") has no such id and so no "Nur dieses Set".
+ */
+export const SINGLE_SET_BASE = 1_000_000_000;
+
+export function singleSetId(setNumber: string): number | undefined {
+  const match = /^(\d{1,8})-([1-9])$/.exec(setNumber);
+  if (!match) return undefined;
+  return SINGLE_SET_BASE + Number(match[1]) * 10 + Number(match[2]) - 1;
+}
+
+/** The set number a `singleSetId` stands for; nothing for a theme id. */
+export function setNumberOfSingleId(id: number): string | undefined {
+  if (!Number.isInteger(id) || id < SINGLE_SET_BASE) return undefined;
+  const rest = id - SINGLE_SET_BASE;
+  return `${Math.floor(rest / 10)}-${(rest % 10) + 1}`;
 }
 
 /** The answer to a search: the themes, and whether more fit than were taken. */

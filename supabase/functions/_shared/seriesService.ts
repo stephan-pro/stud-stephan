@@ -13,12 +13,14 @@ import { CatalogError } from "./json.ts";
 import { MAX_ATTEMPTS, nextCountDay } from "./priceRunService.ts";
 import type { RebrickableClient, RebrickableThemeNode } from "./rebrickableClient.ts";
 import type { ClaimedSet, SeriesStore, SetOutcome } from "./seriesStore.ts";
-import type {
-  SeriesFigureInfo,
-  SeriesPlan,
-  SeriesSearch,
-  SeriesSummary,
-  SeriesTheme,
+import {
+  type SeriesFigureInfo,
+  type SeriesPlan,
+  type SeriesSearch,
+  type SeriesSummary,
+  type SeriesTheme,
+  setNumberOfSingleId,
+  singleSetId,
 } from "./seriesTypes.ts";
 import { classifyQuery, plain, searchWords } from "./themeQuery.ts";
 
@@ -252,12 +254,56 @@ async function searchByNumber(
       ? [await themeIdOfSet(deps, number)].flatMap((id) => id ?? [])
       : await themeIdsOfFigure(deps, number);
   const via = { kind, number } as const;
-  return cutOff(
-    ids.flatMap((id) => {
+  const only = kind === "set" ? await onlySetHit(deps, number) : undefined;
+  return cutOff([
+    ...(only ? [only] : []),
+    ...ids.flatMap((id) => {
       const node = themes.find((theme) => theme.id === id);
       return node ? hitsOfTheme(themes, node, via) : [];
     }),
-  );
+  ]);
+}
+
+/**
+ * "Nur dieses Set": a series of the one set a number names, with how many figures it holds. The
+ * figures come from the same cache the build uses (one counted BrickLink call the first time);
+ * nothing for a set that is unknown, has no figures or cannot be asked about right now.
+ */
+async function onlySetHit(deps: SeriesDeps, number: string): Promise<SeriesTheme | undefined> {
+  const id = singleSetId(number);
+  if (id === undefined) return undefined;
+  try {
+    const figures = await figuresOfSet(deps, number);
+    if (figures.length === 0) return undefined;
+    return {
+      id,
+      name: number,
+      selectable: true,
+      onlySet: { number, figureCount: figures.length },
+    };
+  } catch (error) {
+    if (error instanceof CatalogError) return undefined;
+    throw error;
+  }
+}
+
+const isName = (value: unknown): value is { name: string } =>
+  typeof (value as { name?: unknown } | null)?.name === "string";
+
+/** "75455-1 Name of the set": the series of a single set; the number alone if Rebrickable lacks it. */
+async function singleSetName(deps: SeriesDeps, number: string): Promise<string> {
+  try {
+    const known = await cached(
+      deps,
+      `series:setname:${number}`,
+      async () => ({ name: (await deps.rebrickable.set(number)).name }),
+      isName,
+    );
+    return `${number} ${known.name}`;
+  } catch (error) {
+    if (error instanceof CatalogError && error.failure === "not_found") return number;
+    throw error;
+  }
 }
 
 /**
@@ -306,6 +352,13 @@ interface ThemeInfo {
 
 /** The theme with the sets of it and its sub themes, each set once. */
 async function themeInfo(deps: SeriesDeps, themeId: number): Promise<ThemeInfo> {
+  const only = setNumberOfSingleId(themeId);
+  if (only !== undefined) {
+    return {
+      theme: { id: themeId, name: await singleSetName(deps, only), selectable: true },
+      sets: [{ number: only, name: only }],
+    };
+  }
   const themes = await loadThemes(deps);
   const node = themes.find((theme) => theme.id === themeId);
   if (!node || !selectable(themes, node)) throw new CatalogError("not_found", "Thema unbekannt");
