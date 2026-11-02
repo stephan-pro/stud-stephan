@@ -42,10 +42,10 @@ for (const [size, viewport] of SIZES) {
     await page.goto("#/erfassen");
     const capture = page.getByRole("dialog", { name: TEXTS.capture.title });
     await capture.getByRole("button", { name: TEXTS.capture.what.wish }).click();
-    // Photo and "Manuell" make no wish.
+    // A photo finds a wish, "Manuell" does not.
     await expect(
-      capture.getByRole("button", { name: new RegExp(TEXTS.capture.ways.photo.title) }),
-    ).toBeDisabled();
+      capture.getByRole("link", { name: new RegExp(TEXTS.capture.ways.photo.title) }),
+    ).toHaveAttribute("href", "#/erfassen/foto/set/wunsch");
     await expect(
       capture.getByRole("button", { name: new RegExp(TEXTS.capture.ways.manual.title) }),
     ).toBeDisabled();

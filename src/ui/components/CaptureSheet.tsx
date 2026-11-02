@@ -44,6 +44,8 @@ function wayHref(way: keyof typeof T.ways, what: What): string | undefined {
   if (what === "wish") {
     if (way === "search") return searchHash("minifig", true);
     if (way === "link") return linkHash("legoSet", true);
+    // The photo page lets the person switch between set and figure; a set is the usual wish.
+    if (way === "photo") return photoHash("legoSet", true);
     return undefined;
   }
   const type = formType(what);
@@ -51,15 +53,23 @@ function wayHref(way: keyof typeof T.ways, what: What): string | undefined {
   if (way === "manual") return formHash({ type, mode: "new" });
   if (way === "link") return linkHash(type);
   if (way === "search") return searchHash(type);
-  // Brickognize recognizes figures only.
-  if (way === "photo" && type === "minifig") return photoHash();
-  return undefined;
+  // Figures, sets and (as an attempt) special parts; Brickognize knows no dioramas.
+  return photoHash(type);
+}
+
+/** What the way "Foto" says it recognizes, for what is captured. */
+function photoText(what: What, fallback: string): string {
+  if (what === "legoSet") return T.photoSet;
+  if (what === "specialPart") return T.photoSpecialPart;
+  if (what === "wish") return T.photoWish;
+  return fallback;
 }
 
 /**
  * S7: first what is captured, then how. "Manuell" (P6), "Nummer oder Suche" (P7, figures and sets;
- * special parts by number), "Foto" (P8, figures) and "Link einfügen" (P9, all kinds) work; a wish by
- * number, search or link (P15). Without a connection every way is switched off with a hint (P15).
+ * special parts by number), "Foto" (P8; figures, sets, and special parts as an attempt) and "Link
+ * einfügen" (P9, all kinds) work; a wish by photo, number, search or link (P15). Without a
+ * connection every way is switched off with a hint (P15).
  */
 export function CaptureSheet({ onClose }: { readonly onClose: () => void }) {
   const [what, setWhat] = useState<What>("minifig");
@@ -95,12 +105,12 @@ export function CaptureSheet({ onClose }: { readonly onClose: () => void }) {
             : href
               ? way.value === "search" && what === "specialPart"
                 ? T.partsSearch
-                : text.text
-              : what === "diorama"
-                ? T.onlyManual
-                : what === "wish"
-                  ? T.wishWays
-                  : T.onlyFigures;
+                : way.value === "photo"
+                  ? photoText(what, text.text)
+                  : text.text
+              : what === "wish"
+                ? T.wishWays
+                : T.onlyManual;
           const body = (
             <>
               <span class={`way__icon way__icon--${way.tint}`}>

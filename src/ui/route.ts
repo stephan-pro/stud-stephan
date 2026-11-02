@@ -131,13 +131,17 @@ export interface PageLocation {
   readonly detail?: DetailRef;
   readonly form?: FormRef;
   readonly search?: SearchType;
-  /** The photo recognition (S7a, "#/erfassen/foto"), also below "Erfassen". */
-  readonly photo?: true;
+  /**
+   * The photo recognition (S7a) for a kind of thing, also below "Erfassen": "#/erfassen/foto" (a
+   * figure), "…/foto/set", "…/foto/sonderteil", and for a wish "…/foto/figur/wunsch".
+   */
+  readonly photo?: DetailType;
   /** Capture by link (S7c, "#/erfassen/link/set"), also below "Erfassen". */
   readonly link?: DetailType;
   /**
-   * The search or the link page finds a wish instead of an object (P15): "#/erfassen/suche/set/wunsch",
-   * "#/erfassen/link/figur/wunsch". Only figures and sets.
+   * The search, the link page or the photo finds a wish instead of an object (P15):
+   * "#/erfassen/suche/set/wunsch", "#/erfassen/link/figur/wunsch", "#/erfassen/foto/set/wunsch".
+   * Only figures and sets.
    */
   readonly forWish?: true;
   /** A page of the dioramas (P10). */
@@ -219,19 +223,25 @@ export function parseLocation(hash: string): PageLocation {
     return { route: DEFAULT_ROUTE };
   }
   if (route === "capture" && segments.length === 2 && second === PHOTO_PATH) {
-    return { route, photo: true };
+    return { route, photo: "minifig" };
+  }
+  if (route === "capture" && segments.length === 3 && second === PHOTO_PATH) {
+    const photoType = typeOf(third);
+    if (photoType) return { route, photo: photoType };
+    return { route: DEFAULT_ROUTE };
   }
   if (
     route === "capture" &&
     segments.length === 4 &&
-    (second === SEARCH_PATH || second === LINK_PATH) &&
+    (second === SEARCH_PATH || second === LINK_PATH || second === PHOTO_PATH) &&
     fourth === WISH_PATH
   ) {
     const wishType = typeOf(third);
     if (!isWishType(wishType)) return { route: DEFAULT_ROUTE };
-    return second === SEARCH_PATH
-      ? { route, search: wishType, forWish: true }
-      : { route, link: wishType, forWish: true };
+    if (second === SEARCH_PATH) return { route, search: wishType, forWish: true };
+    return second === LINK_PATH
+      ? { route, link: wishType, forWish: true }
+      : { route, photo: wishType, forWish: true };
   }
   if (route === "capture" && segments.length === 3 && second === SEARCH_PATH) {
     const searchType = typeOf(third);
@@ -313,9 +323,14 @@ export function searchHash(type: SearchType, forWish = false): string {
   return forWish ? `${base}/${WISH_PATH}` : base;
 }
 
-/** The link target of the photo recognition: "#/erfassen/foto". */
-export function photoHash(): string {
-  return `${routeHash("capture")}/${PHOTO_PATH}`;
+/**
+ * The link target of the photo recognition for a kind of thing: "#/erfassen/foto" for a figure,
+ * "#/erfassen/foto/set", "…/foto/sonderteil" (".../wunsch" for a wish, then with the figure's path).
+ */
+export function photoHash(type: DetailType = "minifig", forWish = false): string {
+  const base = `${routeHash("capture")}/${PHOTO_PATH}`;
+  if (forWish) return `${base}/${DETAIL_PATHS[type]}/${WISH_PATH}`;
+  return type === "minifig" ? base : `${base}/${DETAIL_PATHS[type]}`;
 }
 
 /** The link target of capture by link for a kind of thing: "#/erfassen/link/set" (".../wunsch"). */
@@ -351,7 +366,7 @@ export function locationHash(page: PageLocation): string {
   if (page.form) return formHash(page.form);
   if (page.link) return linkHash(page.link, page.forWish === true);
   if (page.search) return searchHash(page.search, page.forWish === true);
-  if (page.photo) return photoHash();
+  if (page.photo) return photoHash(page.photo, page.forWish === true);
   return page.detail ? detailHash(page.detail) : routeHash(page.route);
 }
 

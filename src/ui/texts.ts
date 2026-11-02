@@ -441,12 +441,15 @@ export const TEXTS = {
       link: { title: "Link einfügen", text: "Rebrickable, Merlins Steine, Hersteller" },
       manual: { title: "Manuell", text: "Für Customs und alles ohne Katalog" },
     },
-    onlyFigures: "Erkannt werden nur Figuren",
+    /** The way "Foto" for what is not a figure: what the photo should show. */
+    photoSet: "Foto der Schachtel, des Modells oder der Anleitung",
+    photoSpecialPart: "Ein Versuch: GWPs werden oft nicht erkannt",
+    photoWish: "Foto eines Sets oder einer Figur",
     /** The way "Nummer oder Suche" for a special part: BrickLink finds them by number only. */
     partsSearch: "z. B. 5010325, GWP und Insiders-Prämien",
     wishHint:
-      "Einen Wunsch findest du per Nummer, Suche oder Link. Auch in einer Reihe und bei einer fehlenden Figur eines Sets kannst du Wünsche anlegen.",
-    wishWays: "Wünsche per Nummer, Suche oder Link",
+      "Einen Wunsch findest du per Foto, Nummer, Suche oder Link. Auch in einer Reihe und bei einer fehlenden Figur eines Sets kannst du Wünsche anlegen.",
+    wishWays: "Wünsche per Foto, Nummer, Suche oder Link",
     onlyManual: "Ein Diorama erfasst du von Hand",
   },
   /** A wish from the capture sheet: number, search or link (P15). */
@@ -639,21 +642,50 @@ export const TEXTS = {
   /** S7a photo recognition (P8, F1). */
   recognition: {
     title: "Foto-Erkennung",
+    /** A wish by photo (the person chooses figure or set on the page). */
+    titleWish: "Wunsch per Foto",
     back: "Zurück zum Erfassen",
-    empty:
-      "Mach ein Foto der Figur oder wähl eins aus. Am besten steht sie vor ruhigem Hintergrund und ist ganz zu sehen.",
+    empty: {
+      minifig:
+        "Mach ein Foto der Figur oder wähl eins aus. Am besten steht sie vor ruhigem Hintergrund und ist ganz zu sehen.",
+      legoSet:
+        "Mach ein Foto der Schachtel, des fertigen Modells oder der Anleitung oder wähl eins aus. Am besten ist es scharf und die Vorderseite füllt das Bild.",
+      specialPart:
+        "Mach ein Foto des Sonderteils oder wähl eins aus. Am besten liegt es vor ruhigem Hintergrund.",
+    },
+    /** Said above the photo of a special part: the service knows few of them. */
+    attempt:
+      "Das ist ein Versuch: Sonderteile wie GWPs und Prämien erkennt der Dienst oft nicht. Per Nummer geht es sicher.",
+    kindsLabel: "Figur oder Set",
+    kinds: { minifig: "Figur", legoSet: "Set" },
     pick: "Foto aufnehmen oder wählen",
     again: "Neues Foto",
     yourPhoto: "Dein Foto",
-    photoAlt: "Dein Foto der Figur",
+    photoAlt: {
+      minifig: "Dein Foto der Figur",
+      legoSet: "Dein Foto des Sets",
+      specialPart: "Dein Foto des Sonderteils",
+    },
     resizing: "Foto wird verkleinert …",
     recognizing: "Wird erkannt …",
     suggestions: (count: number) => (count === 1 ? "1 Vorschlag" : `${count} Vorschläge`),
     scoreLabel: "Trefferquote",
     choose: (name: string, percent: string) => `${name}, ${percent}, übernehmen`,
+    /** What tells a Big Fig apart in the list: BrickLink lists it as a part. */
+    bigFig: "große Figur, bei BrickLink ein Teil",
     none: {
-      title: "Keine Figur erkannt",
-      text: "Probier ein anderes Foto, oder such die Figur per Nummer.",
+      minifig: {
+        title: "Keine Figur erkannt",
+        text: "Probier ein anderes Foto, oder such die Figur per Nummer.",
+      },
+      legoSet: {
+        title: "Kein Set erkannt",
+        text: "Probier ein anderes Foto, zum Beispiel von der Vorderseite der Schachtel, oder such das Set per Nummer.",
+      },
+      specialPart: {
+        title: "Nichts erkannt",
+        text: "Sonderteile erkennt der Dienst oft nicht. Such das Sonderteil per Nummer, zum Beispiel 5010325.",
+      },
     },
     notFitting: "Keiner passt – per Nummer suchen",
     failed: {

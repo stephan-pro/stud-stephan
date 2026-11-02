@@ -213,13 +213,41 @@ describe("P7 Adressen der Katalogsuche und des Formulars aus dem Katalog", () =>
 describe("P8 Adresse der Foto-Erkennung", () => {
   it("P8 Die Foto-Erkennung liegt unter Erfassen: #/erfassen/foto", () => {
     expect(photoHash()).toBe("#/erfassen/foto");
-    expect(parseLocation("#/erfassen/foto")).toEqual({ route: "capture", photo: true });
-    expect(parseLocation("#/erfassen/foto/")).toEqual({ route: "capture", photo: true });
-    expect(locationHash({ route: "capture", photo: true })).toBe("#/erfassen/foto");
+    expect(parseLocation("#/erfassen/foto")).toEqual({ route: "capture", photo: "minifig" });
+    expect(parseLocation("#/erfassen/foto/")).toEqual({ route: "capture", photo: "minifig" });
+    expect(locationHash({ route: "capture", photo: "minifig" })).toBe("#/erfassen/foto");
+  });
+
+  it("F1 Foto-Erkennung auch für Sets und Sonderteile: #/erfassen/foto/set und …/sonderteil", () => {
+    expect(photoHash("legoSet")).toBe("#/erfassen/foto/set");
+    expect(photoHash("specialPart")).toBe("#/erfassen/foto/sonderteil");
+    expect(parseLocation("#/erfassen/foto/set")).toEqual({ route: "capture", photo: "legoSet" });
+    expect(parseLocation("#/erfassen/foto/sonderteil/")).toEqual({
+      route: "capture",
+      photo: "specialPart",
+    });
+    // The spelling for a figure is the short one.
+    expect(parseLocation("#/erfassen/foto/figur")).toEqual({ route: "capture", photo: "minifig" });
+    expect(locationHash({ route: "capture", photo: "minifig" })).toBe("#/erfassen/foto");
+  });
+
+  it("F1 Foto-Erkennung für einen Wunsch: …/foto/set/wunsch und …/foto/figur/wunsch, nie ein Sonderteil", () => {
+    expect(photoHash("legoSet", true)).toBe("#/erfassen/foto/set/wunsch");
+    expect(photoHash("minifig", true)).toBe("#/erfassen/foto/figur/wunsch");
+    expect(parseLocation("#/erfassen/foto/set/wunsch")).toEqual({
+      route: "capture",
+      photo: "legoSet",
+      forWish: true,
+    });
+    expect(locationHash({ route: "capture", photo: "minifig", forWish: true })).toBe(
+      "#/erfassen/foto/figur/wunsch",
+    );
+    expect(parseLocation("#/erfassen/foto/sonderteil/wunsch")).toEqual({ route: "showcase" });
   });
 
   it("P8 Mit weiteren Teilen ist es keine Foto-Erkennung", () => {
     expect(parseLocation("#/erfassen/foto/x")).toEqual({ route: "showcase" });
+    expect(parseLocation("#/erfassen/foto/set/x/y")).toEqual({ route: "showcase" });
     expect(parseLocation("#/vitrine/foto")).toEqual({ route: "showcase" });
   });
 });

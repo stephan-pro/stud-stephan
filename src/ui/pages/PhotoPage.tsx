@@ -1,15 +1,22 @@
 import { useEffect, useRef, useState } from "preact/hooks";
+import type { Catalog } from "../../backend/catalog";
 import { CatalogCallError } from "../../backend/catalog";
 import type { Recognizer, Suggestion } from "../../backend/recognition";
+import type { Remote } from "../../backend/remote";
 import { formatScore } from "../../domain/recognition";
 import { PhotoError, resizePhoto } from "../../files/browserPhoto";
 import { CapturePhoto } from "../capturePhoto";
 import { Cover } from "../components/Cover";
 import { Icon } from "../components/Icon";
-import { formHash, routeHash, searchHash } from "../route";
+import { type WishPick, WishPicker } from "../components/WishPicker";
+import { type DetailType, formHash, photoHash, routeHash, searchHash } from "../route";
 import { TEXTS } from "../texts";
+import type { LoadedCollection } from "../useCollection";
 
 const T = TEXTS.recognition;
+
+/** A wish is a figure or a set. */
+const WISH_KINDS: readonly DetailType[] = ["minifig", "legoSet"];
 
 type RecognitionState =
   | { readonly status: "empty" }
@@ -42,15 +49,33 @@ function usePreviewUrl(file: File | undefined): string | undefined {
 }
 
 /**
- * S7a: a photo of a figure in (camera on the phone, file on the PC), up to five suggestions out.
- * A suggestion opens the form filled from the catalog (F1, F2); the photo stays with it. The photo
- * is made small first (`resizePhoto`) and goes to the function `recognize`, never to Brickognize
- * directly.
+ * S7a: a photo of a figure, a set or a special part in (camera on the phone, file on the PC), up to
+ * five suggestions out. A suggestion opens the form filled from the catalog (F1, F2); the photo
+ * stays with it. For a wish (`forWish`) a suggestion opens the wish sheet instead, and the person
+ * chooses between figure and set here. The photo is made small first (`resizePhoto`) and goes to
+ * the function `recognize`, never to Brickognize directly.
  */
-export function PhotoPage({ recognizer }: { readonly recognizer: Recognizer | undefined }) {
+export function PhotoPage({
+  type: initialType,
+  recognizer,
+  forWish = false,
+  data,
+  remote,
+  catalog,
+}: {
+  readonly type: DetailType;
+  readonly recognizer: Recognizer | undefined;
+  readonly forWish?: boolean;
+  /** The collection the wish goes into (only for a wish). */
+  readonly data?: LoadedCollection | undefined;
+  readonly remote?: Remote | undefined;
+  readonly catalog?: Catalog | undefined;
+}) {
+  const [type, setType] = useState(initialType);
   const [file, setFile] = useState<File | undefined>(() => CapturePhoto.peek());
   const [state, setState] = useState<RecognitionState>({ status: "empty" });
   const [attempt, setAttempt] = useState(0);
+  const [pick, setPick] = useState<Extract<WishPick, { kind: "catalog" }> | undefined>();
   const input = useRef<HTMLInputElement>(null);
   const previewUrl = usePreviewUrl(file);
 
@@ -69,6 +94,7 @@ export function PhotoPage({ recognizer }: { readonly recognizer: Recognizer | un
         if (!recognizer) throw new CatalogCallError("Keine Erkennung", "unavailable");
         const suggestions = await recognizer.recognize(
           new Blob([small.bytes as Uint8Array<ArrayBuffer>], { type: small.contentType }),
+          type,
         );
         if (active) setState({ status: "done", suggestions });
       } catch (error) {
@@ -78,7 +104,7 @@ export function PhotoPage({ recognizer }: { readonly recognizer: Recognizer | un
     return () => {
       active = false;
     };
-  }, [file, recognizer, attempt]);
+  }, [file, recognizer, attempt, type]);
 
   const choose = (files: FileList | null) => {
     const chosen = files?.[0];
@@ -88,8 +114,15 @@ export function PhotoPage({ recognizer }: { readonly recognizer: Recognizer | un
     setFile(chosen);
   };
 
+  const chooseKind = (next: DetailType) => {
+    setType(next);
+    // The address follows the chip; the router is not told, the page stays.
+    history.replaceState(null, "", photoHash(next, forWish));
+  };
+
   const working = state.status === "working";
   const best = state.status === "done" ? state.suggestions[0] : undefined;
+  const none = T.none[type];
 
   return (
     <>
@@ -98,15 +131,34 @@ export function PhotoPage({ recognizer }: { readonly recognizer: Recognizer | un
           <Icon name="back" />
         </a>
         <h1 class="page-title page-title--small" tabIndex={-1}>
-          {T.title}
+          {forWish ? T.titleWish : T.title}
         </h1>
         <span class="header-spacer" />
       </header>
 
+      {forWish && (
+        <fieldset class="choice">
+          <legend class="visually-hidden">{T.kindsLabel}</legend>
+          <div class="chips">
+            {WISH_KINDS.map((kind) => (
+              <button
+                key={kind}
+                type="button"
+                class="chip pressable"
+                aria-pressed={type === kind}
+                onClick={() => chooseKind(kind)}
+              >
+                {T.kinds[kind as "minifig" | "legoSet"]}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      )}
+
       <div class="photo-preview">
         {previewUrl ? (
           <>
-            <img class="photo-preview__image" src={previewUrl} alt={T.photoAlt} />
+            <img class="photo-preview__image" src={previewUrl} alt={T.photoAlt[type]} />
             <span class="photo-preview__tag">{T.yourPhoto}</span>
           </>
         ) : (
@@ -116,7 +168,9 @@ export function PhotoPage({ recognizer }: { readonly recognizer: Recognizer | un
         )}
       </div>
 
-      {state.status === "empty" && <p class="card__text">{T.empty}</p>}
+      {type === "specialPart" && <p class="card__text">{T.attempt}</p>}
+
+      {state.status === "empty" && <p class="card__text">{T.empty[type]}</p>}
 
       {working && (
         <p class="search-results__status" role="status" aria-busy="true">
@@ -142,8 +196,8 @@ export function PhotoPage({ recognizer }: { readonly recognizer: Recognizer | un
 
       {state.status === "done" && state.suggestions.length === 0 && (
         <section class="card" role="status">
-          <h2 class="card__title card__title--small">{T.none.title}</h2>
-          <p class="card__text">{T.none.text}</p>
+          <h2 class="card__title card__title--small">{none.title}</h2>
+          <p class="card__text">{none.text}</p>
         </section>
       )}
 
@@ -157,12 +211,11 @@ export function PhotoPage({ recognizer }: { readonly recognizer: Recognizer | un
             <span class="suggestions-head__label">{T.scoreLabel}</span>
           </div>
           <ul class="suggestions">
-            {state.suggestions.map((suggestion) => (
-              <li key={suggestion.number}>
-                <a
-                  class={`suggestion pressable${suggestion === best ? " suggestion--best" : ""}`}
-                  href={formHash({ type: "minifig", mode: "catalog", ref: suggestion.number })}
-                >
+            {state.suggestions.map((suggestion) => {
+              const ref = suggestion.ref ?? suggestion.number;
+              const className = `suggestion pressable${suggestion === best ? " suggestion--best" : ""}`;
+              const body = (
+                <>
                   <Cover
                     image={
                       suggestion.imageUrl
@@ -176,21 +229,44 @@ export function PhotoPage({ recognizer }: { readonly recognizer: Recognizer | un
                   />
                   <span class="search-hit__text">
                     <span class="search-hit__name">{suggestion.name}</span>
-                    <span class="search-hit__facts">{suggestion.number}</span>
+                    <span class="search-hit__facts">
+                      {suggestion.bricklinkType === "PART"
+                        ? `${suggestion.number} · ${T.bigFig}`
+                        : suggestion.number}
+                    </span>
                   </span>
                   <span class="suggestion__score">{formatScore(suggestion.score)}</span>
                   <span class="visually-hidden">
-                    {T.choose(suggestion.name, formatScore(suggestion.score))}
+                    {forWish
+                      ? TEXTS.wishCapture.pick(suggestion.name)
+                      : T.choose(suggestion.name, formatScore(suggestion.score))}
                   </span>
-                </a>
-              </li>
-            ))}
+                </>
+              );
+              return (
+                <li key={suggestion.number}>
+                  {forWish && type !== "specialPart" ? (
+                    <button
+                      type="button"
+                      class={className}
+                      onClick={() => setPick({ kind: "catalog", catalogKind: type, ref })}
+                    >
+                      {body}
+                    </button>
+                  ) : (
+                    <a class={className} href={formHash({ type, mode: "catalog", ref })}>
+                      {body}
+                    </a>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </>
       )}
 
       {(state.status === "done" || state.status === "failed") && (
-        <a class="button button--secondary button--flat pressable" href={searchHash("minifig")}>
+        <a class="button button--secondary button--flat pressable" href={searchHash(type, forWish)}>
           <Icon name="number" size={20} />
           {state.status === "failed" ? T.byNumber : T.notFitting}
         </a>
@@ -213,6 +289,17 @@ export function PhotoPage({ recognizer }: { readonly recognizer: Recognizer | un
         accept="image/*"
         onChange={(event) => choose(event.currentTarget.files)}
       />
+
+      {forWish && pick && data && (
+        <WishPicker
+          key={`${pick.catalogKind}-${pick.ref}`}
+          pick={pick}
+          data={data}
+          remote={remote}
+          catalog={catalog}
+          onClose={() => setPick(undefined)}
+        />
+      )}
     </>
   );
 }

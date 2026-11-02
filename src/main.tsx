@@ -26,7 +26,7 @@ import { SupabaseRemote } from "./backend/supabaseRemote";
 import { DEMO_CATALOG } from "./demo/catalog";
 import { DEMO_COLLECTION } from "./demo/collection";
 import { DEMO_LINK_PAGES } from "./demo/links";
-import { DEMO_SUGGESTIONS } from "./demo/recognition";
+import { DEMO_RECOGNITION } from "./demo/recognition";
 import { seedDemoStore } from "./demo/seed";
 import { DEMO_SERIES_CATALOG } from "./demo/series";
 import { catchInstallOffer } from "./pwa/install";
@@ -73,7 +73,8 @@ function fakeRecognition(): RecognitionControl {
       value === "unavailable" ||
       value === "limit_reached" ||
       value === "none" ||
-      value === "one"
+      value === "one" ||
+      value === "bigFig"
       ? value
       : undefined;
   } catch {
@@ -141,7 +142,7 @@ function createBackend(): {
       remote,
       // The catalog functions are not part of the fake server: a few example entries in memory.
       catalog: new FakeCatalog(DEMO_CATALOG, fakeCatalogFailure, fakeSources),
-      recognizer: new FakeRecognizer(DEMO_SUGGESTIONS, fakeRecognition),
+      recognizer: new FakeRecognizer(DEMO_RECOGNITION, fakeRecognition),
       previewer: new FakeLinkPreviewer(DEMO_LINK_PAGES, fakeLink),
       // The price run writes its price points through the fake server like the real one.
       priceRunner: new FakePriceRunner(remote, {
@@ -194,7 +195,7 @@ render(
     }
     recognizer={
       backend?.recognizer ??
-      (__BACKEND__ === "demo" ? new FakeRecognizer(DEMO_SUGGESTIONS, fakeRecognition) : undefined)
+      (__BACKEND__ === "demo" ? new FakeRecognizer(DEMO_RECOGNITION, fakeRecognition) : undefined)
     }
     previewer={
       backend?.previewer ??

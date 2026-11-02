@@ -333,7 +333,15 @@ function Shell({
               </div>
             ) : photo ? (
               <div class="detail">
-                <PhotoPage recognizer={recognizer} />
+                <PhotoPage
+                  key={page.forWish ? "wish" : photo}
+                  type={photo}
+                  recognizer={recognizer}
+                  forWish={page.forWish === true}
+                  data={data}
+                  remote={remote}
+                  catalog={catalog}
+                />
               </div>
             ) : catalogSearch ? (
               <div class="detail">

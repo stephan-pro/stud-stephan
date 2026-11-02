@@ -186,7 +186,7 @@ interface FormBodyProps {
 /** Where "Abbrechen" leads: back to the object, to the search, or to the showcase. */
 function cancelHash(form: FormRef): string {
   // With a photo taken for the recognition the person comes back to its suggestions.
-  if (CapturePhoto.peek() && form.mode === "catalog" && form.type === "minifig") return photoHash();
+  if (CapturePhoto.peek() && form.mode === "catalog") return photoHash(form.type);
   if (form.mode === "new") return routeHash("showcase");
   if (form.mode === "wish") return routeHash("wishlist");
   // A form reached from a pasted link goes back to where the link was pasted.
@@ -222,11 +222,10 @@ function FormBody({
   // The id is made once; editing keeps the one the object has.
   const id = useRef(start.existing?.id ?? newId(type)).current;
   const unsaved = useRef(new Set<string>()).current;
-  // The photo taken for the recognition (S7a) goes with a new figure, however the form was reached.
+  // The photo taken for the recognition (S7a) goes with a new figure, set or special part, however
+  // the form was reached.
   const initialPhoto = useRef(
-    type === "minifig" && (form.mode === "new" || form.mode === "catalog")
-      ? CapturePhoto.peek()
-      : undefined,
+    form.mode === "new" || form.mode === "catalog" ? CapturePhoto.peek() : undefined,
   ).current;
 
   // Photos sent for a form that is left without saving are taken out of storage again.

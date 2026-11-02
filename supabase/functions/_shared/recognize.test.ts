@@ -1,12 +1,21 @@
 // P8 (F1): the function `recognize` — the photo goes to Brickognize, up to five suggestions with a
 // BrickLink number come back; sign-in, bad bodies and failures of the service. The answers are in
 // the shape Brickognize sent in P2 (docs/DATENQUELLEN.md).
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { BRICKOGNIZE_URL, createBrickognize, parseSuggestions } from "./brickognizeClient.ts";
+import {
+  BRICKOGNIZE_ANY_URL,
+  BRICKOGNIZE_SETS_URL,
+  BRICKOGNIZE_URL,
+  createBrickognize,
+  parseAnySuggestions,
+  parseSetSuggestions,
+  parseSuggestions,
+} from "./brickognizeClient.ts";
 import { fakeFetch, ok, type Route } from "./catalog.fixtures.ts";
 import { recognizeHandlerDeps } from "./environment.ts";
 import { handleRecognize } from "./handler.ts";
-import { MAX_PHOTO_BYTES } from "./recognizeTypes.ts";
+import { MAX_PHOTO_BYTES, RECOGNIZE_KIND_HEADER, type Suggestion } from "./recognizeTypes.ts";
 
 const ENV: Record<string, string> = { SUPABASE_URL: "https://projekt.supabase.co" };
 const AUTH: Route = ["/auth/v1/user", ok({ id: "u" })];
@@ -40,6 +49,16 @@ function photo(
 function deps(routes: Route[], log: string[] = []) {
   return recognizeHandlerDeps((name) => ENV[name], fakeFetch([AUTH, ...routes], log));
 }
+
+/** An entry of the general endpoint, which also says what it is (`type`). */
+function typed(type: string, id: string, name: string, score: number) {
+  return { ...entry(id, name, score), type };
+}
+
+// The three endpoints; the general one is last, its address is the start of the others.
+const FIGS_URL = "/predict/figs/";
+const SETS_URL = "/predict/sets/";
+const ANY_URL = "api.brickognize.com/predict/";
 
 describe("Antworten von Brickognize lesen", () => {
   it("F1 liefert die Figur mit BrickLink-Nummer, Name, Trefferquote und Bild", () => {
@@ -198,4 +217,277 @@ describe("Funktion recognize", () => {
     expect(down.status).toBe(502);
     expect(await down.json()).toEqual({ failure: "unavailable" });
   });
+});
+
+describe("Sets erkennen (F1)", () => {
+  const RANCOR_PIT = ok({
+    items: [entry("75005-1", "Rancor Pit", 0.88), entry("75005", "Rancor Pit, ohne Variante", 0.2)],
+  });
+
+  it("F1 Set-Nummern bekommen ihre Variante, bester zuerst, mit Bild", () => {
+    expect(
+      parseSetSuggestions({
+        items: [entry("75005", "Rancor Pit", 0.2), entry("75372-1", "Battle Pack", 0.7)],
+      }),
+    ).toEqual([
+      {
+        number: "75372-1",
+        name: "Battle Pack",
+        score: 0.7,
+        imageUrl: "https://img.bricklink.com/ItemImage/MN/0/75372-1.png",
+      },
+      {
+        number: "75005-1",
+        name: "Rancor Pit",
+        score: 0.2,
+        imageUrl: "https://img.bricklink.com/ItemImage/MN/0/75005.png",
+      },
+    ]);
+  });
+
+  it("F1 Die Art legoSet fragt nur den Set-Endpunkt, mit dem Foto als query_image", async () => {
+    const log: string[] = [];
+    const response = await handleRecognize(
+      photo({ "Content-Type": "image/webp", [RECOGNIZE_KIND_HEADER]: "legoSet" }),
+      deps([[SETS_URL, RANCOR_PIT]], log),
+    );
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { suggestions: Suggestion[] };
+    // "75005" and "75005-1" are the same set: one suggestion, the sure one.
+    expect(body.suggestions).toMatchObject([
+      { number: "75005-1", name: "Rancor Pit", score: 0.88 },
+    ]);
+    expect(log).toContain(`POST ${BRICKOGNIZE_SETS_URL}`);
+    expect(log.some((line) => line.endsWith(BRICKOGNIZE_URL))).toBe(false);
+    expect(log.some((line) => line.endsWith(BRICKOGNIZE_ANY_URL))).toBe(false);
+  });
+
+  it("F1 Ohne Treffer: leere Liste; gestörter Dienst: 502", async () => {
+    const asSet = { "Content-Type": "image/webp", [RECOGNIZE_KIND_HEADER]: "legoSet" };
+    const none = await handleRecognize(photo(asSet), deps([[SETS_URL, ok({ items: [] })]]));
+    expect(await none.json()).toEqual({ suggestions: [] });
+    const broken = await handleRecognize(
+      photo(asSet),
+      deps([[SETS_URL, () => new Response("kaputt", { status: 500 })]]),
+    );
+    expect(broken.status).toBe(502);
+  });
+});
+
+describe("Big Figs und Teile erkennen (F1)", () => {
+  const RANCOR = typed("part", "11323pb01c01", "Large Figure, Rancor", 0.62);
+
+  it("F1 Aus der allgemeinen Antwort werden für eine Figur nur Teile und Figuren, Teile als PART", () => {
+    const found = parseAnySuggestions(
+      {
+        items: [
+          RANCOR,
+          typed("set", "75005-1", "Rancor Pit", 0.9),
+          typed("fig", "sw0434", "Luke Skywalker", 0.3),
+          entry("ohne-art", "weiß nicht, was es ist", 0.8),
+        ],
+      },
+      "minifig",
+    );
+    expect(found).toEqual([
+      {
+        number: "11323pb01c01",
+        name: "Large Figure, Rancor",
+        score: 0.62,
+        imageUrl: "https://img.bricklink.com/ItemImage/MN/0/11323pb01c01.png",
+        ref: "PART:11323pb01c01",
+        bricklinkType: "PART",
+      },
+      {
+        number: "sw0434",
+        name: "Luke Skywalker",
+        score: 0.3,
+        imageUrl: "https://img.bricklink.com/ItemImage/MN/0/sw0434.png",
+      },
+    ]);
+  });
+
+  it("F1 Ein guter Figurentreffer (ab 50 %) braucht keine zweite Frage", async () => {
+    const log: string[] = [];
+    const response = await handleRecognize(
+      photo(),
+      deps(
+        [
+          [FIGS_URL, ok({ items: [entry("sw0194", "Captain Rex", 0.5)] })],
+          [ANY_URL, ok({ items: [RANCOR] })],
+        ],
+        log,
+      ),
+    );
+    const body = (await response.json()) as { suggestions: Suggestion[] };
+    expect(body.suggestions.map((suggestion) => suggestion.number)).toEqual(["sw0194"]);
+    expect(log.filter((line) => line.startsWith("POST"))).toEqual([`POST ${BRICKOGNIZE_URL}`]);
+  });
+
+  it("F1 Ohne Figurentreffer wird die allgemeine Erkennung gefragt und die Big Fig als Figur vom Typ PART angeboten", async () => {
+    const log: string[] = [];
+    const response = await handleRecognize(
+      photo(),
+      deps(
+        [
+          [FIGS_URL, ok({ items: [] })],
+          [ANY_URL, ok({ items: [RANCOR] })],
+        ],
+        log,
+      ),
+    );
+    const body = (await response.json()) as { suggestions: Suggestion[] };
+    expect(body.suggestions).toHaveLength(1);
+    expect(body.suggestions[0]).toMatchObject({
+      number: "11323pb01c01",
+      ref: "PART:11323pb01c01",
+      bricklinkType: "PART",
+    });
+    expect(log.filter((line) => line.startsWith("POST"))).toEqual([
+      `POST ${BRICKOGNIZE_URL}`,
+      `POST ${BRICKOGNIZE_ANY_URL}`,
+    ]);
+  });
+
+  it("F1 Ein schwacher Figurentreffer (unter 50 %) und ein Teil kommen zusammen, nach Quote sortiert, ohne Doppelte", async () => {
+    const response = await handleRecognize(
+      photo(),
+      deps([
+        [FIGS_URL, ok({ items: [entry("sw0194", "Captain Rex", 0.3)] })],
+        [
+          ANY_URL,
+          ok({
+            items: [
+              RANCOR,
+              typed("fig", "sw0194", "Captain Rex", 0.3),
+              typed("fig", "sw9", "X", 0.1),
+            ],
+          }),
+        ],
+      ]),
+    );
+    const body = (await response.json()) as { suggestions: Suggestion[] };
+    expect(body.suggestions.map((suggestion) => suggestion.number)).toEqual([
+      "11323pb01c01",
+      "sw0194",
+      "sw9",
+    ]);
+  });
+
+  it("F1 Scheitert nur die zweite Frage, bleiben die Figurentreffer; ohne solche ist es ein Fehler", async () => {
+    const failing: Route = [ANY_URL, () => new Response("kaputt", { status: 500 })];
+    const weak = await handleRecognize(
+      photo(),
+      deps([[FIGS_URL, ok({ items: [entry("sw0194", "Captain Rex", 0.3)] })], failing]),
+    );
+    expect(weak.status).toBe(200);
+    expect(((await weak.json()) as { suggestions: Suggestion[] }).suggestions).toHaveLength(1);
+    const empty = await handleRecognize(photo(), deps([[FIGS_URL, ok({ items: [] })], failing]));
+    expect(empty.status).toBe(502);
+    const limited = await handleRecognize(
+      photo(),
+      deps([
+        [FIGS_URL, ok({ items: [] })],
+        [ANY_URL, () => new Response("", { status: 429 })],
+      ]),
+    );
+    expect(limited.status).toBe(429);
+  });
+});
+
+describe("Sonderteile erkennen (F1)", () => {
+  const AS_SPECIAL = { "Content-Type": "image/webp", [RECOGNIZE_KIND_HEADER]: "specialPart" };
+
+  it("F1 Sets, Gear und Bücher werden mit ihrem BrickLink-Typ geöffnet, Teile und Figuren nicht angeboten", () => {
+    const found = parseAnySuggestions(
+      {
+        items: [
+          typed("set", "5008889", "Promo-Set", 0.4),
+          typed("gear", "5010325", "Metal Card", 0.3),
+          typed("book", "5009999", "Buch", 0.2),
+          typed("part", "3001", "Brick 2 x 4", 0.9),
+          typed("fig", "sw0001", "Figur", 0.8),
+          entry("5007777", "ohne Art", 0.1),
+        ],
+      },
+      "specialPart",
+    );
+    expect(found.map((suggestion) => [suggestion.number, suggestion.ref])).toEqual([
+      ["5008889-1", "SET:5008889-1"],
+      ["5010325", "GEAR:5010325"],
+      ["5009999", "BOOK:5009999"],
+      ["5007777", undefined],
+    ]);
+  });
+
+  it("F1 Die Art specialPart fragt nur den allgemeinen Endpunkt", async () => {
+    const log: string[] = [];
+    const response = await handleRecognize(
+      photo(AS_SPECIAL),
+      deps([[ANY_URL, ok({ items: [typed("gear", "5010325", "Metal Card", 0.3)] })]], log),
+    );
+    const body = (await response.json()) as { suggestions: Suggestion[] };
+    expect(body.suggestions).toMatchObject([{ number: "5010325", ref: "GEAR:5010325" }]);
+    expect(log.filter((line) => line.startsWith("POST"))).toEqual([`POST ${BRICKOGNIZE_ANY_URL}`]);
+  });
+
+  it("F1 Ein Foto, das der Dienst nicht kennt (GWPs oft), ist eine leere Liste, kein Fehler", async () => {
+    const response = await handleRecognize(photo(AS_SPECIAL), deps([[ANY_URL, ok({ items: [] })]]));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ suggestions: [] });
+  });
+});
+
+describe("Art des Fotos im Aufruf", () => {
+  it("Eine unbekannte Art ist ein schlechter Aufruf (400), ohne Kopf gilt Figur", async () => {
+    const unknown = await handleRecognize(
+      photo({ "Content-Type": "image/webp", [RECOGNIZE_KIND_HEADER]: "diorama" }),
+      deps([[FIGS_URL, HUGO]]),
+    );
+    expect(unknown.status).toBe(400);
+    const log: string[] = [];
+    await handleRecognize(photo(), deps([[FIGS_URL, HUGO]], log));
+    expect(log).toContain(`POST ${BRICKOGNIZE_URL}`);
+  });
+
+  it("OPTIONS erlaubt den Kopf x-recognize-kind (Vorabfrage des Browsers)", async () => {
+    const options = await handleRecognize(
+      new Request("https://x.test/", { method: "OPTIONS" }),
+      deps([]),
+    );
+    expect(options.headers.get("Access-Control-Allow-Headers")).toContain(RECOGNIZE_KIND_HEADER);
+  });
+});
+
+/**
+ * Echte Antworten von Brickognize, aufgenommen mit `npm run try:recognition` (je ein Foto eines Sets
+ * und des Rancors). Fehlt die Datei, ist der Test übersprungen; die Form der Antworten prüfen die
+ * Tests oben.
+ */
+describe("Aufgezeichnete Antworten von Brickognize", () => {
+  const recorded = (name: string): Record<string, unknown> | undefined => {
+    const path = new URL(`./samples/${name}`, import.meta.url);
+    return existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : undefined;
+  };
+  const set = recorded("brickognize-set.json");
+  const rancor = recorded("brickognize-rancor.json");
+
+  it.skipIf(set === undefined)("F1 Das Set-Foto gibt Set-Nummern mit Variante", () => {
+    const found = parseSetSuggestions(set?.sets);
+    expect(found.length).toBeGreaterThan(0);
+    for (const suggestion of found) expect(suggestion.number).toMatch(/-\d+$/);
+  });
+
+  it.skipIf(rancor === undefined)(
+    "F1 Das Rancor-Foto ergibt Vorschläge nach dem Muster der Funktion",
+    () => {
+      const figures = parseSuggestions(rancor?.figs);
+      const parts = parseAnySuggestions(rancor?.any, "minifig");
+      for (const suggestion of parts) {
+        expect(suggestion.ref).toBe(`PART:${suggestion.number}`);
+        expect(suggestion.bricklinkType).toBe("PART");
+      }
+      expect(figures.length + parts.length).toBeGreaterThan(0);
+    },
+  );
 });

@@ -87,14 +87,14 @@ test.describe("Foto-Erkennung (S7a)", () => {
         .click();
       await expect(page).toHaveURL(/#\/erfassen\/foto$/);
       await expect(heading(page)).toHaveText(R.title);
-      await expect(page.getByText(R.empty)).toBeVisible();
+      await expect(page.getByText(R.empty.minifig)).toBeVisible();
       await expect(page.getByRole("button", { name: R.pick })).toBeVisible();
       await expect(fileInput(page)).toHaveAttribute("accept", "image/*");
       await expectNoAccessibilityViolations(page);
 
       await choosePhoto(page);
       await expect(page.getByRole("heading", { name: R.suggestions(3) })).toBeVisible();
-      await expect(page.getByAltText(R.photoAlt)).toBeVisible();
+      await expect(page.getByAltText(R.photoAlt.minifig)).toBeVisible();
       await expect(page.getByText(R.yourPhoto)).toBeVisible();
       await expect(page.getByText(R.scoreLabel)).toBeVisible();
       const links = suggestionLinks(page);
@@ -156,8 +156,8 @@ test.describe("Foto-Erkennung (S7a)", () => {
     await page.addInitScript((key) => localStorage.setItem(key, "none"), RECOGNITION_KEY);
     await page.goto("#/erfassen/foto");
     await choosePhoto(page);
-    await expect(page.getByText(R.none.title)).toBeVisible();
-    await expect(page.getByText(R.none.text)).toBeVisible();
+    await expect(page.getByText(R.none.minifig.title)).toBeVisible();
+    await expect(page.getByText(R.none.minifig.text)).toBeVisible();
     await expectNoAccessibilityViolations(page);
 
     await page.getByRole("link", { name: R.notFitting }).click();
@@ -248,14 +248,218 @@ test.describe("Foto-Erkennung (S7a)", () => {
     await expect(suggestionLinks(page)).toHaveCount(3);
   });
 
-  test("F1 Für Sets und Sonderteile gibt es keine Foto-Erkennung, das Blatt sagt es", async ({
+  test("F1 Das Erfassen-Blatt sagt je Art, was das Foto erkennt; für ein Diorama gibt es keins", async ({
     page,
   }) => {
     await page.goto("#/erfassen");
     const sheet = page.getByRole("dialog", { name: TEXTS.capture.title });
+    const photo = (role: "link" | "button") =>
+      sheet.getByRole(role, { name: new RegExp(TEXTS.capture.ways.photo.title) });
+    await expect(photo("link")).toContainText(TEXTS.capture.ways.photo.text);
+    await expect(photo("link")).toHaveAttribute("href", "#/erfassen/foto");
     await sheet.getByRole("button", { name: TEXTS.capture.what.legoSet }).click();
-    const photo = sheet.getByRole("button", { name: new RegExp(TEXTS.capture.ways.photo.title) });
-    await expect(photo).toBeDisabled();
-    await expect(photo).toContainText(TEXTS.capture.onlyFigures);
+    await expect(photo("link")).toContainText(TEXTS.capture.photoSet);
+    await expect(photo("link")).toHaveAttribute("href", "#/erfassen/foto/set");
+    await sheet.getByRole("button", { name: TEXTS.capture.what.specialPart }).click();
+    await expect(photo("link")).toContainText(TEXTS.capture.photoSpecialPart);
+    await expect(photo("link")).toHaveAttribute("href", "#/erfassen/foto/sonderteil");
+    await sheet.getByRole("button", { name: TEXTS.capture.what.diorama }).click();
+    await expect(photo("button")).toBeDisabled();
+    await expect(photo("button")).toContainText(TEXTS.capture.onlyManual);
+  });
+});
+
+test.describe("Foto-Erkennung für Sets (S7a)", () => {
+  for (const [size, viewport] of SIZES) {
+    test(`F1 ${size}: Erfassen → Set → Foto zeigt Set-Vorschläge, ein Tipp öffnet das grüne Katalogformular mit dem eigenen Foto, keine axe-Verstöße`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await page.goto("#/erfassen");
+      const sheet = page.getByRole("dialog", { name: TEXTS.capture.title });
+      await sheet.getByRole("button", { name: TEXTS.capture.what.legoSet }).click();
+      await sheet.getByRole("link", { name: new RegExp(TEXTS.capture.ways.photo.title) }).click();
+      await expect(page).toHaveURL(/#\/erfassen\/foto\/set$/);
+      await expect(heading(page)).toHaveText(R.title);
+      await expect(page.getByText(R.empty.legoSet)).toBeVisible();
+      await expect(page.getByText(R.attempt)).toHaveCount(0);
+      await expectNoAccessibilityViolations(page);
+
+      await choosePhoto(page);
+      await expect(page.getByRole("heading", { name: R.suggestions(2) })).toBeVisible();
+      await expect(page.getByAltText(R.photoAlt.legoSet)).toBeVisible();
+      const links = suggestionLinks(page);
+      await expect(links).toHaveCount(2);
+      await expect(links.nth(0)).toContainText("Rancor Pit");
+      await expect(links.nth(0)).toContainText("75005-1");
+      await expect(links.nth(0)).toContainText("88 %");
+      await expect(links.nth(0)).toHaveAttribute("href", "#/erfassen/set/katalog/75005-1");
+      expect(await style(links.nth(0), "background-color")).toBe(MINT);
+      await expectNoAccessibilityViolations(page);
+
+      await links.nth(0).click();
+      await expect(page).toHaveURL(/#\/erfassen\/set\/katalog\/75005-1$/);
+      await expect(heading(page)).toHaveText(F.titleCatalog.legoSet);
+      await expect(page.getByText(C.banner)).toBeVisible();
+      await expect(field(page, F.fields.name)).toHaveValue("Rancor Pit");
+      expect(await style(field(page, F.fields.name), "background-color")).toBe(MINT);
+      // The own photo is on the new set, made small and sent like any other.
+      await expect(page.locator(".photo-slot img")).toHaveCount(1);
+      await expectNoAccessibilityViolations(page);
+
+      // "Abbrechen" leads back to the suggestions of the photo.
+      await page.getByRole("link", { name: F.cancel }).click();
+      await expect(page).toHaveURL(/#\/erfassen\/foto\/set$/);
+      await expect(suggestionLinks(page)).toHaveCount(2);
+    });
+  }
+
+  test("F1 Ein erkanntes Set wird gespeichert; ohne Treffer führt „Keiner passt“ zur Set-Suche", async ({
+    page,
+  }) => {
+    await page.goto("#/erfassen/foto/set");
+    await choosePhoto(page);
+    await suggestionLinks(page).first().click();
+    await page.getByRole("button", { name: F.save }).click();
+    await expect(heading(page)).toHaveText("Rancor Pit");
+
+    // The page stays loaded, so the example recognition is told at its storage directly.
+    await page.evaluate((key) => localStorage.setItem(key, "none"), RECOGNITION_KEY);
+    await page.goto("#/erfassen/foto/set");
+    await choosePhoto(page);
+    await expect(page.getByText(R.none.legoSet.title)).toBeVisible();
+    await expect(page.getByText(R.none.legoSet.text)).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+    await page.getByRole("link", { name: R.notFitting }).click();
+    await expect(page).toHaveURL(/#\/erfassen\/suche\/set$/);
+  });
+});
+
+test.describe("Foto-Erkennung für Big Figs (S7a)", () => {
+  test("F1 Kennt der Dienst die Figur nur als Teil, wird die Big Fig als Figur vom Typ PART angeboten und öffnet das Katalogformular", async ({
+    page,
+  }) => {
+    await page.addInitScript((key) => localStorage.setItem(key, "bigFig"), RECOGNITION_KEY);
+    await page.goto("#/erfassen/foto");
+    await choosePhoto(page);
+    const links = suggestionLinks(page);
+    await expect(links).toHaveCount(1);
+    await expect(links.first()).toContainText("Large Figure, Rancor");
+    await expect(links.first()).toContainText("11323pb01c01");
+    await expect(links.first()).toContainText(R.bigFig);
+    await expect(links.first()).toHaveAttribute(
+      "href",
+      "#/erfassen/figur/katalog/PART%3A11323pb01c01",
+    );
+    await expectNoAccessibilityViolations(page);
+
+    await links.first().click();
+    await expect(heading(page)).toHaveText(F.titleCatalog.minifig);
+    await expect(field(page, F.fields.name)).toHaveValue("Large Figure, Rancor");
+    await expect(field(page, F.fields.number.minifig)).toHaveValue("11323pb01c01");
+    await expect(page.locator(".photo-slot img")).toHaveCount(1);
+    await page.getByRole("button", { name: F.save }).click();
+    await expect(heading(page)).toHaveText("Large Figure, Rancor");
+  });
+});
+
+test.describe("Foto-Erkennung für Sonderteile (S7a)", () => {
+  for (const [size, viewport] of SIZES) {
+    test(`F1 ${size}: Der Versuch für ein Sonderteil sagt, dass GWPs oft nicht erkannt werden, und löst Treffer über den Katalogweg der Sonderteile auf, keine axe-Verstöße`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await page.goto("#/erfassen");
+      const sheet = page.getByRole("dialog", { name: TEXTS.capture.title });
+      await sheet.getByRole("button", { name: TEXTS.capture.what.specialPart }).click();
+      await sheet.getByRole("link", { name: new RegExp(TEXTS.capture.ways.photo.title) }).click();
+      await expect(page).toHaveURL(/#\/erfassen\/foto\/sonderteil$/);
+      await expect(page.getByText(R.attempt)).toBeVisible();
+      await expect(page.getByText(R.empty.specialPart)).toBeVisible();
+      await expectNoAccessibilityViolations(page);
+
+      await choosePhoto(page);
+      const links = suggestionLinks(page);
+      await expect(links).toHaveCount(1);
+      await expect(links.first()).toContainText("The Mandalorian and Grogu Metal Card");
+      await expect(links.first()).toHaveAttribute(
+        "href",
+        "#/erfassen/sonderteil/katalog/GEAR%3A5010325",
+      );
+      await expect(page.getByText(R.attempt)).toBeVisible();
+      await expectNoAccessibilityViolations(page);
+
+      await links.first().click();
+      await expect(heading(page)).toHaveText(F.titleCatalog.specialPart);
+      await expect(field(page, F.fields.name)).toHaveValue("The Mandalorian and Grogu Metal Card");
+      await expect(page.locator(".photo-slot img")).toHaveCount(1);
+    });
+  }
+
+  test("F1 Erkennt der Dienst das Sonderteil nicht, steht dort der Hinweis auf die Nummer, und „Keiner passt“ führt zur Suche", async ({
+    page,
+  }) => {
+    await page.addInitScript((key) => localStorage.setItem(key, "none"), RECOGNITION_KEY);
+    await page.goto("#/erfassen/foto/sonderteil");
+    await choosePhoto(page);
+    await expect(page.getByText(R.none.specialPart.title)).toBeVisible();
+    await expect(page.getByText(R.none.specialPart.text)).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+    await page.getByRole("link", { name: R.notFitting }).click();
+    await expect(page).toHaveURL(/#\/erfassen\/suche\/sonderteil$/);
+  });
+});
+
+test.describe("Foto-Erkennung für Wünsche (S7a)", () => {
+  for (const [size, viewport] of SIZES) {
+    test(`F1 ${size}: Wunsch → Foto erkennt ein Set, ein Tipp öffnet das Wunschblatt, der Wunsch landet auf der Liste, keine axe-Verstöße`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await page.goto("#/erfassen");
+      const sheet = page.getByRole("dialog", { name: TEXTS.capture.title });
+      await sheet.getByRole("button", { name: TEXTS.capture.what.wish }).click();
+      await sheet.getByRole("link", { name: new RegExp(TEXTS.capture.ways.photo.title) }).click();
+      await expect(page).toHaveURL(/#\/erfassen\/foto\/set\/wunsch$/);
+      await expect(heading(page)).toHaveText(R.titleWish);
+      await expect(
+        page.getByRole("button", { name: R.kinds.legoSet, exact: true }),
+      ).toHaveAttribute("aria-pressed", "true");
+      await expectNoAccessibilityViolations(page);
+
+      await choosePhoto(page);
+      await expect(page.getByRole("heading", { name: R.suggestions(2) })).toBeVisible();
+      await expectNoAccessibilityViolations(page);
+      await page.getByRole("button", { name: TEXTS.wishCapture.pick("Rancor Pit") }).click();
+      await page
+        .getByRole("dialog", { name: TEXTS.wishCapture.setFigures.title })
+        .getByRole("button", { name: TEXTS.wishCapture.setFigures.wholeSet })
+        .click();
+      const wish = page.getByRole("dialog", {
+        name: new RegExp(`${TEXTS.wishSheet.titleNew}|${TEXTS.wishSheet.titleEdit}`),
+      });
+      await expect(wish.getByText("Rancor Pit")).toBeVisible();
+      await expectNoAccessibilityViolations(page);
+      await wish.getByRole("button", { name: TEXTS.wishSheet.add }).click();
+
+      await expect(page).toHaveURL(/#\/wunschliste$/);
+      await expect(page.locator(".wish-row__name", { hasText: "Rancor Pit" })).toBeVisible();
+    });
+  }
+
+  test("F1 Im Wunsch lässt sich auf Figur umstellen: dasselbe Foto wird neu erkannt", async ({
+    page,
+  }) => {
+    await page.goto("#/erfassen/foto/set/wunsch");
+    await choosePhoto(page);
+    await expect(suggestionLinks(page)).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: R.suggestions(2) })).toBeVisible();
+
+    await page.getByRole("button", { name: R.kinds.minifig, exact: true }).click();
+    await expect(page).toHaveURL(/#\/erfassen\/foto\/figur\/wunsch$/);
+    await expect(page.getByRole("heading", { name: R.suggestions(3) })).toBeVisible();
+    await expect(page.getByAltText(R.photoAlt.minifig)).toBeVisible();
+    await page.getByRole("link", { name: R.notFitting }).click();
+    await expect(page).toHaveURL(/#\/erfassen\/suche\/figur\/wunsch$/);
   });
 });

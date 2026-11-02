@@ -20,7 +20,13 @@ import {
   workOnPriceRuns,
 } from "./priceRunService.ts";
 import type { PriceRunAnswer } from "./priceRunTypes.ts";
-import { MAX_PHOTO_BYTES, type RecognizeAnswer } from "./recognizeTypes.ts";
+import {
+  MAX_PHOTO_BYTES,
+  RECOGNIZE_KIND_HEADER,
+  RECOGNIZE_KINDS,
+  type RecognizeAnswer,
+  type RecognizeKind,
+} from "./recognizeTypes.ts";
 import {
   planSeries,
   type SeriesDeps,
@@ -33,7 +39,8 @@ import { checkSources, type SourceProbes } from "./sourcesService.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-recognize-kind",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -166,25 +173,33 @@ const PHOTO_TYPES = ["image/webp", "image/jpeg", "image/png"];
 interface PhotoBody {
   readonly bytes: Uint8Array<ArrayBuffer>;
   readonly contentType: string;
+  readonly kind: RecognizeKind;
 }
 
-/** The photo of the request, or nothing if the body is empty, too big or not a picture type. */
+/**
+ * The photo of the request and what it shows (header `x-recognize-kind`, a figure without it), or
+ * nothing if the body is empty, too big or not a picture type, or the kind is unknown.
+ */
 async function readPhoto(request: Request): Promise<PhotoBody | undefined> {
   const contentType = (request.headers.get("Content-Type") ?? "").split(";")[0]?.trim() ?? "";
   if (!PHOTO_TYPES.includes(contentType)) return undefined;
+  const asked = request.headers.get(RECOGNIZE_KIND_HEADER) ?? "minifig";
+  const kind = RECOGNIZE_KINDS.find((candidate) => candidate === asked);
+  if (kind === undefined) return undefined;
   try {
     const bytes = new Uint8Array(await request.arrayBuffer());
     return bytes.length === 0 || bytes.length > MAX_PHOTO_BYTES
       ? undefined
-      : { bytes, contentType };
+      : { bytes, contentType, kind };
   } catch {
     return undefined;
   }
 }
 
 /**
- * The function `recognize` (P8): the body is the photo itself (`Content-Type: image/webp` …); the
- * answer is `{suggestions}` with up to five figures, best first.
+ * The function `recognize` (P8): the body is the photo itself (`Content-Type: image/webp` …), the
+ * header `x-recognize-kind` says whether it shows a figure, a set or a special part; the answer is
+ * `{suggestions}` with up to five, best first.
  */
 export function handleRecognize(request: Request, deps: RecognizeHandlerDeps): Promise<Response> {
   return serve(
@@ -192,8 +207,8 @@ export function handleRecognize(request: Request, deps: RecognizeHandlerDeps): P
     deps,
     async (photo) => {
       if (!photo) return failure("bad_request");
-      const { bytes, contentType } = photo as PhotoBody;
-      const suggestions = await deps.service.recognize(bytes, contentType);
+      const { bytes, contentType, kind } = photo as PhotoBody;
+      const suggestions = await deps.service.recognize(bytes, contentType, kind);
       const result: RecognizeAnswer = { suggestions };
       return answer(200, result);
     },

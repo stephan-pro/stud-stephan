@@ -29,6 +29,7 @@ Browser-Zugriff (CORS): erlaubt bei Rebrickable und Brickognize, **nicht** erlau
 - Lauf mit einem Foto von 2,2 MB: **ein** Vorschlag mit 78 %, nicht drei. P8 darf also nicht von drei Vorschlägen ausgehen und muss mit weniger umgehen. Der PO hat bestätigt: Der Treffer war richtig (Hugo Strange, Sammelserie „The LEGO Batman Movie“). Mehrere Fotos wurden nicht getestet.
 - Das Foto wurde unverkleinert angenommen. P8 verkleinert es trotzdem vor dem Hochladen (Datenmenge, Speicher).
 - CORS: erlaubt (`*`).
+- Weitere Endpunkte, ab 02.11.2026 genutzt (gleiche Form, gleiches Formularfeld): `/predict/sets/` (Sets, Schachtel, Modell, Anleitung) und `/predict/` (alles; die Einträge sagen in `type`, was sie sind, z. B. Teil, Figur, Set; das Feld ist angenommen). `npm run try:recognition` nimmt je eine echte Antwort für ein Set-Foto und ein Rancor-Foto auf (`supabase/functions/_shared/samples/brickognize-*.json`).
 
 ## BrickLink
 
