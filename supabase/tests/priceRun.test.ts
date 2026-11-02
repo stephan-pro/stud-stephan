@@ -208,6 +208,48 @@ describe("P11 Warteschlange des Preisabrufs", () => {
   });
 });
 
+describe("Sonderteile im Preisabruf", () => {
+  it("Ein offizielles Sonderteil mit BrickLink-Typ kommt als „TYP:Nummer“ in die Warteschlange, eines ohne Typ nicht", async () => {
+    const person = await signedIn();
+    await save(
+      person,
+      "specialPart",
+      aSpecialPart({ id: "card", number: "5010325", bricklinkType: "GEAR" }),
+    );
+    await save(person, "specialPart", aSpecialPart({ id: "ohne-typ", number: "5008889" }));
+    await save(
+      person,
+      "specialPart",
+      aSpecialPart({
+        id: "custom",
+        number: "77",
+        bricklinkType: "BOOK",
+        manufacturer: { kind: "custom", name: "Shop" },
+      }),
+    );
+    await call("price_run_begin", { p_owner: person.id, p_trigger: "manual" });
+    const { data } = await admin
+      .from("price_run_items")
+      .select("item_type, bricklink_id")
+      .eq("owner", person.id);
+    expect(data).toEqual([{ item_type: "specialPart", bricklink_id: "GEAR:5010325" }]);
+    const status = await new SupabasePriceRunner(person.client).status();
+    expect(status).toMatchObject({ total: 1, open: 1, skipped: 0 });
+    const taken = await finishAll(person, { used: 900, new: 1500 });
+    expect(taken).toHaveLength(1);
+    expect(await prices(person)).toEqual([
+      {
+        itemType: "specialPart",
+        bricklinkId: "GEAR:5010325",
+        date: status?.day,
+        source: "bricklink",
+        cents: { used: 900, new: 1500 },
+        soldCount: { used: 5 },
+      },
+    ]);
+  });
+});
+
 describe("P11 Rechte", () => {
   it("Die App liest nur ihren eigenen Stand und kann die Warteschlange nicht ändern", async () => {
     expect(await new SupabasePriceRunner(stranger.client).status()).toBeNull();

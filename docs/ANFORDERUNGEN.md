@@ -106,7 +106,8 @@ Akzeptanzkriterien:
 - Hochgeladene Studio-Datei herunterladen → die Datei ist byte-gleich mit dem Original.
 
 ### F9 Sonderteile
-- Felder: Art (GWP, Sammelmünze, Sonstiges), Name, Nummer (optional), Hersteller, Zustand, Quelle, Kaufpreis, Wert, Fotos, Notiz.
+- Felder: Art (GWP, Sammelmünze, Sonstiges), Name, Nummer (optional), Jahr (optional), Hersteller, Zustand, Quelle, Kaufpreis, Wert, Fotos, Notiz.
+- **Aus dem Katalog:** Offizielle GWPs und Insiders-Prämien (z. B. 5010325) werden wie Figuren und Sets über „Nummer oder Suche“ oder per Link (BrickLink, LEGO.com) aus dem BrickLink-Katalog übernommen: Name, Bild, Jahr, Kategorie. Gespeichert werden die Nummer und der BrickLink-Typ (Gear, Set, Buch). Nur mit Typ bekommt ein Sonderteil von LEGO den Marktwert (F10); sonst gilt der eigene Wert.
 
 ### F10 Wert und Wertentwicklung
 - **Offizielle LEGO-Figuren, -Sets und -Sonderteile:** Marktwert aus dem BrickLink-Preisguide (Ø Verkaufspreis der letzten 6 Monate) passend zum Zustand (neu oder gebraucht), in Euro.

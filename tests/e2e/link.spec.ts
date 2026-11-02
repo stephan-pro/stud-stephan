@@ -276,6 +276,88 @@ test.describe("Link einfügen (S7c)", () => {
     await expect(field(page, F.fields.number.minifig)).toHaveValue("sw0194");
   });
 
+  for (const [size, viewport] of SIZES) {
+    test(`F3 ${size}: Ein BrickLink-Link zu Gear (?G=) führt über den Katalog in das grüne Formular eines Sonderteils, keine axe-Verstöße`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      const address = "https://www.bricklink.com/v2/catalog/catalogitem.page?G=5010325#T=C";
+      await page.goto("#/erfassen/link/sonderteil");
+      await paste(page, address);
+      await expect(page.getByText(L.sources.bricklink, { exact: true })).toBeVisible();
+      await expect(page.getByText(L.kinds.specialPart, { exact: true })).toBeVisible();
+      await expect(page.getByText("5010325", { exact: true })).toBeVisible();
+      await expect(page.getByText(L.catalogNote)).toBeVisible();
+      await expectNoAccessibilityViolations(page);
+
+      await page.getByRole("link", { name: L.next }).click();
+      await expect(page).toHaveURL(/#\/erfassen\/sonderteil\/katalog\/GEAR%3A5010325\/link\//);
+      await expect(heading(page)).toHaveText(F.titleCatalog.specialPart);
+      await expect(field(page, F.fields.name)).toHaveValue("The Mandalorian and Grogu Metal Card");
+      expect(await style(field(page, F.fields.name), "background-color")).toBe(MINT);
+      await expect(field(page, F.fields.year)).toHaveValue("2026");
+      await expect(field(page, F.fields.links)).toHaveValue(address);
+      await expectNoAccessibilityViolations(page);
+      await page.getByRole("button", { name: F.save }).click();
+      await expect(heading(page)).toHaveText("The Mandalorian and Grogu Metal Card");
+    });
+  }
+
+  test("F3 Eine LEGO.com-Produktseite wird über die Nummer am Ende zum Sonderteil aus dem Katalog", async ({
+    page,
+  }) => {
+    await page.goto("#/erfassen/link/sonderteil");
+    await paste(
+      page,
+      "https://www.lego.com/de-de/product/the-mandalorian-and-grogu-metal-card-5010325",
+    );
+    await expect(page.getByText(L.sources.lego, { exact: true })).toBeVisible();
+    await expect(page.getByText(L.kinds.specialPart, { exact: true })).toBeVisible();
+    await expect(page.getByText("5010325", { exact: true })).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+    await page.getByRole("link", { name: L.next }).click();
+    await expect(heading(page)).toHaveText(F.titleCatalog.specialPart);
+    await expect(field(page, F.fields.name)).toHaveValue("The Mandalorian and Grogu Metal Card");
+    await expect(field(page, F.fields.number.specialPart)).toHaveValue("5010325");
+  });
+
+  test("F3 Dieselbe LEGO.com-Produktseite ist bei „Set“ ein Set aus dem Katalog", async ({
+    page,
+  }) => {
+    await page.goto("#/erfassen/link/set");
+    await paste(
+      page,
+      "https://www.lego.com/de-de/product/clone-trooper-and-battle-droid-battle-pack-75372",
+    );
+    await expect(page.getByText(L.sources.lego, { exact: true })).toBeVisible();
+    await expect(page.getByText(L.kinds.legoSet, { exact: true })).toBeVisible();
+    await page.getByRole("link", { name: L.next }).click();
+    await expect(heading(page)).toHaveText(F.titleCatalog.legoSet);
+    await expect(field(page, F.fields.number.legoSet)).toHaveValue("75372-1");
+  });
+
+  test("F3 Eine BrickLink-Setadresse (?S=) ist beim Erfassen eines Sonderteils ein Sonderteil vom Typ Set", async ({
+    page,
+  }) => {
+    await page.goto("#/erfassen/link/sonderteil");
+    await paste(page, "https://www.bricklink.com/v2/catalog/catalogitem.page?S=5008889-1");
+    await expect(page.getByText(L.kinds.specialPart, { exact: true })).toBeVisible();
+    await page.getByRole("link", { name: L.next }).click();
+    await expect(page).toHaveURL(/#\/erfassen\/sonderteil\/katalog\/SET%3A5008889-1\/link\//);
+    await expect(field(page, F.fields.name)).toHaveValue("Promo-Set (Beispiel)");
+  });
+
+  test("F3 Für einen Wunsch ist ein Sonderteil-Link keine Wahl: Hinweis, kein „Weiter“", async ({
+    page,
+  }) => {
+    await page.goto("#/erfassen/link/figur/wunsch");
+    await paste(page, "https://www.bricklink.com/v2/catalog/catalogitem.page?G=5010325");
+    await expect(page.getByText(L.noWishForParts)).toBeVisible();
+    await expect(page.getByRole("link", { name: TEXTS.wishCapture.next })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: TEXTS.wishCapture.next })).toHaveCount(0);
+    await expectNoAccessibilityViolations(page);
+  });
+
   test("F3 Eine Seite ohne erkennbare Angaben: Hinweis, das Formular öffnet sich trotzdem mit dem Link", async ({
     page,
   }) => {

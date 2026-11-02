@@ -20,7 +20,8 @@ const BASE = "https://api.bricklink.com/api/store/v1";
 /** How long one BrickLink call may take. */
 const CALL_TIMEOUT_MS = 20_000;
 
-export type ItemType = "MINIFIG" | "SET";
+/** Minifigs and sets, and gear and books for special parts (GWP, Insiders rewards). */
+export type ItemType = "MINIFIG" | "SET" | "GEAR" | "BOOK";
 
 export interface BricklinkItem {
   number: string;

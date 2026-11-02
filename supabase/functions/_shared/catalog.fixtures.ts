@@ -125,9 +125,40 @@ export const BL_SUPERSETS = [
   },
 ];
 
+// Special parts at BrickLink: gear, a (promotional) set or a book. Shaped like the documented item
+// answers; the numbers and names of the set and the book are made up.
+export const BL_GEAR = {
+  no: "5010325",
+  name: "The Mandalorian and Grogu Metal Card",
+  type: "GEAR",
+  category_id: 250,
+  image_url: "//img.bricklink.com/ItemImage/GN/0/5010325.png",
+  year_released: 2026,
+};
+
+export const BL_PROMO_SET = {
+  no: "5008889-1",
+  name: "Promo Polybag",
+  type: "SET",
+  category_id: 65,
+  image_url: "//img.bricklink.com/ItemImage/SN/0/5008889-1.png",
+  year_released: 2023,
+};
+
+export const BL_BOOK = {
+  no: "5000001",
+  name: "Sample Book",
+  type: "BOOK",
+  category_id: 251,
+  year_released: 2019,
+};
+
 export const BL_CATEGORIES: Record<number, unknown> = {
   65: { category_id: 65, category_name: "The Clone Wars", parent_id: 7 },
   7: { category_id: 7, category_name: "Star Wars", parent_id: 0 },
+  250: { category_id: 250, category_name: "Miscellaneous", parent_id: 249 },
+  249: { category_id: 249, category_name: "Gear", parent_id: 0 },
+  251: { category_id: 251, category_name: "Books", parent_id: 0 },
 };
 
 /** The routes of a working BrickLink with the data above. */
@@ -142,10 +173,18 @@ export function brickLinkRoutes(): Route[] {
       "/items/MINIFIG/sw1306",
       brickLink({ ...BL_REX, no: "sw1306", name: "Clone Trooper, 332nd Company" }),
     ],
+    ["/items/GEAR/5010325", brickLink(BL_GEAR)],
+    ["/items/SET/5008889-1", brickLink(BL_PROMO_SET)],
+    ["/items/BOOK/5000001", brickLink(BL_BOOK)],
     ["/categories/65", brickLink(BL_CATEGORIES[65])],
     ["/categories/7", brickLink(BL_CATEGORIES[7])],
+    ["/categories/250", brickLink(BL_CATEGORIES[250])],
+    ["/categories/249", brickLink(BL_CATEGORIES[249])],
+    ["/categories/251", brickLink(BL_CATEGORIES[251])],
     ["/items/MINIFIG/", brickLinkFailure(404, "RESOURCE_NOT_FOUND")],
     ["/items/SET/", brickLinkFailure(404, "RESOURCE_NOT_FOUND")],
+    ["/items/GEAR/", brickLinkFailure(404, "RESOURCE_NOT_FOUND")],
+    ["/items/BOOK/", brickLinkFailure(404, "RESOURCE_NOT_FOUND")],
   ];
 }
 

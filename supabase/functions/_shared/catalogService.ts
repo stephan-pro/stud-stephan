@@ -6,14 +6,18 @@
 // ("fig-014663"); it is turned into a BrickLink number through the subsets of one of its sets, by
 // name. If that fails the entry has no number and the person types it in the form.
 
-import type { BricklinkClient } from "./bricklinkClient.ts";
+import type { BricklinkClient, BricklinkItem } from "./bricklinkClient.ts";
 import type { CatalogStore } from "./catalogStore.ts";
-import type {
-  CatalogFigureInfo,
-  CatalogHit,
-  CatalogItem,
-  CatalogKind,
-  CatalogSetInfo,
+import {
+  type CatalogFigureInfo,
+  type CatalogHit,
+  type CatalogItem,
+  type CatalogKind,
+  type CatalogSetInfo,
+  parseSpecialPartRef,
+  SPECIAL_PART_TYPES,
+  type SpecialPartType,
+  specialPartRef,
 } from "./catalogTypes.ts";
 import { CatalogError, decodeNames, joinTheme } from "./json.ts";
 import type { RebrickableClient } from "./rebrickableClient.ts";
@@ -33,12 +37,19 @@ const MAX_SETS_TRIED = 2;
 const MINIFIG_NUMBER = /^[a-z]{2,8}\d{1,6}[a-z]{0,2}$/i;
 const REBRICKABLE_FIG = /^fig-\d+$/i;
 const SET_NUMBER = /^\d{3,7}(-\d{1,2})?$/;
+/** A special part's number: one token with at least one digit ("5010325", "5010325-1", "gear012"). */
+const SPECIAL_NUMBER = /^(?=.*\d)[A-Za-z0-9][A-Za-z0-9._-]{0,49}$/;
 
 export type Query = { by: "number"; ref: string } | { by: "name"; text: string };
 
 /** Whether the text is a number of the kind or a name to search for. */
 export function classifyQuery(kind: CatalogKind, text: string): Query {
   const query = text.trim();
+  if (kind === "specialPart") {
+    const typed = parseSpecialPartRef(query);
+    if (typed) return { by: "number", ref: specialPartRef(typed.type, typed.number) };
+    return SPECIAL_NUMBER.test(query) ? { by: "number", ref: query } : { by: "name", text: query };
+  }
   if (kind === "legoSet") {
     return SET_NUMBER.test(query)
       ? { by: "number", ref: normalizeSetNumber(query) }
@@ -120,12 +131,59 @@ async function themeChain(
   return joinTheme(root, sub);
 }
 
+/**
+ * A special part by number: BrickLink has no list of GWPs, Insiders rewards and the like, they are
+ * gear, sets or books, and a number does not say which. The types are asked one after the other
+ * (gear first: that is where most promotional items are); "not found" goes on to the next, any
+ * other failure ends the search. A reference with a type ("GEAR:5010325") asks that type only.
+ * A set number without its variant gets "-1" like everywhere.
+ */
+async function findSpecialPart(
+  deps: CatalogDeps,
+  ref: string,
+): Promise<{ type: SpecialPartType; item: BricklinkItem } | undefined> {
+  const typed = parseSpecialPartRef(ref);
+  const types = typed ? [typed.type] : SPECIAL_PART_TYPES;
+  const number = typed?.number ?? ref;
+  for (const type of types) {
+    try {
+      const item = await deps.bricklink.item(
+        type,
+        type === "SET" ? normalizeSetNumber(number) : number,
+      );
+      return { type, item };
+    } catch (error) {
+      if (error instanceof CatalogError && error.failure === "not_found") continue;
+      throw error;
+    }
+  }
+  return undefined;
+}
+
 export async function searchCatalog(
   deps: CatalogDeps,
   kind: CatalogKind,
   text: string,
 ): Promise<CatalogHit[]> {
   const query = classifyQuery(kind, text);
+  if (kind === "specialPart") {
+    // BrickLink cannot search by name, and no other source lists these items: numbers only.
+    if (query.by !== "number") return [];
+    const found = await findSpecialPart(deps, query.ref);
+    if (!found) return [];
+    const { type, item } = found;
+    return [
+      {
+        kind,
+        ref: specialPartRef(type, item.number),
+        number: item.number,
+        bricklinkType: type,
+        name: item.name,
+        ...(item.year === undefined ? {} : { year: item.year }),
+        ...(item.imageUrl === undefined ? {} : { imageUrl: item.imageUrl }),
+      },
+    ];
+  }
   if (query.by === "number") {
     try {
       const item = await deps.bricklink.item(kind === "legoSet" ? "SET" : "MINIFIG", query.ref);
@@ -164,9 +222,37 @@ export async function loadItem(
   const query = classifyQuery(kind, ref);
   if (query.by !== "number") throw new CatalogError("not_found", "Keine Nummer");
   const key = `item:${kind}:${query.ref}`;
-  return cached(deps, key, () =>
-    kind === "legoSet" ? setItem(deps, query.ref) : minifigItem(deps, query.ref),
-  );
+  return cached(deps, key, () => {
+    if (kind === "specialPart") return specialPartItem(deps, query.ref);
+    return kind === "legoSet" ? setItem(deps, query.ref) : minifigItem(deps, query.ref);
+  });
+}
+
+/** A GWP, Insiders reward or the like: name, year, picture and category from BrickLink. */
+async function specialPartItem(
+  deps: CatalogDeps,
+  ref: string,
+): Promise<{ value: CatalogItem; complete: boolean }> {
+  const found = await findSpecialPart(deps, ref);
+  if (!found) {
+    throw new CatalogError(
+      "not_found",
+      "BrickLink: weder Gear noch Set noch Buch mit dieser Nummer",
+    );
+  }
+  const { type, item: base } = found;
+  const incomplete = { value: false };
+  const theme = await optional(() => bricklinkTheme(deps, base.categoryId), incomplete);
+  const item: CatalogItem = {
+    kind: "specialPart",
+    number: base.number,
+    bricklinkType: type,
+    name: base.name,
+  };
+  if (base.year !== undefined) item.year = base.year;
+  if (theme !== undefined) item.theme = theme;
+  if (base.imageUrl !== undefined) item.imageUrl = base.imageUrl;
+  return { value: item, complete: !incomplete.value };
 }
 
 async function setItem(

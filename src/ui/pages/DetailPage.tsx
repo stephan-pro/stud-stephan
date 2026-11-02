@@ -405,6 +405,11 @@ function SpecialPartDetail({
   const rows = originRows([
     { label: T.origin.kind, value: kind.long },
     { label: T.origin.number, value: part.number },
+    {
+      label: T.origin.bricklinkType,
+      value: part.bricklinkType ? TEXTS.search.bricklinkTypes[part.bricklinkType] : undefined,
+    },
+    { label: T.origin.year, value: part.year === undefined ? undefined : String(part.year) },
     { label: T.origin.source, value: part.source },
     {
       label: T.origin.acquired,

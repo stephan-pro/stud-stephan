@@ -9,7 +9,7 @@ import {
 } from "../../backend/linkPreview";
 import type { Remote } from "../../backend/remote";
 import { webAddress } from "../../domain/forms";
-import { hasFields, linkRows } from "../../domain/linkForm";
+import { catalogTarget, hasFields, linkRows, numberOfRef } from "../../domain/linkForm";
 import { CaptureLink } from "../captureLink";
 import { Cover } from "../components/Cover";
 import { fieldId } from "../components/Fields";
@@ -248,43 +248,13 @@ export function LinkPage({
       )}
 
       {state.status === "done" && state.answer.kind === "catalog" && (
-        <>
-          <section class="card" aria-labelledby="link-recognized">
-            <div class="card__head">
-              <h2 class="card__title" id="link-recognized">
-                {T.recognized}
-              </h2>
-              <Source label={T.sources[state.answer.source]} />
-            </div>
-            <dl class="rows">
-              <div class="rows__row">
-                <dt class="rows__label">{T.rows.kind}</dt>
-                <dd class="rows__value">{T.kinds[state.answer.catalogKind]}</dd>
-              </div>
-              <div class="rows__row">
-                <dt class="rows__label">{T.rows.catalogNumber}</dt>
-                <dd class="rows__value">{state.answer.ref}</dd>
-              </div>
-            </dl>
-            <p class="card__text">{T.catalogNote}</p>
-          </section>
-          {lead(
-            formHash({
-              type: state.answer.catalogKind,
-              mode: "catalog",
-              ref: state.answer.ref,
-              link: state.address,
-            }),
-            {
-              kind: "catalog",
-              catalogKind: state.answer.catalogKind,
-              ref: state.answer.ref,
-              link: state.address,
-            },
-            forWish ? TEXTS.wishCapture.next : T.next,
-            true,
-          )}
-        </>
+        <CatalogResult
+          answer={state.answer}
+          address={state.address}
+          type={type}
+          forWish={forWish}
+          lead={lead}
+        />
       )}
 
       {state.status === "done" && state.answer.kind === "page" && (
@@ -317,6 +287,67 @@ export function LinkPage({
           onClose={() => setPick(undefined)}
         />
       )}
+    </>
+  );
+}
+
+/**
+ * The card "Erkannt" of a Rebrickable, BrickLink or LEGO.com address: what kind of entry it is and
+ * its number; the catalog fills the rest in the form. A special part cannot become a wish.
+ */
+function CatalogResult({
+  answer,
+  address,
+  type,
+  forWish,
+  lead,
+}: {
+  readonly answer: Extract<LinkAnswer, { kind: "catalog" }>;
+  readonly address: string;
+  readonly type: DetailType;
+  readonly forWish: boolean;
+  readonly lead: (
+    href: string,
+    wish: WishPick,
+    label: string,
+    primary: boolean,
+  ) => ComponentChildren;
+}) {
+  const target = catalogTarget(answer, type, forWish);
+  const { catalogKind, ref } = target;
+  return (
+    <>
+      <section class="card" aria-labelledby="link-recognized">
+        <div class="card__head">
+          <h2 class="card__title" id="link-recognized">
+            {T.recognized}
+          </h2>
+          <Source label={T.sources[answer.source]} />
+        </div>
+        <dl class="rows">
+          <div class="rows__row">
+            <dt class="rows__label">{T.rows.kind}</dt>
+            <dd class="rows__value">{T.kinds[catalogKind]}</dd>
+          </div>
+          <div class="rows__row">
+            <dt class="rows__label">{T.rows.catalogNumber}</dt>
+            <dd class="rows__value">{numberOfRef(ref)}</dd>
+          </div>
+        </dl>
+        <p class="card__text">
+          {forWish && catalogKind === "specialPart" ? T.noWishForParts : T.catalogNote}
+        </p>
+      </section>
+      {catalogKind === "specialPart" && forWish
+        ? null
+        : lead(
+            formHash({ type: catalogKind, mode: "catalog", ref, link: address }),
+            catalogKind === "specialPart"
+              ? { kind: "page", type: "legoSet", fields: {}, link: address }
+              : { kind: "catalog", catalogKind, ref, link: address },
+            forWish ? TEXTS.wishCapture.next : T.next,
+            true,
+          )}
     </>
   );
 }

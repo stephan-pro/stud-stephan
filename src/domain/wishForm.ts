@@ -109,7 +109,8 @@ export interface WishSource {
 /** A catalog entry (number or search, F2) as a wish; `link` when it was reached by a pasted link. */
 export function wishSourceOfItem(item: CatalogItem, link?: string): WishSource {
   return {
-    type: item.kind,
+    // A special part is never wished (the picker never asks for one); it would count as a figure.
+    type: item.kind === "legoSet" ? "legoSet" : "minifig",
     name: item.name,
     number: item.number === "" ? undefined : item.number,
     theme: item.theme,

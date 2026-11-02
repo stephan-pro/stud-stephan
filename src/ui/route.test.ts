@@ -160,8 +160,15 @@ describe("P7 Adressen der Katalogsuche und des Formulars aus dem Katalog", () =>
     expect(parseLocation("#/erfassen/suche/set/")).toEqual({ route: "capture", search: "legoSet" });
   });
 
-  it("P7 Für Sonderteile und unbekannte Arten gibt es keine Suche", () => {
-    expect(parseLocation("#/erfassen/suche/sonderteil")).toEqual({ route: "showcase" });
+  it("Sonderteile werden über die Nummer gesucht: #/erfassen/suche/sonderteil; unbekannte Arten haben keine Suche", () => {
+    expect(searchHash("specialPart")).toBe("#/erfassen/suche/sonderteil");
+    expect(parseLocation("#/erfassen/suche/sonderteil")).toEqual({
+      route: "capture",
+      search: "specialPart",
+    });
+    expect(locationHash({ route: "capture", search: "specialPart" })).toBe(
+      "#/erfassen/suche/sonderteil",
+    );
     expect(parseLocation("#/erfassen/suche/xyz")).toEqual({ route: "showcase" });
   });
 
@@ -175,8 +182,24 @@ describe("P7 Adressen der Katalogsuche und des Formulars aus dem Katalog", () =>
     expect(parseLocation(formHash(odd))).toEqual({ route: "capture", form: odd });
   });
 
-  it("P7 Ohne Nummer oder für Sonderteile öffnet sich die Vitrine", () => {
-    expect(parseLocation("#/erfassen/sonderteil/katalog/x")).toEqual({ route: "showcase" });
+  it("Das Formular eines Sonderteils aus dem Katalog trägt Typ und Nummer: #/erfassen/sonderteil/katalog/GEAR%3A5010325", () => {
+    const form = { type: "specialPart", mode: "catalog", ref: "GEAR:5010325" } as const;
+    expect(formHash(form)).toBe("#/erfassen/sonderteil/katalog/GEAR%3A5010325");
+    expect(parseLocation("#/erfassen/sonderteil/katalog/GEAR%3A5010325")).toEqual({
+      route: "capture",
+      form,
+    });
+    const plain = {
+      type: "specialPart",
+      mode: "catalog",
+      ref: "5010325",
+      link: "https://a.de/x",
+    } as const;
+    expect(parseLocation(formHash(plain))).toEqual({ route: "capture", form: plain });
+  });
+
+  it("P7 Ohne Nummer öffnet sich die Vitrine", () => {
+    expect(parseLocation("#/erfassen/sonderteil/katalog/")).toEqual({ route: "showcase" });
     expect(parseLocation("#/erfassen/figur/katalog/%E0%A4%A")).toEqual({ route: "showcase" });
   });
 
@@ -241,7 +264,7 @@ describe("P9 Adressen des Erfassens per Link", () => {
     expect(parseLocation("#/erfassen/set/link/%E0%A4%A")).toEqual({ route: "showcase" });
     expect(parseLocation("#/erfassen/set/katalog/75372-1/link/")).toEqual({ route: "showcase" });
     expect(parseLocation("#/erfassen/set/katalog/75372-1/x/y")).toEqual({ route: "showcase" });
-    expect(parseLocation("#/erfassen/sonderteil/katalog/x/link/y")).toEqual({ route: "showcase" });
+    expect(parseLocation("#/erfassen/sonderteil/katalog/x/link/")).toEqual({ route: "showcase" });
     expect(parseLocation("#/vitrine/link/set")).toEqual({ route: "showcase" });
   });
 });

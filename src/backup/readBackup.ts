@@ -68,6 +68,7 @@ const CONDITIONS = ["new", "used"];
 const POSITIONS = ["head", "torso", "arms", "hands", "legs", "headgear", "accessory", "other"];
 const SET_STATUS = ["complete", "figuresRemoved", "disassembled"];
 const SPECIAL_KINDS = ["gwp", "coin", "other"];
+const BRICKLINK_TYPES = ["GEAR", "SET", "BOOK"];
 const PRIORITIES = ["high", "medium", "low"];
 
 function isManufacturer(value: unknown): boolean {
@@ -145,7 +146,12 @@ function wrongField(kind: ObjectKind, object: Json): string | undefined {
       );
     }
     if (kind === "specialPart") {
-      checks.push(typeOf("kind", (v) => SPECIAL_KINDS.includes(v as string)));
+      checks.push(
+        typeOf("kind", (v) => SPECIAL_KINDS.includes(v as string)),
+        missing("bricklinkType", (v) => BRICKLINK_TYPES.includes(v as string)),
+        missing("number", (v) => typeof v === "string"),
+        missing("year", isWhole),
+      );
     }
   }
   return checks.find((field) => field !== undefined);

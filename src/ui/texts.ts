@@ -344,6 +344,8 @@ export const TEXTS = {
       title: "Herkunft",
       kind: "Art",
       number: "Nummer",
+      bricklinkType: "BrickLink-Katalog",
+      year: "Jahr",
       source: "Quelle",
       acquired: "Erworben",
       purchasePrice: "Kaufpreis",
@@ -433,7 +435,8 @@ export const TEXTS = {
       manual: { title: "Manuell", text: "Für Customs und alles ohne Katalog" },
     },
     onlyFigures: "Erkannt werden nur Figuren",
-    noCatalogForParts: "Für Sonderteile gibt es keinen Katalog",
+    /** The way "Nummer oder Suche" for a special part: BrickLink finds them by number only. */
+    partsSearch: "z. B. 5010325, GWP und Insiders-Prämien",
     wishHint:
       "Einen Wunsch findest du per Nummer, Suche oder Link. Auch in einer Reihe und bei einer fehlenden Figur eines Sets kannst du Wünsche anlegen.",
     wishWays: "Wünsche per Nummer, Suche oder Link",
@@ -594,10 +597,17 @@ export const TEXTS = {
     placeholder: {
       minifig: "z. B. sw0194 oder Captain Rex",
       legoSet: "z. B. 75372 oder Battle Pack",
+      specialPart: "Nummer, z. B. 5010325",
     },
-    kinds: { minifig: "Figuren", legoSet: "Sets" },
+    kinds: { minifig: "Figuren", legoSet: "Sets", specialPart: "Sonderteile" },
     kindsLabel: "Was suchen?",
     idle: "Gib eine Nummer oder einen Namen ein. Die Nummer einer Figur ist die BrickLink-Nummer, z. B. sw0194.",
+    idleParts:
+      "Gib die Nummer des Sonderteils ein, z. B. 5010325. Die App schlägt sie bei BrickLink als Gear, Set und Buch nach.",
+    noneParts:
+      "Sonderteile finden sich nur über die Nummer, nicht über den Namen. Prüf die Nummer (bei LEGO steht sie auf der Verpackung und auf der Produktseite) oder leg das Sonderteil von Hand an.",
+    /** What BrickLink calls the item: the type the number was found under. */
+    bricklinkTypes: { GEAR: "Gear", SET: "Set", BOOK: "Buch" },
     searching: "Suche läuft …",
     results: (count: number) =>
       count === 1 ? "1 Treffer im Katalog" : `${count} Treffer im Katalog`,
@@ -658,13 +668,14 @@ export const TEXTS = {
     placeholder: "Rebrickable, Merlins Steine oder Hersteller-Seite",
     paste: "Aus Zwischenablage einfügen",
     pasteFailed: "Die Zwischenablage ließ sich nicht lesen. Füg den Link von Hand ein.",
-    idle: "Füg einen Link ein: ein Set von Rebrickable oder BrickLink, eine Seite der Merlins Steine SetDB oder die Seite eines Herstellers. Gelesen wird nur diese eine Seite.",
+    idle: "Füg einen Link ein: ein Set von Rebrickable oder BrickLink, ein Sonderteil von BrickLink oder LEGO.com, eine Seite der Merlins Steine SetDB oder die Seite eines Herstellers. Gelesen wird nur diese eine Seite.",
     reading: "Link wird gelesen …",
     notAnAddress: "Das ist keine Web-Adresse. Sie beginnt mit https://.",
     recognized: "Erkannt",
     sources: {
       rebrickable: "Rebrickable",
       bricklink: "BrickLink",
+      lego: "LEGO.com",
       merlin: "Merlins Steine SetDB",
       page: "Webseite",
     },
@@ -677,7 +688,10 @@ export const TEXTS = {
       kind: "Art",
       catalogNumber: "Nummer",
     },
-    kinds: { minifig: "Figur", legoSet: "Set" },
+    kinds: { minifig: "Figur", legoSet: "Set", specialPart: "Sonderteil" },
+    /** A BrickLink or LEGO.com address of a special part cannot become a wish (only figures and sets). */
+    noWishForParts:
+      "Das ist ein Sonderteil. Auf die Wunschliste kommen nur Figuren und Sets; ein Sonderteil legst du über „Erfassen“ an.",
     imageTaken: "übernommen",
     imageLoading: "wird geholt …",
     imageBlocked: "gesperrt – nimm ein eigenes Foto",
@@ -889,6 +903,9 @@ export const TEXTS = {
     numberMissing:
       "Die BrickLink-Nummer wurde im Katalog nicht gefunden. Trag sie ein, wenn du sie kennst; sie ist für den Marktpreis nötig.",
     fromSetHint: (numbers: readonly string[]) => `Kommt vor in: ${numbers.join(", ")}`,
+    /** Under the number of a special part: the BrickLink type it was found under, which gives its price. */
+    bricklinkTypeHint: (type: string) =>
+      `Bei BrickLink als ${type} gelistet. Dafür holt die App den Marktpreis, solange die Nummer so bleibt.`,
     prefilledNote: "Aus dem Katalog übernommen",
   },
   /** S8 form (P6): entering and editing by hand. */
@@ -905,6 +922,7 @@ export const TEXTS = {
     titleCatalog: {
       minifig: "Neue Figur",
       legoSet: "Neues Set",
+      specialPart: "Neues Sonderteil",
     },
     titleEdit: (name: string) => `${name} bearbeiten`,
     titleWish: { minifig: "Figur erhalten", legoSet: "Set erhalten" },

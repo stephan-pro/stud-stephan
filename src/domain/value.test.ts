@@ -57,10 +57,15 @@ describe("F10 Wert offizieller Objekte", () => {
   it("F10 Sets und Sonderteile von LEGO bekommen ebenfalls den Marktwert in ihrem Zustand", () => {
     const prices = [
       aPrice("75372-1", "2026-10-26", { used: 2100, new: 2750 }, "legoSet"),
-      aPrice("5008889", "2026-10-26", { new: 990 }, "specialPart"),
+      aPrice("GEAR:5008889", "2026-10-26", { new: 990 }, "specialPart"),
     ];
     expect(valueOfItem(aSet({ condition: "used" }), prices).cents).toBe(2100);
-    expect(valueOfItem(aSpecialPart({ number: "5008889" }), prices).cents).toBe(990);
+    // A special part's price is kept under its BrickLink type and number.
+    expect(
+      valueOfItem(aSpecialPart({ number: "5008889", bricklinkType: "GEAR" }), prices).cents,
+    ).toBe(990);
+    // The number alone says nothing about the type: it keeps its own value (none here).
+    expect(valueOfItem(aSpecialPart({ number: "5008889" }), prices).kind).toBe("none");
   });
 
   it("F10 Gleiche Nummer bei anderer Objektart zählt nicht als Preis", () => {

@@ -50,21 +50,20 @@ function wayHref(way: keyof typeof T.ways, what: What): string | undefined {
   if (type === undefined) return undefined;
   if (way === "manual") return formHash({ type, mode: "new" });
   if (way === "link") return linkHash(type);
-  if (way === "search" && type !== "specialPart") return searchHash(type);
+  if (way === "search") return searchHash(type);
   // Brickognize recognizes figures only.
   if (way === "photo" && type === "minifig") return photoHash();
   return undefined;
 }
 
 /**
- * S7: first what is captured, then how. "Manuell" (P6), "Nummer oder Suche" (P7, figures and sets)
- * "Foto" (P8, figures) and "Link einfügen" (P9, all kinds) work; a wish by number, search or link
- * (P15). Without a connection every way is switched off with a hint (P15).
+ * S7: first what is captured, then how. "Manuell" (P6), "Nummer oder Suche" (P7, figures and sets;
+ * special parts by number), "Foto" (P8, figures) and "Link einfügen" (P9, all kinds) work; a wish by
+ * number, search or link (P15). Without a connection every way is switched off with a hint (P15).
  */
 export function CaptureSheet({ onClose }: { readonly onClose: () => void }) {
   const [what, setWhat] = useState<What>("minifig");
   const writable = useWritable();
-  const type = formType(what);
   return (
     <Sheet id="capture" title={T.title} closeLabel={T.close} onClose={onClose}>
       <fieldset class="choice">
@@ -94,14 +93,14 @@ export function CaptureSheet({ onClose }: { readonly onClose: () => void }) {
           const hint = !writable
             ? TEXTS.readOnlyShort
             : href
-              ? text.text
+              ? way.value === "search" && what === "specialPart"
+                ? T.partsSearch
+                : text.text
               : what === "diorama"
                 ? T.onlyManual
                 : what === "wish"
                   ? T.wishWays
-                  : way.value === "search" && type
-                    ? T.noCatalogForParts
-                    : T.onlyFigures;
+                  : T.onlyFigures;
           const body = (
             <>
               <span class={`way__icon way__icon--${way.tint}`}>

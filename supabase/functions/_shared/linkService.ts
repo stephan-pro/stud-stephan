@@ -1,8 +1,10 @@
-// `link-preview` (P9, F3): what a pasted address gives. Rebrickable and BrickLink addresses are not
-// fetched at all: the number in the address goes to the catalog (P7), which fills the form. The
+// `link-preview` (P9, F3): what a pasted address gives. Rebrickable, BrickLink and LEGO.com product
+// addresses are not fetched at all: the number in the address goes to the catalog (P7), which fills
+// the form (BrickLink gear and books and LEGO.com products are special parts or sets). The
 // Merlins Steine page is read once; any other page gives its title and picture (Open Graph).
 // Nothing of a page is passed on except the few fields below; the page itself is never returned.
 
+import { specialPartRef } from "./catalogTypes.ts";
 import type { LinkAnswer, PageFields } from "./linkTypes.ts";
 import { extractPreview, extractSetPage } from "./pageParser.ts";
 import {
@@ -43,6 +45,8 @@ export function catalogLink(url: URL): Extract<LinkAnswer, { kind: "catalog" }> 
   if (hostIs(url, "bricklink.com") && /catalogitem\.(page|asp)$/i.test(url.pathname)) {
     const set = url.searchParams.get("S");
     const figure = url.searchParams.get("M");
+    const gear = url.searchParams.get("G");
+    const book = url.searchParams.get("B");
     if (set && BRICKLINK_NUMBER.test(set)) {
       // BrickLink writes "75372-1"; a number without the part after the dash means the first.
       const ref = set.includes("-") ? set : `${set}-1`;
@@ -50,6 +54,35 @@ export function catalogLink(url: URL): Extract<LinkAnswer, { kind: "catalog" }> 
     }
     if (figure && BRICKLINK_NUMBER.test(figure)) {
       return { kind: "catalog", source: "bricklink", catalogKind: "minifig", ref: figure };
+    }
+    // Gear and books are special parts; the address says the type, so the catalog asks that one.
+    if (gear && BRICKLINK_NUMBER.test(gear)) {
+      return {
+        kind: "catalog",
+        source: "bricklink",
+        catalogKind: "specialPart",
+        ref: specialPartRef("GEAR", gear),
+      };
+    }
+    if (book && BRICKLINK_NUMBER.test(book)) {
+      return {
+        kind: "catalog",
+        source: "bricklink",
+        catalogKind: "specialPart",
+        ref: specialPartRef("BOOK", book),
+      };
+    }
+  }
+  if (hostIs(url, "lego.com")) {
+    // A product page ends in the product number: ".../product/the-mandalorian-and-grogu-metal-card-5010325".
+    // It does not say whether it is gear, a set or a book: the plain number goes to the catalog,
+    // which tries the BrickLink types (the app turns it into a set number for a set).
+    const parts = url.pathname.split("/").filter(Boolean);
+    const slug = parts[parts.indexOf("product") + 1];
+    const number =
+      parts.includes("product") && slug ? /(?:^|-)(\d{4,7})$/.exec(slug)?.[1] : undefined;
+    if (number) {
+      return { kind: "catalog", source: "lego", catalogKind: "specialPart", ref: number };
     }
   }
   return undefined;

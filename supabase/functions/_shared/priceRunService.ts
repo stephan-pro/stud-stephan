@@ -9,7 +9,8 @@
 // - BrickLink's day used up (shared limit with the catalog): what was taken goes back, and the
 //   run waits until the next day (UTC, like the count).
 
-import type { BricklinkClient, BricklinkPrice } from "./bricklinkClient.ts";
+import type { BricklinkClient, BricklinkPrice, ItemType } from "./bricklinkClient.ts";
+import { parseSpecialPartRef } from "./catalogTypes.ts";
 import { CatalogError } from "./json.ts";
 import type { ClaimedItem, ItemOutcome, PriceRunStore } from "./priceRunStore.ts";
 
@@ -42,6 +43,25 @@ export function bricklinkNumber(item: Pick<ClaimedItem, "itemType" | "bricklinkI
   return item.itemType === "legoSet" && !number.includes("-") ? `${number}-1` : number;
 }
 
+/**
+ * What to ask BrickLink for: the type and the number. A special part carries its BrickLink type in
+ * the key ("GEAR:5010325"); a key without a valid type cannot be asked for and counts as unknown.
+ */
+export function bricklinkTarget(item: Pick<ClaimedItem, "itemType" | "bricklinkId">): {
+  readonly type: ItemType;
+  readonly number: string;
+} {
+  if (item.itemType === "minifig") return { type: "MINIFIG", number: bricklinkNumber(item) };
+  if (item.itemType === "legoSet") return { type: "SET", number: bricklinkNumber(item) };
+  const typed = parseSpecialPartRef(item.bricklinkId.trim());
+  if (!typed) throw new CatalogError("not_found", "Sonderteil ohne BrickLink-Typ");
+  return {
+    type: typed.type,
+    number:
+      typed.type === "SET" && !typed.number.includes("-") ? `${typed.number}-1` : typed.number,
+  };
+}
+
 /** The next day at 00:05 UTC: when BrickLink's count starts again. */
 export function nextCountDay(now: Date): string {
   return new Date(
@@ -54,8 +74,7 @@ export async function priceOf(
   bricklink: Pick<BricklinkClient, "price">,
   item: ClaimedItem,
 ): Promise<ItemOutcome> {
-  const type = item.itemType === "minifig" ? "MINIFIG" : "SET";
-  const number = bricklinkNumber(item);
+  const { type, number } = bricklinkTarget(item);
   const answers: Record<"new" | "used", BricklinkPrice> = {
     new: await bricklink.price(type, number, "new"),
     used: await bricklink.price(type, number, "used"),

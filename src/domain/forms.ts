@@ -146,6 +146,7 @@ const ORDER: Readonly<Record<FormType, readonly FieldKey[]>> = {
     "number",
     "manufacturerName",
     "theme",
+    "year",
     "source",
     "acquired",
     "purchasePrice",
@@ -278,7 +279,12 @@ export function formFromItem(item: ShowcaseItem, sets: readonly LegoSet[] = []):
       minifigCount: item.minifigCount === undefined ? "" : String(item.minifigCount),
     };
   }
-  return { ...form, number: item.number ?? "", kind: item.kind };
+  return {
+    ...form,
+    number: item.number ?? "",
+    kind: item.kind,
+    year: item.year === undefined ? "" : String(item.year),
+  };
 }
 
 /**
@@ -483,7 +489,28 @@ export function buildItem(type: FormType, values: FormValues, context: BuildCont
       ...(minifigCount ? { minifigCount: Number(minifigCount) } : {}),
     };
   }
-  return { ...base, type: "specialPart", kind: values.kind, ...(number ? { number } : {}) };
+  const previous = existing?.type === "specialPart" ? existing : undefined;
+  const year = trimmed(values.year);
+  // The BrickLink type belongs to the number it was found under: another number drops it.
+  const fromCatalog = context.catalog?.bricklink;
+  const bricklinkType = sameNumber(fromCatalog?.number, number)
+    ? fromCatalog?.type
+    : sameNumber(previous?.number, number)
+      ? previous?.bricklinkType
+      : undefined;
+  return {
+    ...base,
+    type: "specialPart",
+    kind: values.kind,
+    ...(number ? { number } : {}),
+    ...(bricklinkType ? { bricklinkType } : {}),
+    ...(year ? { year: Number(year) } : {}),
+  };
+}
+
+/** Whether two numbers are the same one, without case and surrounding spaces; empty never is. */
+function sameNumber(a: string | undefined, b: string | undefined): boolean {
+  return !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
 }
 
 /** What a part of the mod sheet (S8a) holds while typing. */

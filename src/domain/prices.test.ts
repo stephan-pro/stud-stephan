@@ -31,7 +31,7 @@ describe("F10 Preisabruf", () => {
     ]);
   });
 
-  it("F10 Auch Wünsche von LEGO bekommen einen Marktpreis; Sonderteile fragt der Abruf nicht ab (P11)", () => {
+  it("F10 Auch Wünsche von LEGO bekommen einen Marktpreis; Sonderteile ohne BrickLink-Typ fragt der Abruf nicht ab (P11)", () => {
     const withWish = aCollection({
       wishlist: [
         aWish({ bricklinkId: "sw0196" }),
@@ -44,6 +44,59 @@ describe("F10 Preisabruf", () => {
       { itemType: "minifig", bricklinkId: "sw0196" },
       { itemType: "legoSet", bricklinkId: "75372-1" },
     ]);
+  });
+
+  it("Der Preisabruf fragt Sonderteile mit gespeichertem BrickLink-Typ ab, unter „TYP:Nummer“, jedes nur einmal", () => {
+    const card = aSpecialPart({ number: "5010325", bricklinkType: "GEAR" });
+    const withParts = aCollection({
+      specialParts: [
+        card,
+        aSpecialPart({ number: " 5010325 ", bricklinkType: "GEAR", condition: "used" }),
+        aSpecialPart({ number: "5008889-1", bricklinkType: "SET" }),
+        aSpecialPart({ number: "77", bricklinkType: "BOOK", manufacturer: { kind: "bluebrixx" } }),
+        aSpecialPart({ number: "5008818" }),
+        aSpecialPart({ bricklinkType: "GEAR" }),
+      ],
+    });
+    expect(itemsToPrice(withParts)).toEqual([
+      { itemType: "specialPart", bricklinkId: "GEAR:5010325" },
+      { itemType: "specialPart", bricklinkId: "SET:5008889-1" },
+    ]);
+    // A part without a type is not "skipped": it simply keeps its own value.
+    expect(itemsWithoutNumber(withParts)).toBe(0);
+    expect(hasMarketPrice(card)).toBe(true);
+    expect(hasMarketPrice(aSpecialPart({ number: "5010325" }))).toBe(false);
+  });
+
+  it("Die Wert-Karte eines Sonderteils zeigt den Marktpreis in seinem Zustand und vergleicht mit dem anderen", () => {
+    const card = aSpecialPart({ number: "5010325", bricklinkType: "GEAR", condition: "new" });
+    const prices = [
+      aPrice("GEAR:5010325", LAST_WEEK, { new: 1400, used: 900 }, "specialPart"),
+      aPrice("GEAR:5010325", TODAY, { new: 1500 }, "specialPart"),
+      // The same number as a set is another item.
+      aPrice("5010325", TODAY, { new: 99999 }, "legoSet"),
+    ];
+    expect(marketPrice(card, "new", prices)).toEqual({ cents: 1500, date: TODAY });
+    expect(valueOfItem(card, prices)).toMatchObject({
+      kind: "market",
+      cents: 1500,
+      asOf: TODAY,
+      otherCondition: { condition: "used", cents: 900, date: LAST_WEEK },
+    });
+    expect(priceHistory(card, "new", prices)).toEqual([
+      { date: LAST_WEEK, cents: 1400 },
+      { date: TODAY, cents: 1500 },
+    ]);
+  });
+
+  it("Ein Sonderteil ohne BrickLink-Typ bleibt beim eigenen Wert, auch wenn eine Nummer da ist", () => {
+    const own = aSpecialPart({
+      number: "5010325",
+      manualValue: { cents: 700, enteredOn: LAST_WEEK },
+    });
+    const prices = [aPrice("5010325", TODAY, { new: 1500 }, "specialPart")];
+    expect(marketPrice(own, "new", prices)).toBeUndefined();
+    expect(valueOfItem(own, prices)).toMatchObject({ kind: "manual", cents: 700 });
   });
 
   it("P11 Objekte ohne BrickLink-Nummer werden übersprungen und gezählt", () => {

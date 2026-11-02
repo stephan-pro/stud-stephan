@@ -17,6 +17,7 @@ import { guide, MemoryPriceRunStore, priceRoutes } from "./priceRun.fixtures.ts"
 import {
   BATCH_SIZE,
   bricklinkNumber,
+  bricklinkTarget,
   MAX_ATTEMPTS,
   nextCountDay,
   type PriceRunDeps,
@@ -114,6 +115,74 @@ describe("BrickLink-Preisguide", () => {
       soldCount: { used: 3 },
     });
     expect(await priceOf(client, { ...item, bricklinkId: "sw0001" })).toEqual({ kind: "empty" });
+  });
+});
+
+describe("Preisabruf für Sonderteile", () => {
+  const part = (bricklinkId: string, attempts = 1) =>
+    ({ runId: 1, itemType: "specialPart" as const, bricklinkId, attempts }) as const;
+
+  it("der Schlüssel „TYP:Nummer“ sagt, was BrickLink gefragt wird; ein Set bekommt bei Bedarf „-1“", () => {
+    expect(bricklinkTarget(part("GEAR:5010325"))).toEqual({ type: "GEAR", number: "5010325" });
+    expect(bricklinkTarget(part(" BOOK:5000001 "))).toEqual({ type: "BOOK", number: "5000001" });
+    expect(bricklinkTarget(part("SET:5008889"))).toEqual({ type: "SET", number: "5008889-1" });
+    expect(bricklinkTarget(part("SET:5008889-2"))).toEqual({ type: "SET", number: "5008889-2" });
+    expect(bricklinkTarget({ itemType: "minifig", bricklinkId: "sw0194" })).toEqual({
+      type: "MINIFIG",
+      number: "sw0194",
+    });
+    expect(bricklinkTarget({ itemType: "legoSet", bricklinkId: "75372" })).toEqual({
+      type: "SET",
+      number: "75372-1",
+    });
+    // Without a valid type there is nothing to ask for.
+    expect(() => bricklinkTarget(part("5010325"))).toThrowError(CatalogError);
+    expect(() => bricklinkTarget(part("PART:3001"))).toThrowError(CatalogError);
+  });
+
+  it("fragt BrickLink nach dem Typ des Sonderteils und verbindet neu und gebraucht", async () => {
+    const log: string[] = [];
+    const client = createBricklink({
+      fetch: fakeFetch(priceRoutes(), log),
+      credentials: CREDENTIALS,
+    });
+    expect(await priceOf(client, part("GEAR:5010325"))).toEqual({
+      kind: "priced",
+      cents: { new: 1550, used: 900 },
+      soldCount: { new: 8, used: 3 },
+    });
+    expect(await priceOf(client, part("SET:5008889"))).toEqual({
+      kind: "priced",
+      cents: { used: 400 },
+      soldCount: { used: 2 },
+    });
+    expect(await priceOf(client, part("BOOK:5000001"))).toEqual({ kind: "empty" });
+    expect(log.map((line) => /items\/(\w+\/[^/]+)\/price/.exec(line)?.[1])).toEqual([
+      "GEAR/5010325",
+      "GEAR/5010325",
+      "SET/5008889-1",
+      "SET/5008889-1",
+      "BOOK/5000001",
+      "BOOK/5000001",
+    ]);
+  });
+
+  it("ein Lauf mit Figur, Set und Sonderteilen schreibt für jedes einen Stand; ein Sonderteil ohne Typ scheitert", async () => {
+    const store = new MemoryPriceRunStore();
+    store.add("stephan", [
+      ["minifig", "sw0194"],
+      ["specialPart", "GEAR:5010325"],
+      ["specialPart", "SET:5008889"],
+      ["specialPart", "5010325"],
+    ]);
+    const result = await workOnPriceRuns(runDeps(store), { budgetMs: 50_000 });
+    expect(result).toEqual({ processed: 4, paused: false });
+    expect(priced(store)).toEqual([
+      "minifig:sw0194",
+      "specialPart:GEAR:5010325",
+      "specialPart:SET:5008889",
+    ]);
+    expect(store.state("specialPart:5010325")).toBe("failed");
   });
 });
 

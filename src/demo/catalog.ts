@@ -71,4 +71,22 @@ export const DEMO_CATALOG: readonly CatalogItem[] = [
     pieceCount: 119,
     figures: [{ number: "sw1195", name: "Clone Trooper, 501st Legion", quantity: 4 }],
   },
+  // Special parts: BrickLink knows them as gear, set or book, and the catalog finds them by number.
+  {
+    kind: "specialPart",
+    number: "5010325",
+    bricklinkType: "GEAR",
+    name: "The Mandalorian and Grogu Metal Card",
+    year: 2026,
+    theme: "Gear – Miscellaneous",
+    imageUrl: "https://img.bricklink.com/ItemImage/GN/0/5010325.png",
+  },
+  {
+    kind: "specialPart",
+    number: "5008889-1",
+    bricklinkType: "SET",
+    name: "Promo-Set (Beispiel)",
+    year: 2023,
+    theme: "Star Wars",
+  },
 ];

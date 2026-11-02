@@ -2,7 +2,8 @@
 // shown highlighted, and what the page does not give ("bitte ergänzen"). No DOM and no texts of
 // the interface.
 
-import type { PageFields } from "../backend/linkPreview";
+import type { CatalogKind } from "../backend/catalog";
+import type { LinkAnswer, PageFields } from "../backend/linkPreview";
 import type { CatalogForm } from "./catalog";
 import { emptyForm, type FieldKey, type FormType, type FormValues, fieldsOf } from "./forms";
 import type { Manufacturer } from "./types";
@@ -14,6 +15,47 @@ export interface LinkRow {
   readonly key: LinkRowKey;
   /** What was read, as text; nothing if the page did not give it ("bitte ergänzen"). */
   readonly value: string | undefined;
+}
+
+/** The catalog entry a recognised address leads to. */
+export interface CatalogTarget {
+  readonly catalogKind: CatalogKind;
+  /** What the function `catalog` takes as `ref`. */
+  readonly ref: string;
+}
+
+/** "75372" → "75372-1": both catalogs number the first edition of a set with "-1". */
+function setRef(number: string): string {
+  return number.includes("-") ? number : `${number}-1`;
+}
+
+/**
+ * Where a recognised Rebrickable, BrickLink or LEGO.com address leads, given what is being captured
+ * (`type`) and whether it is for a wish. The address alone does not always say: a LEGO.com product
+ * page is a set where a set is captured (or wished) and a special part otherwise; a BrickLink set
+ * address (`?S=`) is a special part where one is captured, because GWPs and promotional polybags
+ * are sets at BrickLink.
+ */
+export function catalogTarget(
+  answer: Extract<LinkAnswer, { kind: "catalog" }>,
+  type: FormType,
+  forWish = false,
+): CatalogTarget {
+  if (answer.source === "lego") {
+    return forWish || type === "legoSet"
+      ? { catalogKind: "legoSet", ref: setRef(answer.ref) }
+      : { catalogKind: "specialPart", ref: answer.ref };
+  }
+  if (answer.source === "bricklink" && answer.catalogKind === "legoSet" && type === "specialPart") {
+    return { catalogKind: "specialPart", ref: `SET:${answer.ref}` };
+  }
+  return { catalogKind: answer.catalogKind, ref: answer.ref };
+}
+
+/** The number of a reference without its BrickLink type: "GEAR:5010325" → "5010325". */
+export function numberOfRef(ref: string): string {
+  const colon = ref.indexOf(":");
+  return colon < 0 ? ref : ref.slice(colon + 1);
 }
 
 /** The rows for `type`: only what the form of that kind has a field for. */

@@ -7,7 +7,8 @@ import type { StoreSettings } from "./catalogStore.ts";
 import { CatalogError, type Fetch, isRecord, num, str } from "./json.ts";
 import type { PriceRunStatus } from "./priceRunTypes.ts";
 
-export type PricedKind = "minifig" | "legoSet";
+/** A special part's `bricklinkId` is "GEAR:5010325": its BrickLink type and number. */
+export type PricedKind = "minifig" | "legoSet" | "specialPart";
 
 /** One catalog item taken from the queue. */
 export interface ClaimedItem {
@@ -47,7 +48,7 @@ export const BRICKLINK_TOTAL_CAP = 4950;
 export const PRICE_RUN_DAILY_CAP = 2500;
 
 function isKind(value: unknown): value is PricedKind {
-  return value === "minifig" || value === "legoSet";
+  return value === "minifig" || value === "legoSet" || value === "specialPart";
 }
 
 /** The items of `price_run_claim`, read defensively. */

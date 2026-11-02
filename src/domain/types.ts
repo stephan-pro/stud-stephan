@@ -2,6 +2,8 @@
 // the rules live in the other files of `src/domain/`.
 // Money is always whole cents (1250 = 12,50 €), days are "YYYY-MM-DD", points in time ISO 8601.
 
+import type { SpecialPartType } from "../../supabase/functions/_shared/catalogTypes";
+
 /** Version of this data shape; goes into every export (F15) and is checked on import. */
 export const SCHEMA_VERSION = 1;
 
@@ -127,11 +129,24 @@ export interface LegoSet extends ItemBase {
 
 export type SpecialPartKind = "gwp" | "coin" | "other";
 
+/**
+ * What BrickLink calls a special part: gear, a set (polybag, promo set) or a book. Found in the
+ * catalog by number (`SpecialPartType` of the function `catalog`).
+ */
+export type BricklinkType = SpecialPartType;
+
 export interface SpecialPart extends ItemBase {
   type: "specialPart";
   kind: SpecialPartKind;
-  /** Optional; for LEGO the BrickLink number, which then gives the market value. */
+  /** Optional; for LEGO the BrickLink number ("5010325", a set "5008889-1"). */
   number?: string;
+  /**
+   * The BrickLink type `number` was found under in the catalog. Together with the number it gives
+   * the market value of an official LEGO special part; without it the part keeps its own value.
+   * It belongs to the number: another number leaves it out.
+   */
+  bricklinkType?: BricklinkType;
+  year?: number;
 }
 
 /** A Studio file (`.io`) stored at a diorama. */

@@ -1,12 +1,12 @@
 // `PriceRunner` over the collection of a `Remote`: the demo and the end-to-end tests (the real run
 // lives in the Edge Function `bricklink`). Like the real one it asks for the official figures, sets
-// and wishes with a number, a few per call, and writes one price point per item with the run's day
-// through `Remote.savePrice`. The "market" moves the latest known price up by 2 %; an item without
-// any known price has no sale. The state is kept in the device's storage, if given, so it survives
-// a reload like the real one.
+// and wishes with a number and the special parts with a BrickLink type, a few per call, and writes
+// one price point per item with the run's day through `Remote.savePrice`. The "market" moves the
+// latest known price up by 2 %; an item without any known price has no sale. The state is kept in
+// the device's storage, if given, so it survives a reload like the real one.
 
-import { type CatalogItem, itemsToPrice, itemsWithoutNumber, marketPrice } from "../domain/prices";
-import type { Condition, PricePoint, WishItem } from "../domain/types";
+import { type CatalogItem, catalogKey, itemsToPrice, itemsWithoutNumber } from "../domain/prices";
+import type { Condition, PricePoint } from "../domain/types";
 import { CatalogCallError } from "./catalog";
 import type { PriceRunner, PriceRunStatus } from "./priceRun";
 import type { Remote } from "./remote";
@@ -123,24 +123,19 @@ export class FakePriceRunner implements PriceRunner {
     prices: readonly PricePoint[],
     day: string,
   ): PricePoint | undefined {
-    // The catalog item as a wish, which is what `marketPrice` looks prices up for.
-    const wish: WishItem = {
-      id: item.bricklinkId,
-      type: item.itemType === "legoSet" ? "legoSet" : "minifig",
-      name: item.bricklinkId,
-      ...(item.itemType === "legoSet"
-        ? { setNumber: item.bricklinkId }
-        : { bricklinkId: item.bricklinkId }),
-      manufacturer: { kind: "lego" },
-      priority: "low",
-      desiredCondition: "used",
-      links: [],
-      createdAt: day,
-    };
+    // The newest point of the item (its key: type and number, for a special part with its
+    // BrickLink type) that has a price in the condition.
+    const key = catalogKey(item.itemType, item.bricklinkId);
     const cents: Partial<Record<Condition, number>> = {};
     for (const condition of ["new", "used"] as const) {
-      const latest = marketPrice(wish, condition, prices);
-      if (latest) cents[condition] = Math.round(latest.cents * 1.02);
+      const latest = prices
+        .filter(
+          (point) =>
+            catalogKey(point.itemType, point.bricklinkId) === key &&
+            point.cents[condition] !== undefined,
+        )
+        .sort((a, b) => b.date.localeCompare(a.date))[0]?.cents[condition];
+      if (latest !== undefined) cents[condition] = Math.round(latest * 1.02);
     }
     if (Object.keys(cents).length === 0) return undefined;
     return {

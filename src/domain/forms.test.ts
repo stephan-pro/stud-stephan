@@ -461,6 +461,73 @@ describe("F9 Sonderteile", () => {
     expect(formFromItem(part)).toMatchObject({ kind: "gwp", number: "5008" });
     expect(formFromItem(aSpecialPart()).number).toBe("");
   });
+
+  describe("Sonderteil aus dem Katalog: BrickLink-Typ und Jahr", () => {
+    const fromCatalog = {
+      bricklink: { type: "GEAR" as const, number: "5010325" },
+      imageUrl: "https://img.bricklink.com/ItemImage/GN/0/5010325.png",
+    };
+    const card = filled({ name: "Metal Card", number: "5010325", year: "2026" });
+
+    it("Typ und Nummer aus dem Katalog bleiben am Sonderteil, dazu das Jahr", () => {
+      const item = buildItem("specialPart", card, context({ catalog: fromCatalog }));
+      expect(item).toMatchObject({
+        type: "specialPart",
+        number: "5010325",
+        bricklinkType: "GEAR",
+        year: 2026,
+        catalogImageUrl: fromCatalog.imageUrl,
+      });
+    });
+
+    it("Wird die Nummer im Formular geändert, fällt der Typ weg; Groß-/Kleinschreibung zählt nicht", () => {
+      const other = buildItem(
+        "specialPart",
+        { ...card, number: "5010326" },
+        context({ catalog: fromCatalog }),
+      );
+      expect(other).not.toHaveProperty("bricklinkType");
+      const spaced = buildItem(
+        "specialPart",
+        { ...card, number: " 5010325 " },
+        context({ catalog: fromCatalog }),
+      );
+      expect(spaced).toMatchObject({ bricklinkType: "GEAR" });
+      const noNumber = buildItem(
+        "specialPart",
+        { ...card, number: "" },
+        context({ catalog: fromCatalog }),
+      );
+      expect(noNumber).not.toHaveProperty("bricklinkType");
+      expect(noNumber).not.toHaveProperty("number");
+    });
+
+    it("Von Hand angelegt hat ein Sonderteil keinen Typ und kein Jahr", () => {
+      const item = buildItem("specialPart", filled({ number: "5010325" }), context());
+      expect(item).not.toHaveProperty("bricklinkType");
+      expect(item).not.toHaveProperty("year");
+    });
+
+    it("Beim Bearbeiten bleibt der Typ, solange die Nummer dieselbe ist, und das Jahr lässt sich ändern", () => {
+      const existing = aSpecialPart({ number: "5010325", bricklinkType: "GEAR", year: 2026 });
+      const form = formFromItem(existing);
+      expect(form).toMatchObject({ number: "5010325", year: "2026" });
+      expect(buildItem("specialPart", form, context({ existing }))).toMatchObject({
+        bricklinkType: "GEAR",
+        year: 2026,
+      });
+      expect(
+        buildItem("specialPart", { ...form, year: "2025" }, context({ existing })),
+      ).toMatchObject({ bricklinkType: "GEAR", year: 2025 });
+      const changed = buildItem("specialPart", { ...form, number: "77" }, context({ existing }));
+      expect(changed).not.toHaveProperty("bricklinkType");
+    });
+
+    it("Das Jahr wird nur bei Sets und Sonderteilen geprüft", () => {
+      expect(validateForm("specialPart", filled({ year: "1800" })).year).toBe("year");
+      expect(validateForm("specialPart", filled({ year: "2026" }))).toEqual({});
+    });
+  });
 });
 
 describe("F6 Mod-Teile", () => {

@@ -548,6 +548,45 @@ describe("Rebrickable und BrickLink: nur die Nummer aus der Adresse, kein Abruf"
       "legoSet",
       "75372-1",
     ],
+    // Special parts: gear (?G=) and books (?B=) name their type, the catalog asks only that one.
+    [
+      "https://www.bricklink.com/v2/catalog/catalogitem.page?G=5010325",
+      "bricklink",
+      "specialPart",
+      "GEAR:5010325",
+    ],
+    [
+      "https://www.bricklink.com/v2/catalog/catalogitem.page?G=5010325&idColor=0#T=C",
+      "bricklink",
+      "specialPart",
+      "GEAR:5010325",
+    ],
+    [
+      "https://www.bricklink.com/catalogitem.asp?G=gear012",
+      "bricklink",
+      "specialPart",
+      "GEAR:gear012",
+    ],
+    [
+      "https://www.bricklink.com/v2/catalog/catalogitem.page?B=5000001",
+      "bricklink",
+      "specialPart",
+      "BOOK:5000001",
+    ],
+    // LEGO.com product pages end in the product number; the catalog finds out what it is.
+    [
+      "https://www.lego.com/de-de/product/the-mandalorian-and-grogu-metal-card-5010325",
+      "lego",
+      "specialPart",
+      "5010325",
+    ],
+    [
+      "https://www.lego.com/en-us/product/millennium-falcon-75375?icmp=x#details",
+      "lego",
+      "specialPart",
+      "75375",
+    ],
+    ["https://lego.com/de-de/product/5010325/", "lego", "specialPart", "5010325"],
   ])("F3 %s", async (address, source, catalogKind, ref) => {
     const sent: Sent[] = [];
     const answer = await previewLink({ fetch: pages({}, sent), resolve: PUBLIC }, address);
@@ -571,6 +610,19 @@ describe("Rebrickable und BrickLink: nur die Nummer aus der Adresse, kein Abruf"
       catalogLink(new URL("https://rebrickable.com.evil.example/sets/75372-1/")),
     ).toBeUndefined();
     expect(catalogLink(new URL("https://evilrebrickable.com/sets/75372-1/"))).toBeUndefined();
+    // Other BrickLink addresses and look-alike hosts of LEGO.com are no catalog addresses.
+    expect(
+      catalogLink(new URL("https://www.bricklink.com/v2/catalog/catalogitem.page?G=a%20b")),
+    ).toBeUndefined();
+    expect(
+      catalogLink(new URL("https://www.bricklink.com/v2/search.page?G=5010325")),
+    ).toBeUndefined();
+    expect(
+      catalogLink(new URL("https://www.lego.com.evil.example/de-de/product/card-5010325")),
+    ).toBeUndefined();
+    expect(catalogLink(new URL("https://www.lego.com/de-de/categories/gear"))).toBeUndefined();
+    expect(catalogLink(new URL("https://www.lego.com/de-de/product/karte"))).toBeUndefined();
+    expect(catalogLink(new URL("https://www.lego.com/de-de/product/karte-12"))).toBeUndefined();
     const address = "https://rebrickable.com/mocs/MOC-12345/autor/burg/";
     const moc = `<meta property="og:title" content="Burg (MOC)">`;
     expect(await previewLink(deps({ [address]: html(moc) }), address)).toEqual({

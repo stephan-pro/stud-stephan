@@ -5,12 +5,14 @@
 import type { CatalogItem, CatalogSetInfo } from "../backend/catalog";
 import { emptyForm, type FieldKey, type FormValues } from "./forms";
 import { shortSetNumber } from "./showcase";
-import type { CatalogFigure } from "./types";
+import type { BricklinkType, CatalogFigure } from "./types";
 
 /** The catalog data an object keeps without a field for it. */
 export interface CatalogExtras {
   readonly imageUrl?: string;
   readonly figures?: readonly CatalogFigure[];
+  /** Special part: the BrickLink type and the number it was found under; they give its price. */
+  readonly bricklink?: { readonly type: BricklinkType; readonly number: string };
 }
 
 export interface CatalogForm {
@@ -65,6 +67,8 @@ export function formFromCatalog(item: CatalogItem, link?: string): CatalogForm {
         item.figures.reduce((sum, figure) => sum + figure.quantity, 0),
       );
     }
+  } else if (item.kind === "specialPart") {
+    fill("year", item.year);
   } else if (item.sets?.length === 1 && item.sets[0]) {
     fill("fromSet", shortSetNumber(item.sets[0].number));
   }
@@ -75,6 +79,9 @@ export function formFromCatalog(item: CatalogItem, link?: string): CatalogForm {
     extras: {
       ...(item.imageUrl ? { imageUrl: item.imageUrl } : {}),
       ...(item.kind === "legoSet" ? { figures: containedFigures(item) } : {}),
+      ...(item.kind === "specialPart" && item.bricklinkType && item.number
+        ? { bricklink: { type: item.bricklinkType, number: item.number } }
+        : {}),
     },
     sets: item.kind === "minifig" ? (item.sets ?? []) : [],
     numberMissing: item.kind === "minifig" && item.number === "",

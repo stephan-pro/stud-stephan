@@ -30,6 +30,12 @@ export function priceRoutes(): Route[] {
     ["/items/MINIFIG/sw0542/price?guide_type=sold&new_or_used=U", guide("24.0000", 3)],
     ["/items/SET/75372-1/price?guide_type=sold&new_or_used=N", guide("18.0000", 40)],
     ["/items/SET/75372-1/price?guide_type=sold&new_or_used=U", guide("12.0000", 25)],
+    // Special parts: gear, a promotional set and a book.
+    ["/items/GEAR/5010325/price?guide_type=sold&new_or_used=N", guide("15.5000", 8)],
+    ["/items/GEAR/5010325/price?guide_type=sold&new_or_used=U", guide("9.0000", 3)],
+    ["/items/SET/5008889-1/price?guide_type=sold&new_or_used=N", guide("0.0000", 0)],
+    ["/items/SET/5008889-1/price?guide_type=sold&new_or_used=U", guide("4.0000", 2)],
+    ["/items/BOOK/5000001/price", guide("0.0000", 0)],
     // Known, but nothing sold in 6 months.
     ["/items/MINIFIG/sw0001/price", guide("0.0000", 0)],
   ];

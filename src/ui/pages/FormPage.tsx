@@ -228,6 +228,12 @@ function FormBody({
 
   const set = (fields: Partial<FormValues>) => setValues((current) => ({ ...current, ...fields }));
   const shown = fieldsOf(type);
+  // The BrickLink type a special part's number was found under, while the number is still that one.
+  const found = catalogForm?.extras.bricklink;
+  const bricklinkType =
+    found && values.number.trim().toLowerCase() === found.number.toLowerCase()
+      ? found.type
+      : undefined;
   const message = (field: FieldKey): string | undefined => {
     const error: FieldError | undefined = errors[field];
     return error ? T.errors[error] : undefined;
@@ -444,7 +450,11 @@ function FormBody({
         {text("name", T.fields.name)}
         {shown.includes("number") &&
           text("number", T.fields.number[type], {
-            hint: catalogForm?.numberMissing ? CT.numberMissing : undefined,
+            hint: catalogForm?.numberMissing
+              ? CT.numberMissing
+              : bricklinkType
+                ? CT.bricklinkTypeHint(TEXTS.search.bricklinkTypes[bricklinkType])
+                : undefined,
           })}
         <Choice
           legend={T.fields.manufacturer}
@@ -455,9 +465,9 @@ function FormBody({
         {(values.manufacturerKind === "other" || values.manufacturerKind === "custom") &&
           text("manufacturerName", T.fields.manufacturerName)}
         {text("theme", T.fields.theme)}
+        {shown.includes("year") && text("year", T.fields.year, { inputMode: "numeric" })}
         {type === "legoSet" && (
           <>
-            {text("year", T.fields.year, { inputMode: "numeric" })}
             {text("pieceCount", T.fields.pieceCount, { inputMode: "numeric" })}
             {text("minifigCount", T.fields.minifigCount, { inputMode: "numeric" })}
           </>

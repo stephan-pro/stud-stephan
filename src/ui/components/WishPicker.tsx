@@ -1,10 +1,5 @@
 import { useEffect, useRef, useState } from "preact/hooks";
-import {
-  type Catalog,
-  CatalogCallError,
-  type CatalogItem,
-  type CatalogKind,
-} from "../../backend/catalog";
+import { type Catalog, CatalogCallError, type CatalogItem } from "../../backend/catalog";
 import type { PageFields } from "../../backend/linkPreview";
 import type { Remote } from "../../backend/remote";
 import type { CatalogFigure } from "../../domain/types";
@@ -19,7 +14,7 @@ import {
   wishSourceOfPage,
   wishValuesOf,
 } from "../../domain/wishForm";
-import { routeHash } from "../route";
+import { routeHash, type WishType } from "../route";
 import { TEXTS } from "../texts";
 import type { LoadedCollection } from "../useCollection";
 import { wishActions } from "../wishActions";
@@ -32,14 +27,14 @@ const T = TEXTS.wishCapture;
 export type WishPick =
   | {
       readonly kind: "catalog";
-      readonly catalogKind: CatalogKind;
+      readonly catalogKind: WishType;
       readonly ref: string;
       /** The pasted link the entry was reached by. */
       readonly link?: string | undefined;
     }
   | {
       readonly kind: "page";
-      readonly type: CatalogKind;
+      readonly type: WishType;
       readonly fields: PageFields;
       readonly link: string;
     };

@@ -12,11 +12,19 @@ import {
   type SourceState,
 } from "./catalog";
 
+/** A special part's reference carries its BrickLink type, like the real function's hits. */
+function refOf(item: CatalogItem): string {
+  return item.kind === "specialPart" && item.bricklinkType
+    ? `${item.bricklinkType}:${item.number}`
+    : item.number;
+}
+
 function hitOf(item: CatalogItem): CatalogHit {
   return {
     kind: item.kind,
-    ref: item.number,
+    ref: refOf(item),
     number: item.number,
+    ...(item.bricklinkType === undefined ? {} : { bricklinkType: item.bricklinkType }),
     name: item.name,
     ...(item.year === undefined ? {} : { year: item.year }),
     ...(item.theme === undefined ? {} : { theme: item.theme }),
@@ -60,21 +68,27 @@ export class FakeCatalog implements Catalog {
     this.calls.push(`search ${kind} ${query}`);
     this.check();
     const wanted = query.trim().toLowerCase();
-    return this.items
-      .filter((item) => item.kind === kind)
-      .filter(
-        (item) =>
-          item.number.toLowerCase().startsWith(wanted) ||
-          item.number.toLowerCase().replace(/-1$/, "") === wanted ||
-          item.name.toLowerCase().includes(wanted),
-      )
-      .map(hitOf);
+    const byNumber = (item: CatalogItem) =>
+      item.number.toLowerCase().startsWith(wanted) ||
+      item.number.toLowerCase().replace(/-1$/, "") === wanted;
+    return (
+      this.items
+        .filter((item) => item.kind === kind)
+        // Special parts are found by number only, like the real catalog (BrickLink cannot search names).
+        .filter(
+          (item) =>
+            byNumber(item) || (kind !== "specialPart" && item.name.toLowerCase().includes(wanted)),
+        )
+        .map(hitOf)
+    );
   }
 
   async item(kind: CatalogKind, ref: string): Promise<CatalogItem> {
     this.calls.push(`item ${kind} ${ref}`);
     this.check();
-    const found = this.items.find((item) => item.kind === kind && item.number === ref);
+    const found = this.items.find(
+      (item) => item.kind === kind && (item.number === ref || refOf(item) === ref),
+    );
     if (!found) throw new CatalogCallError("Nicht im Katalog", "not_found");
     return found;
   }

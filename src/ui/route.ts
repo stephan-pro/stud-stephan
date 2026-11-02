@@ -66,7 +66,7 @@ const COPY_PATH = "kopie";
 export type FormRef =
   | { readonly type: DetailType; readonly mode: "new" }
   | {
-      readonly type: "minifig" | "legoSet";
+      readonly type: SearchType;
       readonly mode: "catalog";
       readonly ref: string;
       /** The pasted address the entry was reached from (F3); kept with the object. */
@@ -79,13 +79,20 @@ export type FormRef =
   /** "Erhalten" (F14): the form filled from the wish `id`; saving it takes the wish off the list. */
   | { readonly type: "minifig" | "legoSet"; readonly mode: "wish"; readonly id: string };
 
-/** The kinds the catalog knows (S7b): figures and sets. */
-export type SearchType = "minifig" | "legoSet";
+/** The kinds the catalog knows (S7b): figures, sets and special parts (by number only). */
+export type SearchType = "minifig" | "legoSet" | "specialPart";
+
+/** The kinds a wish can be (P15): the catalog's, but not special parts. */
+export type WishType = Exclude<SearchType, "specialPart">;
 
 const SEARCH_PATH = "suche";
 const CATALOG_PATH = "katalog";
 
 function isSearchType(type: DetailType | undefined): type is SearchType {
+  return type === "minifig" || type === "legoSet" || type === "specialPart";
+}
+
+function isWishType(type: DetailType | undefined): type is WishType {
   return type === "minifig" || type === "legoSet";
 }
 
@@ -221,7 +228,7 @@ export function parseLocation(hash: string): PageLocation {
     fourth === WISH_PATH
   ) {
     const wishType = typeOf(third);
-    if (!isSearchType(wishType)) return { route: DEFAULT_ROUTE };
+    if (!isWishType(wishType)) return { route: DEFAULT_ROUTE };
     return second === SEARCH_PATH
       ? { route, search: wishType, forWish: true }
       : { route, link: wishType, forWish: true };

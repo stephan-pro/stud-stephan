@@ -14,12 +14,19 @@ export interface PageFields {
 }
 
 export type LinkAnswer =
-  /** An address of Rebrickable or BrickLink: no page is read, the catalog fills the form (P7). */
+  /**
+   * An address of Rebrickable, BrickLink or a LEGO.com product page: no page is read, the catalog
+   * fills the form (P7). A LEGO.com address gives `specialPart` with the plain product number; the
+   * app asks for a set instead where a set is being captured.
+   */
   | {
       kind: "catalog";
-      source: "rebrickable" | "bricklink";
+      source: "rebrickable" | "bricklink" | "lego";
       catalogKind: CatalogKind;
-      /** What the function `catalog` takes as `ref`: a set number or a figure number. */
+      /**
+       * What the function `catalog` takes as `ref`: a set number, a figure number, a special part's
+       * number with or without its BrickLink type ("GEAR:5010325").
+       */
       ref: string;
     }
   /** Any other page, read once. */

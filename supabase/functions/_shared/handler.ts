@@ -69,7 +69,7 @@ export async function isSignedIn(request: Request, authUrl: string, send: Fetch)
 }
 
 function isKind(value: unknown): value is CatalogKind {
-  return value === "minifig" || value === "legoSet";
+  return value === "minifig" || value === "legoSet" || value === "specialPart";
 }
 
 /** The request of the app, or nothing if it is not one. */
@@ -82,7 +82,10 @@ export function parseCatalogRequest(body: unknown): CatalogRequest | undefined {
   }
   if (body.op === "item") {
     const ref = str(body.ref);
-    if (ref === undefined || !/^[A-Za-z0-9._-]{1,50}$/.test(ref)) return undefined;
+    // A special part's reference may carry its BrickLink type: "GEAR:5010325".
+    const allowed =
+      body.kind === "specialPart" ? /^[A-Za-z0-9._:-]{1,50}$/ : /^[A-Za-z0-9._-]{1,50}$/;
+    if (ref === undefined || !allowed.test(ref)) return undefined;
     return { op: "item", kind: body.kind, ref };
   }
   return undefined;

@@ -113,6 +113,51 @@ describe("P7 F2 Formular aus dem Katalog", () => {
     expect(set.type === "legoSet" && set.containedFigures).toHaveLength(2);
   });
 
+  it("Ein Sonderteil füllt Name, Nummer, Kategorie und Jahr aus und merkt sich den BrickLink-Typ", () => {
+    const card: CatalogItem = {
+      kind: "specialPart",
+      number: "5010325",
+      bricklinkType: "GEAR",
+      name: "The Mandalorian and Grogu Metal Card",
+      year: 2026,
+      theme: "Gear – Miscellaneous",
+      imageUrl: "https://img.bricklink.com/ItemImage/GN/0/5010325.png",
+    };
+    const form = formFromCatalog(card);
+    expect(form.values).toMatchObject({
+      name: "The Mandalorian and Grogu Metal Card",
+      number: "5010325",
+      theme: "Gear – Miscellaneous",
+      year: "2026",
+      manufacturerKind: "lego",
+    });
+    expect(form.prefilled).toEqual(["name", "number", "theme", "year"]);
+    expect(form.extras).toEqual({
+      imageUrl: card.imageUrl,
+      bricklink: { type: "GEAR", number: "5010325" },
+    });
+    expect(form.sets).toEqual([]);
+    expect(form.numberMissing).toBe(false);
+    const part = buildItem("specialPart", form.values, {
+      ...CONTEXT,
+      id: "part-1",
+      catalog: form.extras,
+    });
+    expect(part).toMatchObject({
+      type: "specialPart",
+      number: "5010325",
+      bricklinkType: "GEAR",
+      year: 2026,
+      theme: "Gear – Miscellaneous",
+      catalogImageUrl: card.imageUrl,
+    });
+  });
+
+  it("Ein Eintrag ohne BrickLink-Typ (alter Zwischenspeicher) macht ein Sonderteil ohne Typ", () => {
+    const form = formFromCatalog({ kind: "specialPart", number: "5010325", name: "Karte" });
+    expect(form.extras).toEqual({});
+  });
+
   it("P7 F2 Das Katalogbild kommt mit an die neue Figur", () => {
     const item = buildItem("minifig", formFromCatalog(REX).values, {
       ...CONTEXT,

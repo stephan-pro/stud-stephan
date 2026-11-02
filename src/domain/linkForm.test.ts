@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { formFromCatalog } from "./catalog";
 import { buildItem, validateForm } from "./forms";
-import { formFromLink, hasFields, linkRows } from "./linkForm";
+import { catalogTarget, formFromLink, hasFields, linkRows, numberOfRef } from "./linkForm";
 
 // P9 F3: what a pasted link fills into a form, and what it leaves for the person.
 
@@ -116,5 +116,68 @@ describe("P9 F3 Formular aus einem Link", () => {
     expect(form.values.links).toBe("https://rebrickable.com/sets/75372-1/");
     expect(form.origin).toBe("catalog");
     expect(form.prefilled).not.toContain("links");
+  });
+});
+
+describe("Katalogadressen: wohin eine erkannte Adresse führt", () => {
+  const answer = (
+    source: "rebrickable" | "bricklink" | "lego",
+    catalogKind: "minifig" | "legoSet" | "specialPart",
+    ref: string,
+  ) => ({ kind: "catalog" as const, source, catalogKind, ref });
+
+  it("eine LEGO.com-Produktseite ist ein Sonderteil mit der Nummer, bei einem Set oder einem Wunsch ein Set", () => {
+    const page = answer("lego", "specialPart", "5010325");
+    expect(catalogTarget(page, "specialPart")).toEqual({
+      catalogKind: "specialPart",
+      ref: "5010325",
+    });
+    expect(catalogTarget(page, "minifig")).toEqual({ catalogKind: "specialPart", ref: "5010325" });
+    expect(catalogTarget(answer("lego", "specialPart", "75375"), "legoSet")).toEqual({
+      catalogKind: "legoSet",
+      ref: "75375-1",
+    });
+    expect(catalogTarget(page, "minifig", true)).toEqual({
+      catalogKind: "legoSet",
+      ref: "5010325-1",
+    });
+    expect(catalogTarget(answer("lego", "specialPart", "5008889-2"), "legoSet").ref).toBe(
+      "5008889-2",
+    );
+  });
+
+  it("eine BrickLink-Setadresse ist beim Erfassen eines Sonderteils ein Sonderteil vom Typ Set", () => {
+    const set = answer("bricklink", "legoSet", "5008889-1");
+    expect(catalogTarget(set, "specialPart")).toEqual({
+      catalogKind: "specialPart",
+      ref: "SET:5008889-1",
+    });
+    expect(catalogTarget(set, "legoSet")).toEqual({ catalogKind: "legoSet", ref: "5008889-1" });
+    expect(catalogTarget(set, "specialPart", true)).toEqual({
+      catalogKind: "specialPart",
+      ref: "SET:5008889-1",
+    });
+  });
+
+  it("Gear- und Buchadressen, Figuren und Rebrickable bleiben, wie die Funktion sie erkannt hat", () => {
+    const gear = answer("bricklink", "specialPart", "GEAR:5010325");
+    expect(catalogTarget(gear, "legoSet")).toEqual({
+      catalogKind: "specialPart",
+      ref: "GEAR:5010325",
+    });
+    expect(catalogTarget(answer("bricklink", "minifig", "sw0194"), "minifig")).toEqual({
+      catalogKind: "minifig",
+      ref: "sw0194",
+    });
+    expect(catalogTarget(answer("rebrickable", "legoSet", "75372-1"), "specialPart")).toEqual({
+      catalogKind: "legoSet",
+      ref: "75372-1",
+    });
+  });
+
+  it("die Nummer eines Verweises ohne den BrickLink-Typ", () => {
+    expect(numberOfRef("GEAR:5010325")).toBe("5010325");
+    expect(numberOfRef("SET:5008889-1")).toBe("5008889-1");
+    expect(numberOfRef("sw0194")).toBe("sw0194");
   });
 });

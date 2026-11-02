@@ -293,6 +293,24 @@ describe("Prüfung vor dem Import", () => {
     ).toBe("invalidData");
   });
 
+  it("Ein Sonderteil mit BrickLink-Typ wird gelesen; ein unbekannter Typ oder ein Jahr als Text wird abgelehnt", async () => {
+    expect(
+      await broken((p) => {
+        expect(p.manifest.collection.specialParts[0]).toMatchObject({
+          number: "5010325",
+          bricklinkType: "GEAR",
+          year: 2026,
+        });
+        (p.manifest.collection.specialParts[0] as { bricklinkType: string }).bricklinkType = "PART";
+      }),
+    ).toBe("invalidData");
+    expect(
+      await broken((p) => {
+        (p.manifest.collection.specialParts[0] as { year: unknown }).year = "2026";
+      }),
+    ).toBe("invalidData");
+  });
+
   it("F15 Doppelte Kennungen, Verweise ins Leere und Preisstände ohne Sinn werden abgelehnt", async () => {
     expect(
       await broken((p) => {

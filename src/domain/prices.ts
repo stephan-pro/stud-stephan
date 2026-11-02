@@ -1,5 +1,6 @@
 // BrickLink market prices (F10): looking up the latest price and recording a weekly run.
-// Copies of the same figure share one BrickLink number and therefore one price per run.
+// Copies of the same figure share one BrickLink number and therefore one price per run. Special
+// parts taken from the catalog have a price too, kept under their BrickLink type and number.
 
 import type {
   Collection,
@@ -34,14 +35,26 @@ export function itemNumber(item: Priceable): string | undefined {
   return number?.trim() || undefined;
 }
 
+/**
+ * The number an object's price is kept under (`PricePoint.bricklinkId`). For a special part it is
+ * the BrickLink type and the number in one text ("GEAR:5010325"), because the number alone does
+ * not say what to ask BrickLink for; a part that was not taken from the catalog has no type and
+ * therefore no price.
+ */
+export function priceNumber(item: Priceable): string | undefined {
+  if (item.type !== "specialPart") return itemNumber(item);
+  const number = item.number?.trim();
+  return number && item.bricklinkType ? `${item.bricklinkType}:${number}` : undefined;
+}
+
 /** "minifig:sw0194"; case and surrounding spaces of the number do not matter. */
 export function catalogKey(itemType: PricedType, bricklinkId: string): string {
   return `${itemType}:${bricklinkId.trim().toLowerCase()}`;
 }
 
-/** Only official LEGO items with a number get a market value; everything else is estimated. */
+/** Only official LEGO items with a BrickLink number get a market value; everything else is estimated. */
 export function hasMarketPrice(item: Priceable): boolean {
-  return item.manufacturer.kind === "lego" && itemNumber(item) !== undefined;
+  return item.manufacturer.kind === "lego" && priceNumber(item) !== undefined;
 }
 
 export function otherCondition(condition: Condition): Condition {
@@ -74,7 +87,7 @@ export function marketPrice(
   condition: Condition,
   prices: readonly PricePoint[],
 ): MarketPrice | undefined {
-  const number = itemNumber(item);
+  const number = priceNumber(item);
   if (!hasMarketPrice(item) || number === undefined) return undefined;
   for (const point of priceIndex(prices).get(catalogKey(item.type, number)) ?? []) {
     const cents = point.cents[condition];
@@ -102,7 +115,7 @@ export function priceHistory(
   condition: Condition,
   prices: readonly PricePoint[],
 ): PriceStep[] {
-  const number = itemNumber(item);
+  const number = priceNumber(item);
   if (!hasMarketPrice(item) || number === undefined) return [];
   const points = priceIndex(prices).get(catalogKey(item.type, number)) ?? [];
   return points
@@ -114,22 +127,23 @@ export function priceHistory(
 }
 
 /**
- * What the price run asks BrickLink about (P11): official figures and sets of the collection and of
- * the wishlist. Special parts are left out: their number does not say which kind of BrickLink item
- * they are (set, part, gear), so they keep their own value or purchase price.
+ * What the price run counts as skipped when it has no number (P11): official figures and sets of
+ * the collection and of the wishlist. Special parts are not among them: one without a BrickLink
+ * type was not taken from the catalog and keeps its own value or purchase price, without a note.
  */
-function runCandidates(collection: Collection): Priceable[] {
+function numberedCandidates(collection: Collection): Priceable[] {
   return [...collection.minifigs, ...collection.sets, ...collection.wishlist];
 }
 
 /**
  * Every catalog item a price run has to ask BrickLink for, each once (as the database's
- * `price_run_begin` does).
+ * `price_run_begin` does): the figures, sets and wishes with a number, and the special parts with a
+ * BrickLink type.
  */
 export function itemsToPrice(collection: Collection): CatalogItem[] {
   const items = new Map<string, CatalogItem>();
-  for (const item of runCandidates(collection)) {
-    const bricklinkId = itemNumber(item);
+  for (const item of [...numberedCandidates(collection), ...collection.specialParts]) {
+    const bricklinkId = priceNumber(item);
     if (!hasMarketPrice(item) || bricklinkId === undefined) continue;
     const key = catalogKey(item.type, bricklinkId);
     if (!items.has(key)) items.set(key, { itemType: item.type, bricklinkId });
@@ -139,7 +153,7 @@ export function itemsToPrice(collection: Collection): CatalogItem[] {
 
 /** Official figures, sets and wishes without a number: the run skips them (`skipped`). */
 export function itemsWithoutNumber(collection: Collection): number {
-  return runCandidates(collection).filter(
+  return numberedCandidates(collection).filter(
     (item) => item.manufacturer.kind === "lego" && itemNumber(item) === undefined,
   ).length;
 }

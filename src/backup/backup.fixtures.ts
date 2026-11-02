@@ -88,7 +88,10 @@ export async function fillCollection(remote: Remote): Promise<Collection> {
     "minifig",
     aMinifig({ id: "minifig-cody", name: "Commander Cody", standsInSetId: "set-75372" }),
   );
-  await remote.save("specialPart", aSpecialPart({ id: "part-coin" }));
+  await remote.save(
+    "specialPart",
+    aSpecialPart({ id: "part-coin", number: "5010325", bricklinkType: "GEAR", year: 2026 }),
+  );
   await remote.save("wishItem", aWish({ id: "wish-1" }));
   await remote.savePrice(aPrice("sw0194", "2026-10-26", { used: 3850, new: 5200 }));
   await remote.savePrice(aPrice("sw0194", "2026-11-02", { used: 3900 }));

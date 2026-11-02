@@ -15,7 +15,9 @@ const MIN_LENGTH = 2;
 /** The wait after the last key before the catalog is asked, so typing does not send a call per key. */
 const PAUSE_MS = 400;
 
-const KINDS: readonly SearchType[] = ["minifig", "legoSet"];
+const KINDS: readonly SearchType[] = ["minifig", "legoSet", "specialPart"];
+/** A wish is a figure or a set, never a special part. */
+const WISH_KINDS: readonly SearchType[] = ["minifig", "legoSet"];
 
 type SearchState =
   | { readonly status: "idle" }
@@ -36,6 +38,7 @@ function facts(hit: CatalogHit): string {
   return T.facts(
     [
       hit.number ?? T.unknownNumber,
+      hit.bricklinkType ? T.bricklinkTypes[hit.bricklinkType] : undefined,
       hit.theme,
       hit.year === undefined ? undefined : String(hit.year),
     ].filter((fact): fact is string => fact !== undefined),
@@ -131,7 +134,7 @@ export function SearchPage({
       <fieldset class="choice">
         <legend class="visually-hidden">{T.kindsLabel}</legend>
         <div class="chips">
-          {KINDS.map((kind) => (
+          {(forWish ? WISH_KINDS : KINDS).map((kind) => (
             <button
               key={kind}
               type="button"
@@ -147,13 +150,19 @@ export function SearchPage({
 
       <section class="card search-results" aria-busy={state.status === "loading"}>
         <p class="search-results__status" role="status">
-          {state.status === "idle" && T.idle}
+          {state.status === "idle" && (type === "specialPart" ? T.idleParts : T.idle)}
           {state.status === "loading" && T.searching}
           {state.status === "done" &&
             (state.hits.length > 0 ? T.results(state.hits.length) : T.none)}
         </p>
         {state.status === "done" && state.hits.length === 0 && (
-          <p class="card__text">{forWish ? TEXTS.wishCapture.noneHint : T.noneHint}</p>
+          <p class="card__text">
+            {forWish
+              ? TEXTS.wishCapture.noneHint
+              : type === "specialPart"
+                ? T.noneParts
+                : T.noneHint}
+          </p>
         )}
         {state.status === "failed" && (
           <div role="alert" class="search-results__failed">
@@ -189,15 +198,14 @@ export function SearchPage({
                   <Icon name={forWish ? "wishlist" : "plus"} size={22} />
                 </>
               );
+              const { kind } = hit;
               return (
-                <li key={`${hit.kind}-${hit.ref}`}>
-                  {forWish ? (
+                <li key={`${kind}-${hit.ref}`}>
+                  {forWish && kind !== "specialPart" ? (
                     <button
                       type="button"
                       class="search-hit pressable"
-                      onClick={() =>
-                        setPick({ kind: "catalog", catalogKind: hit.kind, ref: hit.ref })
-                      }
+                      onClick={() => setPick({ kind: "catalog", catalogKind: kind, ref: hit.ref })}
                     >
                       {body}
                     </button>
