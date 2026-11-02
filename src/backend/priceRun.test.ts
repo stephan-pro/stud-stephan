@@ -104,6 +104,17 @@ describe("P11 Der Preisabruf der App", () => {
     expect(readStatus({ total: 1 })).toBeNull();
     expect(readStatus("x")).toBeNull();
   });
+
+  it("liest die Gründe fehlgeschlagener Einträge, nur Text zählt; ohne Gründe bleibt das Feld weg", () => {
+    expect(
+      readStatus({
+        ...STATUS,
+        failedReasons: { sw9999: "BrickLink: nicht gefunden", sw9998: 5, x: null },
+      }),
+    ).toEqual({ ...STATUS, failedReasons: { sw9999: "BrickLink: nicht gefunden" } });
+    expect(readStatus({ ...STATUS, failedReasons: {} })).toEqual(STATUS);
+    expect(readStatus({ ...STATUS, failedReasons: ["a"] })).toEqual(STATUS);
+  });
 });
 
 describe("P11 Der Beispiel-Preisabruf für Demo und E2E-Tests", () => {

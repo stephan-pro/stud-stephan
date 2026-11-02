@@ -7,6 +7,7 @@ import {
   decodeEntities,
   type Fetch,
   isRecord,
+  type Json,
   list,
   num,
   secureUrl,
@@ -26,8 +27,16 @@ const CALL_TIMEOUT_MS = 20_000;
  */
 export type ItemType = "MINIFIG" | "PART" | "SET" | "GEAR" | "BOOK";
 
-/** The BrickLink category of the Big Figs; the lists of a set's parts tell them from ordinary parts by it. */
-const LARGE_FIGURE_CATEGORY = /^large figures?$/i;
+/**
+ * What makes a part of a set a Big Fig (a figure BrickLink lists as a part, checked against the
+ * real answer for 75005 "Rancor Pit", where the Rancor is `11323pb01c01` in the category "Animal,
+ * Land" and not in "Large Figure"): its number is a printed, assembled part (`pb…c…`), and its
+ * category is an animal or a large figure. The number alone is not enough (the torso assemblies of
+ * minifigs are `973pb…c01`), the category alone neither (horses and heads are animals and figure
+ * parts without a print and assembly in the number).
+ */
+const ASSEMBLED_PRINTED = /pb\d+c\d+$/i;
+const BIG_FIG_CATEGORY = /^(animal|large figure)/i;
 
 export interface BricklinkItem {
   number: string;
@@ -104,35 +113,40 @@ function failureOf(httpStatus: number, body: unknown): CatalogError | undefined 
   return new CatalogError("unavailable", `BrickLink: Code ${code} ${text}`.trim());
 }
 
-/** Whether a list of items holds parts at all (then the Big Fig category is worth looking up). */
-function hasParts(data: unknown): boolean {
-  return list(data).some(
-    (group) =>
-      isRecord(group) &&
-      list(group.entries).some(
-        (entry) => isRecord(entry) && isRecord(entry.item) && entry.item.type === "PART",
-      ),
-  );
+/** Whether an item of a list is a part that looks like a Big Fig by its number (still to be checked by its category). */
+function looksLikeBigFig(item: Json): boolean {
+  return item.type === "PART" && ASSEMBLED_PRINTED.test(str(item.no) ?? "");
+}
+
+/** The categories of the parts that look like Big Figs: what is worth looking up. */
+function bigFigCategoryIds(data: unknown): Set<number> {
+  const ids = new Set<number>();
+  for (const group of list(data)) {
+    if (!isRecord(group)) continue;
+    for (const entry of list(group.entries)) {
+      if (!isRecord(entry) || !isRecord(entry.item) || !looksLikeBigFig(entry.item)) continue;
+      const id = num(entry.item.category_id);
+      if (id !== undefined) ids.add(id);
+    }
+  }
+  return ids;
 }
 
 /**
  * The entries of one item type in the lists of BrickLink's subsets and supersets, each number once
- * with its quantities added. For parts only those of the given categories count (`categories`).
+ * with its quantities added. With `accept` only the items it accepts count.
  */
 function entriesOf(
   data: unknown,
   wanted: ItemType,
-  categories?: ReadonlySet<number>,
+  accept?: (item: Json) => boolean,
 ): BricklinkEntry[] {
   const found = new Map<string, BricklinkEntry>();
   for (const group of list(data)) {
     if (!isRecord(group)) continue;
     for (const entry of list(group.entries)) {
       if (!isRecord(entry) || !isRecord(entry.item) || entry.item.type !== wanted) continue;
-      if (categories) {
-        const category = num(entry.item.category_id);
-        if (category === undefined || !categories.has(category)) continue;
-      }
+      if (accept && !accept(entry.item)) continue;
       const number = str(entry.item.no);
       const rawName = str(entry.item.name);
       const name = rawName === undefined ? undefined : decodeEntities(rawName);
@@ -183,28 +197,27 @@ export function createBricklink(options: BricklinkOptions): BricklinkClient {
     return isRecord(body) ? body.data : undefined;
   }
 
-  // The ids of the Big Fig categories, asked once per client (one call for the whole category list).
-  let largeFigures: Promise<ReadonlySet<number>> | undefined;
-  async function largeFigureCategories(): Promise<ReadonlySet<number>> {
-    const data = await get("/categories");
-    const ids = new Set<number>();
-    for (const entry of list(data)) {
-      if (!isRecord(entry)) continue;
-      const id = num(entry.category_id);
-      const name = str(entry.category_name);
-      if (id !== undefined && name !== undefined && LARGE_FIGURE_CATEGORY.test(name.trim())) {
-        ids.add(id);
-      }
+  async function loadCategory(id: number): Promise<BricklinkCategory> {
+    const data = await get(`/categories/${id}`);
+    const name = isRecord(data) ? str(data.category_name) : undefined;
+    if (!isRecord(data) || name === undefined) {
+      throw new CatalogError("unavailable", "BrickLink: Kategorie ohne Namen");
     }
-    return ids;
+    const parentId = num(data.parent_id);
+    return parentId ? { name, parentId } : { name };
   }
-  const bigFigCategories = () => {
-    largeFigures ??= largeFigureCategories().catch((error: unknown) => {
-      largeFigures = undefined;
-      throw error;
-    });
-    return largeFigures;
-  };
+
+  // The names of categories asked for a set's parts, once each per client (a failure is not kept).
+  const categoryNames = new Map<number, Promise<string>>();
+  function nameOfCategory(id: number): Promise<string> {
+    let known = categoryNames.get(id);
+    if (!known) {
+      known = loadCategory(id).then((category) => category.name);
+      known.catch(() => categoryNames.delete(id));
+      categoryNames.set(id, known);
+    }
+    return known;
+  }
 
   const enc = encodeURIComponent;
   return {
@@ -238,11 +251,22 @@ export function createBricklink(options: BricklinkOptions): BricklinkClient {
         ...entry,
         imageUrl: minifigImage(entry.number),
       }));
-      // Big Figs are parts of the category "Large Figure" (the Rancor of 75005 is "11323pb01c01").
-      // They have no picture in the lists, and the category list is only asked if there are parts.
-      if (hasParts(data)) {
-        const categories = await bigFigCategories();
-        if (categories.size > 0) minifigs.push(...entriesOf(data, "PART", categories));
+      // Big Figs are parts that look like assembled, printed figures (the Rancor of 75005 is
+      // "11323pb01c01") in an animal or large figure category. Only the categories of such parts are
+      // looked up, one call each (the torso assemblies "973pb…c01" are in one category: one call).
+      // They have no picture in the lists.
+      const wanted = new Set<number>();
+      for (const id of bigFigCategoryIds(data)) {
+        if (BIG_FIG_CATEGORY.test((await nameOfCategory(id)).trim())) wanted.add(id);
+      }
+      if (wanted.size > 0) {
+        minifigs.push(
+          ...entriesOf(
+            data,
+            "PART",
+            (item) => looksLikeBigFig(item) && wanted.has(num(item.category_id) ?? -1),
+          ),
+        );
       }
       return { minifigs, sets: entriesOf(data, "SET") };
     },
@@ -255,15 +279,7 @@ export function createBricklink(options: BricklinkOptions): BricklinkClient {
       return entriesOf(await get(`/items/${type}/${enc(number)}/supersets`), "SET");
     },
 
-    async category(id) {
-      const data = await get(`/categories/${id}`);
-      const name = isRecord(data) ? str(data.category_name) : undefined;
-      if (!isRecord(data) || name === undefined) {
-        throw new CatalogError("unavailable", "BrickLink: Kategorie ohne Namen");
-      }
-      const parentId = num(data.parent_id);
-      return parentId ? { name, parentId } : { name };
-    },
+    category: loadCategory,
 
     async price(type, number, condition) {
       const data = await get(`/items/${type}/${enc(number)}/price`, {

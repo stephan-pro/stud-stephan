@@ -36,10 +36,26 @@ function isStatus(value: unknown): value is PriceRunStatus {
   );
 }
 
+/** The reasons of failed items by number; only text counts (an older database has none). */
+function readReasons(value: unknown): Record<string, string> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value).filter(
+      (entry): entry is [string, string] => typeof entry[1] === "string",
+    ),
+  );
+}
+
 /** The status as it came, or null; missing lists are filled in. */
 export function readStatus(value: unknown): PriceRunStatus | null {
   if (!isStatus(value)) return null;
-  return { ...value, failedNumbers: Array.isArray(value.failedNumbers) ? value.failedNumbers : [] };
+  const { failedReasons, ...rest } = value;
+  const reasons = readReasons(failedReasons);
+  return {
+    ...rest,
+    failedNumbers: Array.isArray(value.failedNumbers) ? value.failedNumbers : [],
+    ...(Object.keys(reasons).length > 0 ? { failedReasons: reasons } : {}),
+  };
 }
 
 export class SupabasePriceRunner implements PriceRunner {

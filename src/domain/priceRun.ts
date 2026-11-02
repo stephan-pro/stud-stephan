@@ -40,3 +40,17 @@ export function priceRunState(status: PriceRunStatus | null, now: Timestamp): Pr
 export function priceRunDone(status: PriceRunStatus): number {
   return Math.max(status.total - status.open, 0);
 }
+
+/**
+ * The failed items for the settings: each number with its reason where the run has one
+ * ("11323pb01c01 – BrickLink: nicht gefunden (…)"), the number alone where it has not (items that
+ * failed before the reasons were kept).
+ */
+export function failedItems(
+  status: Pick<PriceRunStatus, "failedNumbers" | "failedReasons">,
+): string[] {
+  return status.failedNumbers.map((number) => {
+    const reason = status.failedReasons?.[number];
+    return reason ? `${number} – ${reason}` : number;
+  });
+}

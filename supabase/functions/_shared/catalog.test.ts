@@ -368,7 +368,7 @@ describe("Katalog: Eintrag (F2)", () => {
       theme: "Star Wars – The Clone Wars",
     });
     expect(item.pieceCount).toBeUndefined();
-    expect(store.values.has("item:legoSet:75372-1")).toBe(false);
+    expect(store.values.has("item:legoSet:v2:75372-1")).toBe(false);
   });
 
   it("Ein Thema ohne Oberthema bleibt einstufig", async () => {

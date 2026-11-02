@@ -250,6 +250,87 @@ describe("Sonderteile im Preisabruf", () => {
   });
 });
 
+describe("Grund eines fehlgeschlagenen Eintrags", () => {
+  it("Der Grund steht am Eintrag, im Stand des laufenden Laufs und nach dem Abschluss im Lauf; Preisstände schreiben keinen", async () => {
+    const person = await signedIn();
+    await save(person, "minifig", aMinifig({ id: "a", bricklinkId: "sw9999" }));
+    await save(person, "minifig", aMinifig({ id: "b", bricklinkId: "sw0194" }));
+    await call("price_run_begin", { p_owner: person.id, p_trigger: "manual" });
+    const items = await call<Claimed[]>("price_run_claim", { p_owner: person.id, p_limit: 50 });
+    const unknown = items.find((item) => item.bricklinkId === "sw9999");
+    const known = items.find((item) => item.bricklinkId === "sw0194");
+    if (!unknown || !known) throw new Error("beide Einträge werden genommen");
+
+    await call("price_run_finish", {
+      p_run: unknown.runId,
+      p_item_type: unknown.itemType,
+      p_bricklink_id: unknown.bricklinkId,
+      p_outcome: "failed",
+      p_reason: "BrickLink: nicht gefunden (RESOURCE_NOT_FOUND)",
+    });
+    // While the run is open the status has the reason already.
+    const running = await new SupabasePriceRunner(person.client).status();
+    expect(running).toMatchObject({
+      failed: 1,
+      failedNumbers: ["sw9999"],
+      failedReasons: { sw9999: "BrickLink: nicht gefunden (RESOURCE_NOT_FOUND)" },
+    });
+
+    // Six named parameters still work (the Edge Function before the migration, and priced items).
+    await call("price_run_finish", {
+      p_run: known.runId,
+      p_item_type: known.itemType,
+      p_bricklink_id: known.bricklinkId,
+      p_outcome: "priced",
+      p_cents: { used: 100 },
+    });
+    const done = await new SupabasePriceRunner(person.client).status();
+    expect(done?.finishedAt).toBeDefined();
+    expect(done).toMatchObject({
+      failed: 1,
+      failedNumbers: ["sw9999"],
+      failedReasons: { sw9999: "BrickLink: nicht gefunden (RESOURCE_NOT_FOUND)" },
+    });
+  });
+
+  it("Ein zu langer Grund wird auf 200 Zeichen gekürzt, ein leerer und der Grund eines anderen Ergebnisses gar nicht gespeichert", async () => {
+    const person = await signedIn();
+    await save(person, "minifig", aMinifig({ id: "c", bricklinkId: "sw0001" }));
+    await save(person, "minifig", aMinifig({ id: "d", bricklinkId: "sw0002" }));
+    await call("price_run_begin", { p_owner: person.id, p_trigger: "manual" });
+    const [first, second] = await call<Claimed[]>("price_run_claim", {
+      p_owner: person.id,
+      p_limit: 50,
+    });
+    if (!first || !second) throw new Error("zwei Einträge");
+    await call("price_run_finish", {
+      p_run: first.runId,
+      p_item_type: first.itemType,
+      p_bricklink_id: first.bricklinkId,
+      p_outcome: "failed",
+      p_reason: "x".repeat(500),
+    });
+    await call("price_run_finish", {
+      p_run: second.runId,
+      p_item_type: second.itemType,
+      p_bricklink_id: second.bricklinkId,
+      p_outcome: "empty",
+      p_reason: "gehört nicht dazu",
+    });
+    const { data } = await admin
+      .from("price_run_items")
+      .select("bricklink_id, state, reason")
+      .eq("owner", person.id)
+      .order("bricklink_id");
+    expect(data).toEqual(
+      [
+        { bricklink_id: first.bricklinkId, state: "failed", reason: "x".repeat(200) },
+        { bricklink_id: second.bricklinkId, state: "empty", reason: null },
+      ].sort((a, b) => a.bricklink_id.localeCompare(b.bricklink_id)),
+    );
+  });
+});
+
 describe("Big Figs im Preisabruf", () => {
   it("Eine Figur oder ein Wunsch mit Typ PART kommt als „PART:Nummer“ in die Warteschlange, eine Minifigur mit der nackten Nummer", async () => {
     const person = await signedIn();

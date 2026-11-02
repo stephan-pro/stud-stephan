@@ -3,12 +3,14 @@
 import { describe, expect, it } from "vitest";
 import { createBricklink } from "./bricklinkClient.ts";
 import {
+  BL_RANCOR_ANSWERS,
   brickLink,
   brickLinkFailure,
   CREDENTIALS,
   fakeFetch,
   MemoryStore,
   noSleep,
+  ok,
   type Route,
 } from "./catalog.fixtures.ts";
 import { type BricklinkHandlerDeps, handleBricklink, parseSeriesRequest } from "./handler.ts";
@@ -428,41 +430,13 @@ describe("P12 Aufbau in Portionen", () => {
     expect(store.state(`${summary.id}|7675-1`)).toBe("done");
   });
 
-  it("Eine Big Fig (Teil der Kategorie Large Figure) zählt zu den Figuren der Reihe, mit ihrem Typ in der Nummer", async () => {
+  it("Eine Big Fig (Rancor aus 75005, echte Antwort von BrickLink) zählt zu den Figuren der Reihe, mit ihrem Typ in der Nummer", async () => {
     const store = new MemorySeriesStore();
     const deps = seriesDeps(store, {
       extra: [
-        [
-          "/items/SET/75372-1/subsets",
-          brickLink([
-            {
-              match_no: "0",
-              entries: [
-                { item: { no: "sw0434", name: "Luke Skywalker", type: "MINIFIG" }, quantity: 1 },
-                {
-                  item: {
-                    no: "11323pb01c01",
-                    name: "Large Figure, Rancor",
-                    type: "PART",
-                    category_id: 1081,
-                  },
-                  quantity: 1,
-                },
-                {
-                  item: { no: "3001", name: "Brick 2 x 4", type: "PART", category_id: 5 },
-                  quantity: 9,
-                },
-              ],
-            },
-          ]),
-        ],
-        [
-          "/categories",
-          brickLink([
-            { category_id: 5, category_name: "Brick" },
-            { category_id: 1081, category_name: "Large Figure" },
-          ]),
-        ],
+        // The set 75372-1 of the series answers with the real subsets of 75005.
+        ["/items/SET/75372-1/subsets", ok(BL_RANCOR_ANSWERS.subsets75005)],
+        ["/categories/147", ok(BL_RANCOR_ANSWERS.categories["147"])],
       ],
     });
     const summary = await startSeries(deps, "stephan", 2);
@@ -471,8 +445,11 @@ describe("P12 Aufbau in Portionen", () => {
     const numbers = detail?.figures.map((figure) => figure.number) ?? [];
     expect(numbers).toContain("sw0434");
     expect(numbers).toContain("PART:11323pb01c01");
-    expect(numbers).not.toContain("3001");
-    expect(numbers.some((number) => number.includes("3001"))).toBe(false);
+    // No brick, head or hinge of the set counts as a figure.
+    expect(numbers.some((number) => number === "3001" || number === "2429c01")).toBe(false);
+    expect(detail?.figures.find((figure) => figure.number === "PART:11323pb01c01")?.name).toBe(
+      "Rancor",
+    );
   });
 
   it("F13 Eine Sammelserie enthält ein Set je Figur; die Figuren werden eine Ebene tiefer gelesen", async () => {

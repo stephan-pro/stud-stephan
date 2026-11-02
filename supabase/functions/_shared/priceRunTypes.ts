@@ -27,6 +27,8 @@ export interface PriceRunStatus {
   skipped: number;
   /** Numbers of the failed items (at most 20). */
   failedNumbers: string[];
+  /** Why each failed item failed, by its number: BrickLink's code and message, short. */
+  failedReasons?: Record<string, string>;
 }
 
 /** `{op: "priceRun", start}` of the app: `start` begins a run if none is open. */

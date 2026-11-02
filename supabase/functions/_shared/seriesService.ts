@@ -419,9 +419,10 @@ async function figuresOfSet(
 ): Promise<SeriesFigureInfo[]> {
   return cached(
     deps,
-    // "figures2": the first version stored names with HTML characters. "figures3": Big Figs count
-    // as figures now, so lists cached before do not have them.
-    `series:figures3:${setNumber}`,
+    // "figures2": the first version stored names with HTML characters. "figures4": Big Figs count
+    // as figures now (3 was the first try, which looked for the category "Large Figure" and found
+    // none), so lists cached before do not have them.
+    `series:figures4:${setNumber}`,
     async () => {
       const { minifigs, sets } = await deps.bricklink.contentsOfSet(setNumber);
       const found = new Map<string, SeriesFigureInfo>();

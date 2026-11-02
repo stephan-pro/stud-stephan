@@ -29,7 +29,7 @@ export type ItemOutcome =
       readonly soldCount: Partial<Record<"new" | "used", number>>;
     }
   | { readonly kind: "empty" }
-  | { readonly kind: "failed" }
+  | { readonly kind: "failed"; readonly reason?: string }
   | { readonly kind: "retry" };
 
 export interface PriceRunStore {
@@ -107,14 +107,26 @@ export function supabasePriceRunStore(settings: StoreSettings, send: Fetch): Pri
     },
 
     async finish(item, outcome) {
-      await rpc("price_run_finish", {
+      const args = {
         p_run: item.runId,
         p_item_type: item.itemType,
         p_bricklink_id: item.bricklinkId,
         p_outcome: outcome.kind,
         p_cents: outcome.kind === "priced" ? outcome.cents : null,
         p_sold: outcome.kind === "priced" ? outcome.soldCount : null,
-      });
+      };
+      const reason = outcome.kind === "failed" ? outcome.reason : undefined;
+      if (reason === undefined) {
+        await rpc("price_run_finish", args);
+        return;
+      }
+      // The reason needs the migration `…_price_run_reasons.sql`; where it is not applied yet the
+      // item is finished without it, so a run never stops for want of the reason.
+      try {
+        await rpc("price_run_finish", { ...args, p_reason: reason });
+      } catch {
+        await rpc("price_run_finish", args);
+      }
     },
 
     async release(items, pausedUntil) {

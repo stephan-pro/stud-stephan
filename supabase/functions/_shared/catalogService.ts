@@ -269,7 +269,9 @@ export async function loadItem(
 ): Promise<CatalogItem> {
   const query = classifyQuery(kind, ref);
   if (query.by !== "number") throw new CatalogError("not_found", "Keine Nummer");
-  const key = `item:${kind}:${query.ref}`;
+  // "legoSet:v2": the figures of a set count Big Figs now (and found none before), so entries
+  // cached before do not stay for 30 days.
+  const key = `item:${kind === "legoSet" ? "legoSet:v2" : kind}:${query.ref}`;
   return cached(deps, key, () => {
     if (kind === "specialPart") return specialPartItem(deps, query.ref);
     return kind === "legoSet" ? setItem(deps, query.ref) : minifigItem(deps, query.ref);

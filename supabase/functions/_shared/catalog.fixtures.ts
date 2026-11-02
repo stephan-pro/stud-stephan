@@ -1,6 +1,7 @@
 // Fake internet for the tests of the functions: answers in the shapes the documented APIs of
 // BrickLink and Rebrickable send (as seen in P2), and a store in memory.
 
+import { readFileSync } from "node:fs";
 import type { CatalogStore } from "./catalogStore.ts";
 import type { Fetch } from "./json.ts";
 
@@ -153,17 +154,28 @@ export const BL_BOOK = {
   year_released: 2019,
 };
 
-// A Big Fig: BrickLink lists the Rancor of 75005 "Rancor Pit" as a part of the category "Large
-// Figure" (`P=11323pb01c01`), not as a minifig. Shaped like the documented answers; the category
-// number and the picture address are made up.
-export const BL_RANCOR = {
-  no: "11323pb01c01",
-  name: "Large Figure, Rancor",
-  type: "PART",
-  category_id: 1081,
-  image_url: "//img.bricklink.com/ItemImage/PN/0/11323pb01c01.png",
-  year_released: 2013,
+// A Big Fig: BrickLink lists the Rancor of 75005 "Rancor Pit" as a part (`P=11323pb01c01`) in the
+// category "Animal, Land", not as a minifig and not in "Large Figure". These are the real answers of
+// BrickLink (recorded with `npm run try:bricklink` in November 2026; the price details of the price
+// guide are left out): the item, its category, its colors, the price guide, and the subsets of the
+// set with its 97 entries. The set's own item and the supersets of the part were not recorded and
+// are made up below.
+const RANCOR_SAMPLE = JSON.parse(
+  readFileSync(new URL("./samples/bricklink-rancor-2026-11.json", import.meta.url), "utf8"),
+) as {
+  item: unknown;
+  category: unknown;
+  colors: unknown;
+  priceNew: unknown;
+  priceUsed: unknown;
+  priceNewColor88: unknown;
+  priceUsedColor88: unknown;
+  subsets75005: unknown;
+  categories: Record<string, unknown>;
 };
+
+/** BrickLink's answers for the Rancor, each with its `meta` and `data` as sent. */
+export const BL_RANCOR_ANSWERS = RANCOR_SAMPLE;
 
 export const BL_RANCOR_PIT = {
   no: "75005-1",
@@ -173,24 +185,6 @@ export const BL_RANCOR_PIT = {
   image_url: "//img.bricklink.com/ItemImage/SN/0/75005-1.png",
   year_released: 2013,
 };
-
-/** The parts and minifigs of 75005: Luke, the Rancor (a Large Figure part) and an ordinary brick. */
-export const BL_RANCOR_PIT_SUBSETS = [
-  {
-    match_no: 0,
-    entries: [
-      {
-        item: { no: "sw0434", name: "Luke Skywalker", type: "MINIFIG", category_id: 65 },
-        quantity: 1,
-      },
-      {
-        item: { no: "11323pb01c01", name: "Large Figure, Rancor", type: "PART", category_id: 1081 },
-        quantity: 1,
-      },
-      { item: { no: "3001", name: "Brick 2 x 4", type: "PART", category_id: 5 }, quantity: 12 },
-    ],
-  },
-];
 
 export const BL_RANCOR_SUPERSETS = [
   {
@@ -204,7 +198,6 @@ export const BL_RANCOR_SUPERSETS = [
 export const BL_CATEGORIES: Record<number, unknown> = {
   65: { category_id: 65, category_name: "The Clone Wars", parent_id: 7 },
   7: { category_id: 7, category_name: "Star Wars", parent_id: 0 },
-  1081: { category_id: 1081, category_name: "Large Figure", parent_id: 0 },
   250: { category_id: 250, category_name: "Miscellaneous", parent_id: 249 },
   249: { category_id: 249, category_name: "Gear", parent_id: 0 },
   251: { category_id: 251, category_name: "Books", parent_id: 0 },
@@ -223,8 +216,8 @@ export function brickLinkRoutes(): Route[] {
       brickLink({ ...BL_REX, no: "sw1306", name: "Clone Trooper, 332nd Company" }),
     ],
     ["/items/PART/11323pb01c01/supersets", brickLink(BL_RANCOR_SUPERSETS)],
-    ["/items/PART/11323pb01c01", brickLink(BL_RANCOR)],
-    ["/items/SET/75005-1/subsets", brickLink(BL_RANCOR_PIT_SUBSETS)],
+    ["/items/PART/11323pb01c01", ok(RANCOR_SAMPLE.item)],
+    ["/items/SET/75005-1/subsets", ok(RANCOR_SAMPLE.subsets75005)],
     ["/items/SET/75005-1", brickLink(BL_RANCOR_PIT)],
     ["/items/GEAR/5010325", brickLink(BL_GEAR)],
     ["/items/SET/5008889-1", brickLink(BL_PROMO_SET)],
@@ -234,9 +227,10 @@ export function brickLinkRoutes(): Route[] {
     ["/categories/250", brickLink(BL_CATEGORIES[250])],
     ["/categories/249", brickLink(BL_CATEGORIES[249])],
     ["/categories/251", brickLink(BL_CATEGORIES[251])],
-    ["/categories/1081", brickLink(BL_CATEGORIES[1081])],
-    // The whole category list (no number after the slash): it must stay behind the ones above.
-    ["/categories", brickLink(Object.values(BL_CATEGORIES))],
+    // The recorded categories of the parts of 75005, the Rancor's among them ("Animal, Land").
+    ["/categories/147", ok(RANCOR_SAMPLE.categories["147"])],
+    ["/categories/238", ok(RANCOR_SAMPLE.categories["238"])],
+    ["/categories/22", ok(RANCOR_SAMPLE.categories["22"])],
     ["/items/MINIFIG/", brickLinkFailure(404, "RESOURCE_NOT_FOUND")],
     ["/items/PART/", brickLinkFailure(404, "RESOURCE_NOT_FOUND")],
     ["/items/SET/", brickLinkFailure(404, "RESOURCE_NOT_FOUND")],

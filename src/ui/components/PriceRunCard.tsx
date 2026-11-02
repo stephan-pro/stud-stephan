@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { CatalogCallError } from "../../backend/catalog";
 import type { PriceRunner, PriceRunStatus } from "../../backend/priceRun";
 import { formatDateTime } from "../../domain/dates";
-import { nextPriceRun, priceRunDone, priceRunState } from "../../domain/priceRun";
+import { failedItems, nextPriceRun, priceRunDone, priceRunState } from "../../domain/priceRun";
 import { TEXTS } from "../texts";
 import { useWritable } from "../useCollection";
 import { Rows } from "./DetailParts";
@@ -160,7 +160,7 @@ export function PriceRunCard({
               ? [{ label: T.skipped, value: T.withoutNumber(status.skipped) }]
               : []),
             ...(status && status.failedNumbers.length > 0
-              ? [{ label: T.failedNumbers, value: status.failedNumbers.join(", ") }]
+              ? [{ label: T.failedNumbers, value: failedItems(status).join("; ") }]
               : []),
             { label: T.nextRun, value: formatDateTime(nextPriceRun(time)) },
           ]}

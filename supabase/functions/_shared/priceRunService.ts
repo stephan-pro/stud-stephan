@@ -73,12 +73,41 @@ export function nextCountDay(now: Date): string {
   ).toISOString();
 }
 
-/** Asks for new and used; both answers are needed, or the item is tried again later. */
+/**
+ * Asks for new and used; both answers are needed, or the item is tried again later. A figure whose
+ * number BrickLink does not know as a minifig is asked for as a part too: that is what a Big Fig
+ * (the Rancor of 75005, `11323pb01c01`) is, also for a figure saved before the type was kept. The
+ * price is kept under the key the item has, so nothing else changes.
+ */
 export async function priceOf(
   bricklink: Pick<BricklinkClient, "price">,
   item: ClaimedItem,
 ): Promise<ItemOutcome> {
-  const { type, number } = bricklinkTarget(item);
+  const target = bricklinkTarget(item);
+  try {
+    return await priceTarget(bricklink, target);
+  } catch (error) {
+    if (
+      item.itemType !== "minifig" ||
+      target.type !== "MINIFIG" ||
+      !(error instanceof CatalogError) ||
+      error.failure !== "not_found"
+    ) {
+      throw error;
+    }
+    try {
+      return await priceTarget(bricklink, { type: "PART", number: target.number });
+    } catch (second) {
+      if (!(second instanceof CatalogError) || second.failure !== "not_found") throw second;
+      throw new CatalogError("not_found", `${error.message}; als Teil: ${second.message}`);
+    }
+  }
+}
+
+async function priceTarget(
+  bricklink: Pick<BricklinkClient, "price">,
+  { type, number }: { readonly type: ItemType; readonly number: string },
+): Promise<ItemOutcome> {
   const answers: Record<"new" | "used", BricklinkPrice> = {
     new: await bricklink.price(type, number, "new"),
     used: await bricklink.price(type, number, "used"),
@@ -96,6 +125,24 @@ export async function priceOf(
 
 function keyOf(item: ClaimedItem): string {
   return `${item.runId}|${item.itemType}|${item.bricklinkId}`;
+}
+
+/** The longest reason kept with a failed item (the database allows 200). */
+const MAX_REASON = 160;
+
+/**
+ * Why an item failed, short and for the person: BrickLink's code and message as `CatalogError`
+ * words them (they never contain a key or a signature: those only travel in the request header).
+ * Anything that looks like OAuth data is cut out all the same.
+ */
+export function failureReason(error: unknown): string {
+  const text =
+    error instanceof CatalogError ? error.message : `unerwarteter Fehler: ${String(error)}`;
+  const clean = text
+    .replace(/oauth_[a-z_]+\s*=\s*"?[^",\s]*"?/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return clean.length > MAX_REASON ? `${clean.slice(0, MAX_REASON - 1)}…` : clean;
 }
 
 /**
@@ -133,7 +180,14 @@ export async function workOnPriceRuns(
           return { processed, paused: true };
         }
         const unknown = error instanceof CatalogError && error.failure === "not_found";
-        outcome = unknown || item.attempts >= MAX_ATTEMPTS ? { kind: "failed" } : { kind: "retry" };
+        const reason = failureReason(error);
+        const giveUp = unknown || item.attempts >= MAX_ATTEMPTS;
+        // The reason goes to the function's log (Supabase Dashboard → Edge Functions → Logs) and,
+        // for an item that is given up, to the run, where the settings show it.
+        console.error(
+          `Preisabruf ${item.itemType} ${item.bricklinkId} (Versuch ${item.attempts}, ${giveUp ? "fehlgeschlagen" : "wird wiederholt"}): ${reason}`,
+        );
+        outcome = giveUp ? { kind: "failed", reason } : { kind: "retry" };
         if (outcome.kind === "retry") retried.add(keyOf(item));
       }
       await deps.store.finish(item, outcome);

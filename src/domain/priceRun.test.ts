@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PriceRunStatus } from "../backend/priceRun";
 import { formatDateTime } from "./dates";
-import { nextPriceRun, priceRunDone, priceRunState } from "./priceRun";
+import { failedItems, nextPriceRun, priceRunDone, priceRunState } from "./priceRun";
 
 function aStatus(fields: Partial<PriceRunStatus> = {}): PriceRunStatus {
   return {
@@ -55,5 +55,23 @@ describe("P11 Zustand des letzten Laufs", () => {
   it("zählt die schon abgefragten Einträge", () => {
     expect(priceRunDone(aStatus({ open: 300 }))).toBe(14);
     expect(priceRunDone(aStatus({ total: 0, open: 0 }))).toBe(0);
+  });
+
+  it("Fehlgeschlagene Einträge nennen ihren Grund, wo es einen gibt, sonst nur die Nummer", () => {
+    expect(
+      failedItems({
+        failedNumbers: ["11323pb01c01", "sw9999", "sw0001"],
+        failedReasons: {
+          "11323pb01c01": "BrickLink: nicht gefunden (RESOURCE_NOT_FOUND)",
+          sw9999: "BrickLink: Code 500",
+        },
+      }),
+    ).toEqual([
+      "11323pb01c01 – BrickLink: nicht gefunden (RESOURCE_NOT_FOUND)",
+      "sw9999 – BrickLink: Code 500",
+      "sw0001",
+    ]);
+    expect(failedItems({ failedNumbers: ["a"] })).toEqual(["a"]);
+    expect(failedItems({ failedNumbers: [] })).toEqual([]);
   });
 });

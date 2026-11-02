@@ -91,6 +91,50 @@ test("P11 Ohne Verbindung sagt die Karte es; beim Tageslimit wartet der Lauf auf
   await expect(row(page, T.result)).toHaveText(/^\d+ aktualisiert, 0 fehlgeschlagen/);
 });
 
+for (const [size, viewport] of [
+  ["Handy", PHONE],
+  ["PC", PC],
+] as const) {
+  test(`P11 ${size}: „Fehlgeschlagen“ nennt je Nummer den Grund von BrickLink, wo es einen gibt, ohne axe-Verstöße`, async ({
+    page,
+  }) => {
+    await signInDirectly(page);
+    await page.setViewportSize(viewport);
+    // A finished run with two failed items, one with a reason and one from before they were kept.
+    const run = {
+      status: {
+        trigger: "manual",
+        day: "2026-11-07",
+        startedAt: "2026-11-07T10:00:00Z",
+        finishedAt: "2026-11-07T10:01:00Z",
+        total: 5,
+        updated: 3,
+        empty: 0,
+        failed: 2,
+        open: 0,
+        skipped: 0,
+        failedNumbers: ["11323pb01c01", "sw9998"],
+        failedReasons: { "11323pb01c01": "BrickLink: nicht gefunden (RESOURCE_NOT_FOUND)" },
+      },
+      queue: [],
+    };
+    await page.addInitScript(([key, value]) => localStorage.setItem(key, value), [
+      "stud-stephan-fake:price-run",
+      JSON.stringify(run),
+    ] as const);
+    await page.goto("#/einstellungen");
+    // The row "Fehlgeschlagen" itself, not "Ergebnis: … 2 fehlgeschlagen".
+    const failedRow = page
+      .locator(".price-run .rows__row")
+      .filter({ has: page.locator("dt", { hasText: new RegExp(`^${T.failedNumbers}$`) }) })
+      .locator("dd");
+    await expect(failedRow).toHaveText(
+      "11323pb01c01 – BrickLink: nicht gefunden (RESOURCE_NOT_FOUND); sw9998",
+    );
+    await expectNoAccessibilityViolations(page);
+  });
+}
+
 test("P11 Kann der Stand nicht gelesen werden, sagt die Karte es und versucht es auf Wunsch neu", async ({
   page,
 }) => {
