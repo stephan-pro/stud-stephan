@@ -1174,6 +1174,11 @@ a.button {
     flex: 0 1 360px;
   }
 
+  /* A search field inside a page (not in the header row) keeps its natural height. */
+  .search.search--page {
+    flex: none;
+  }
+
   .search-toggle {
     display: none;
   }
