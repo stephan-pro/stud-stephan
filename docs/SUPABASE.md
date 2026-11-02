@@ -8,10 +8,10 @@ Stand: 31.10.2026 (Paket P4b). Für den Product Owner und spätere Sitzungen. Di
 |---|---|---|
 | Projekt `stud-stephan`, Ref `ohuqwiypmoqyuxsgouxw`, Region North EU (Stockholm, `eu-north-1`), Free Plan, ohne GitHub-Verbindung | supabase.com, Konto des PO | – |
 | Projekt-URL `https://ohuqwiypmoqyuxsgouxw.supabase.co` und Publishable Key `sb_publishable_…` | GitHub-Repository-Variablen `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`; lokal `.env.local` (Vorlage `.env.example`) | ja (stehen später ohnehin in der App) |
-| Datenbank-Passwort | nur beim PO; `npx supabase link` / `db push` fragen es im eigenen Terminal ab | **nein** |
+| Datenbank-Passwort | nur beim PO; wird für Migrationen nicht mehr gebraucht (SQL Editor) | **nein** |
 | Secret Key / service_role | bleibt im Dashboard; ab P7 nutzen ihn nur die Edge Functions auf dem Server | **nein** |
 | Rebrickable- und BrickLink-Schlüssel | nur als Supabase-Secrets (ab P7, `npm run deploy:functions`, PO im eigenen Terminal) und in `.env.local` | **nein** |
-| Tabellen, Regeln, Funktionen, Dateiablagen | `supabase/migrations/` im Repo, eingespielt mit `npx supabase db push` | ja |
+| Tabellen, Regeln, Funktionen, Dateiablagen | `supabase/migrations/` im Repo, eingespielt im SQL Editor (Abschnitt „Datenbank ändern“) | ja |
 
 | Absender der Anmeldecodes | Gmail-Konto von Krümel (`kruemel.haushaltsapp@gmail.com`) per SMTP, eigenes App-Passwort „Stud Stephan“ | Adresse ja |
 | App-Passwort des Gmail-Kontos | nur im Dashboard (Authentication → Emails → SMTP Settings) | **nein** |
@@ -51,15 +51,31 @@ Eingerichtet und vom PO geprüft am 01.11.2026: Anmeldung am PC und am Handy, ei
 
 ## Datenbank ändern
 
-Jede Änderung ist eine neue Datei in `supabase/migrations/` (nie eine eingespielte ändern). In CI prüft `npm run check:db` sie gegen eine frische lokale Instanz. Ins echte Projekt spielt sie der PO im eigenen Terminal ein (PowerShell im Ordner `stud-stephan`):
+Jede Änderung ist eine neue Datei in `supabase/migrations/` (nie eine eingespielte ändern). In CI prüft `npm run check:db` sie gegen eine frische lokale Instanz.
+
+**Der eine Weg ins echte Projekt: SQL Editor im Browser. Kein Datenbank-Passwort, kein Terminal, kein `db push`.**
+
+1. Warte, bis der letzte Lauf von `check` auf GitHub grün ist (Reiter „Actions“ im Repository).
+2. Öffne die neue Datei in `supabase/migrations/` (z. B. in VS Code) und kopiere den **ganzen** Inhalt (Strg+A, Strg+C).
+3. Öffne https://supabase.com/dashboard/project/ohuqwiypmoqyuxsgouxw/sql/new (im Konto des PO angemeldet).
+4. Füge den Inhalt ein (Strg+V) und klicke **Run**.
+5. Erwartet: „Success. No rows returned“ (oder eine Ergebnistabelle). Eine rote Meldung: nichts weiter tun, die Meldung an Claude geben. Die Datei ist so geschrieben, dass sie gefahrlos noch einmal laufen darf.
+6. Mehrere neue Dateien: eine nach der anderen, in der Reihenfolge der Zeitstempel im Dateinamen (der ältere zuerst).
+7. Trage in der Tabelle unten (oder sag es Claude) ein, dass die Datei eingespielt ist.
+
+**Warum nicht `db push`:** `db push` führt nur Dateien aus, die in der Migrationshistorie der Datenbank (Tabelle `supabase_migrations.schema_migrations`) fehlen. Weil mehrere Dateien (Katalog, Preisabruf, Event-Trigger, Reihen) im SQL Editor eingespielt wurden, kennt die Historie sie womöglich nicht, und `db push` würde sie ein zweites Mal ausführen. Das ist unschädlich, weil jede Datei wiederholbar ist (nächster Absatz), aber unnötig, und es braucht das Datenbank-Passwort. Wer `db push` doch versehentlich ausführt, richtet damit keinen Schaden an (siehe „Vorfall 02.11.2026“).
+
+**Regel für neue Migrationen (Claude):** Jede Datei ab `20261104130000` muss zweimal ausgeführt werden können: `create table/index … if not exists`, `create or replace function`, `drop trigger if exists` vor `create trigger`, `add column if not exists`. Nie `drop table`, `truncate` oder `delete` auf Tabellen außerhalb von Funktionen. Das prüft `src/backend/migrations.test.ts` in `npm run check`.
+
+**Prüfen, was eingespielt ist (nur lesen, im SQL Editor):**
 
 ```
-npx supabase login
-npx supabase link --project-ref ohuqwiypmoqyuxsgouxw
-npx supabase db push
+select version, name from supabase_migrations.schema_migrations order by version;
 ```
 
-`login` öffnet den Browser, `link` fragt das Datenbank-Passwort ab (einmal pro Rechner), `db push` zeigt die neuen Migrationen und spielt sie nach Rückfrage ein. Docker ist dafür nicht nötig. `npx supabase migration list` zeigt danach je Migration „Local“ und „Remote“; stehen in beiden Spalten dieselben Zeitstempel, ist alles eingespielt.
+Die Zeitstempel der Dateien stehen im Repo (`supabase/migrations/`). Fehlt eine Zeile, ist das nur ein Hinweis für `db push`, nicht ein Fehler der Datenbank. Ob die Wirkung da ist, zeigt die Spalte „Prüfung“ in der Tabelle unten.
+
+**Vorfall 02.11.2026:** `20261104120000_photo_focus.sql` ist im echten Projekt eingespielt (Funktion `check_photo_focus` und vier Trigger vorhanden, vom PO per SQL-Abfrage geprüft), offenbar über `npx supabase db push`. Claude hat keinen Zugriff auf die Datenbank und konnte die Historie nicht einsehen; aus den Dateien folgt: (a) `20261031120000_collection.sql` ist **nicht** wiederholbar (`create table` ohne Schutz). Ist `db push` ohne Fehler durchgelaufen, muss diese Datei in der Historie gestanden haben (also früher mit `db push` eingespielt worden sein), sonst wäre der Lauf dort abgebrochen. (b) Die vier Dateien aus dem SQL Editor sind wiederholbar (Schutzklauseln, `cron.schedule` mit Namen ersetzt den Job, keine Daten werden gelöscht). Falls `db push` sie erneut ausgeführt hat, blieb die Wirkung gleich. (c) `photo_focus` läuft nur einmal, die Historie kennt sie jetzt. Nicht belegt, bitte mit der Abfrage oben prüfen und das Ergebnis eintragen: ob `20261101120000`, `20261102120000`, `20261102130000` und `20261103120000` jetzt in der Historie stehen.
 
 | Migration | Inhalt | Im echten Projekt |
 |---|---|---|
@@ -67,6 +83,8 @@ npx supabase db push
 | `20261101120000_catalog.sql` (P7) | Tabellen `catalog_cache` und `catalog_usage` (nur für die Edge Functions, für die App gesperrt), Funktion `catalog_count_call` | eingespielt (spätestens 01.11.2026 zusammen mit P11, SQL Editor); die Datei darf mehrfach laufen |
 | `20261102120000_price_run.sql` (P11) | Erweiterungen `pg_cron` und `pg_net`; Tabellen `price_runs` und `price_run_items` (Besitzer liest, nur die Funktionen schreiben); Warteschlange `price_run_begin/claim/finish/release`, Zähler `price_count_call`, Stand `price_run_status`; Aufruf der Funktion `price_run_call` (Geheimnis aus dem Vault); drei Cron-Jobs | eingespielt (01.11.2026, SQL Editor, vom PO gemeldet); die Datei darf mehrfach laufen |
 | `20261102130000_event_trigger_rights.sql` (nach P11) | Nimmt `anon` und `authenticated` das Ausführungsrecht an Event-Trigger-Funktionen mit SECURITY DEFINER in `public` (betrifft `rls_auto_enable()` von „Enable automatic RLS“; Security-Advisor-Warnungen vom 01.11.2026) | eingespielt (SQL Editor, vom PO gemeldet); die Datei darf mehrfach laufen |
+| `20261103120000_series.sql` (P12) | Warteschlange für den Aufbau der Reihen (`series_builds`, `series_build_sets`) und ihre Funktionen, nur für die Edge Functions | eingespielt (P12, vom PO bestätigt); die Datei darf mehrfach laufen |
+| `20261104120000_photo_focus.sql` | Funktion `check_photo_focus` und vier Trigger, die `photoFocus` (Bildausschnitt) prüfen | eingespielt 02.11.2026 (offenbar per `db push`); Funktion und alle vier Trigger vom PO per SQL-Abfrage bestätigt; nicht wiederholbar, läuft nicht noch einmal |
 
 ## Edge Functions (P7)
 
