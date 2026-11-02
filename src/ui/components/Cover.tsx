@@ -1,5 +1,6 @@
 import type { ComponentChildren } from "preact";
 import { useEffect, useState } from "preact/hooks";
+import { objectPosition } from "../../domain/photoFocus";
 import type { CoverImage } from "../../domain/showcase";
 import { tintIndex } from "../labels";
 import { usePhotoUrl } from "../photos";
@@ -51,6 +52,11 @@ export function Cover({
       {showImage ? (
         <img
           class="cover__image"
+          style={
+            image?.kind === "photo" && image.focus
+              ? { objectPosition: objectPosition(image.focus) }
+              : undefined
+          }
           src={url}
           alt={alt}
           loading="lazy"

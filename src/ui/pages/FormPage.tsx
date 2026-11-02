@@ -20,6 +20,7 @@ import {
 } from "../../domain/forms";
 import { formFromLink, hasFields } from "../../domain/linkForm";
 import { formatMoney } from "../../domain/money";
+import { withFocus } from "../../domain/photoFocus";
 import { shortSetNumber } from "../../domain/showcase";
 import type {
   Collection,
@@ -423,6 +424,13 @@ function FormBody({
           photos={values.photos}
           onPhotos={(change) =>
             setValues((current) => ({ ...current, photos: change(current.photos) }))
+          }
+          focus={values.photoFocus}
+          onFocus={(path, point) =>
+            setValues((current) => ({
+              ...current,
+              photoFocus: withFocus(current.photoFocus, path, point),
+            }))
           }
           remote={remote}
           folder={id}

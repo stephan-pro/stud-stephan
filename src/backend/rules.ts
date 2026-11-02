@@ -131,6 +131,31 @@ function isText(value: unknown, max: number): value is string {
   return typeof value === "string" && value.length >= 1 && value.length <= max;
 }
 
+function isPercent(value: unknown): boolean {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 100;
+}
+
+/**
+ * The points of an object's photos (`photoFocus`): none, or an object with a point `{x, y}` in
+ * whole percent for up to as many photos as an object may have, keyed by photo path.
+ */
+export function isPhotoFocusMap(value: unknown): boolean {
+  if (value === undefined) return true;
+  if (!isObject(value)) return false;
+  const entries = Object.entries(value);
+  return (
+    entries.length <= LIMITS.photosPerObject &&
+    entries.every(
+      ([path, point]) =>
+        isText(path, LIMITS.pathLength) &&
+        isObject(point) &&
+        Object.keys(point).length === 2 &&
+        isPercent(point.x) &&
+        isPercent(point.y),
+    )
+  );
+}
+
 function hasDuplicates(values: readonly unknown[]): boolean {
   return new Set(values).size !== values.length;
 }
@@ -199,6 +224,7 @@ export function checkObject(
       return "invalid_object";
     }
     if (list.some((path) => !isOwnPath(owner, path as string))) return "invalid_path";
+    if (!isPhotoFocusMap(object.photoFocus)) return "invalid_object";
     photos = list as string[];
   }
 

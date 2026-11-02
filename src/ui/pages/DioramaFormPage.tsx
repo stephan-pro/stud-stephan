@@ -12,6 +12,7 @@ import {
   formFromDiorama,
   validateDioramaForm,
 } from "../../domain/dioramaForm";
+import { withFocus } from "../../domain/photoFocus";
 import type { Collection, StudioFile } from "../../domain/types";
 import { FormCard, fieldId, TextField } from "../components/Fields";
 import { Icon } from "../components/Icon";
@@ -173,6 +174,13 @@ function FormBody({
           photos={values.photos}
           onPhotos={(change) =>
             setValues((current) => ({ ...current, photos: change(current.photos) }))
+          }
+          focus={values.photoFocus}
+          onFocus={(path, point) =>
+            setValues((current) => ({
+              ...current,
+              photoFocus: withFocus(current.photoFocus, path, point),
+            }))
           }
           remote={remote}
           folder={id}

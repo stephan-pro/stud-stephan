@@ -1,5 +1,6 @@
 import { formatMonth } from "../../domain/dates";
 import { formatMoney } from "../../domain/money";
+import { photoImage } from "../../domain/showcase";
 import type { Minifig, PricePoint } from "../../domain/types";
 import { valueOfItem } from "../../domain/value";
 import { detailHash } from "../route";
@@ -25,7 +26,7 @@ export function CopyRow({
   return (
     <a class="copy-row pressable" href={detailHash({ type: "minifig", id: copy.id })}>
       <Cover
-        image={photo ? { kind: "photo", path: photo } : undefined}
+        image={photo ? photoImage(copy, photo) : undefined}
         alt=""
         tintKey={copy.id}
         scribbleId={`copy-${copy.id}`}

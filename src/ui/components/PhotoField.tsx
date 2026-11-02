@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { type Remote, RemoteError } from "../../backend/remote";
 import { LIMITS } from "../../backend/rules";
+import { focusOf, type PhotoFocusMap } from "../../domain/photoFocus";
+import type { PhotoFocus } from "../../domain/types";
 import { PhotoError, resizePhoto } from "../../files/browserPhoto";
 import { uploadFile } from "../../files/upload";
 import { TEXTS } from "../texts";
 import { Cover } from "./Cover";
+import { FocusSheet } from "./FocusSheet";
 import { Icon } from "./Icon";
 
 const T = TEXTS.form.photos;
@@ -25,6 +28,10 @@ interface PhotoFieldProps {
   readonly photos: readonly string[];
   /** Changes the list; takes a function so photos that arrive together do not overwrite each other. */
   readonly onPhotos: (change: (photos: string[]) => string[]) => void;
+  /** The point of each photo that matters, by path; photos without one show their middle. */
+  readonly focus: PhotoFocusMap;
+  /** A photo's point was set. */
+  readonly onFocus: (path: string, focus: PhotoFocus) => void;
   /** The server's files; none in a build without a server. */
   readonly remote: Pick<Remote, "putFile" | "removeFile"> | undefined;
   /** The object's folder in storage: "<id>/photo-….webp". */
@@ -66,6 +73,8 @@ function jobLabel(job: Job): string {
 export function PhotoField({
   photos,
   onPhotos,
+  focus,
+  onFocus,
   remote,
   folder,
   unsaved,
@@ -73,6 +82,8 @@ export function PhotoField({
   initialFile,
 }: PhotoFieldProps) {
   const [jobs, setJobs] = useState<readonly Job[]>([]);
+  // The photo whose point is being set.
+  const [editing, setEditing] = useState<string | undefined>();
   const nextKey = useRef(0);
   const input = useRef<HTMLInputElement>(null);
   const waiting = jobs.length;
@@ -156,11 +167,17 @@ export function PhotoField({
         {photos.map((path, index) => (
           <li key={path} class="photo-slot">
             <Cover
-              image={{ kind: "photo", path }}
+              image={{ kind: "photo", path, focus: focusOf(focus, path) }}
               alt={`${name}: ${T.alt(index + 1, photos.length)}`}
               tintKey={path}
               scribbleId={`form-photo-${index}`}
               variant="thumb"
+            />
+            <button
+              type="button"
+              class="photo-slot__open"
+              aria-label={T.setFocus(index + 1)}
+              onClick={() => setEditing(path)}
             />
             {index === 0 && <span class="photo-slot__badge">{T.cover}</span>}
             <div class="photo-slot__actions">
@@ -235,6 +252,15 @@ export function PhotoField({
         multiple
         onChange={(event) => add(event.currentTarget.files)}
       />
+      {editing !== undefined && photos.includes(editing) && (
+        <FocusSheet
+          path={editing}
+          name={name}
+          focus={focusOf(focus, editing)}
+          onSave={(point) => onFocus(editing, point)}
+          onClose={() => setEditing(undefined)}
+        />
+      )}
       <p class="card__text">{room > 0 ? T.hint : T.full}</p>
       {!remote && <p class="card__text">{T.noServer}</p>}
     </>

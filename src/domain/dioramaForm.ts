@@ -12,7 +12,8 @@ import {
   wholeNumber,
 } from "./forms";
 import { parseMoney } from "./money";
-import type { Diorama, Id, IsoDate, StudioFile, Timestamp } from "./types";
+import { cleanFocus } from "./photoFocus";
+import type { Diorama, Id, IsoDate, PhotoFocus, StudioFile, Timestamp } from "./types";
 
 /** Everything the fields of the diorama form hold. */
 export interface DioramaFormValues {
@@ -25,6 +26,8 @@ export interface DioramaFormValues {
   note: string;
   /** Paths in storage, in order; the first one is the cover. */
   photos: string[];
+  /** The point of each photo that matters, by path; none means the middle. */
+  photoFocus: Record<string, PhotoFocus>;
   studioFiles: StudioFile[];
 }
 
@@ -43,6 +46,7 @@ export function emptyDioramaForm(): DioramaFormValues {
     links: "",
     note: "",
     photos: [],
+    photoFocus: {},
     studioFiles: [],
   };
 }
@@ -56,6 +60,7 @@ export function formFromDiorama(diorama: Diorama): DioramaFormValues {
     links: diorama.links.join("\n"),
     note: diorama.note ?? "",
     photos: [...diorama.photos],
+    photoFocus: { ...diorama.photoFocus },
     studioFiles: diorama.studioFiles.map((file) => ({ ...file })),
   };
 }
@@ -103,11 +108,13 @@ export function buildDiorama(values: DioramaFormValues, context: DioramaBuildCon
   const value = trimmed(values.manualValue);
   const cents = value === undefined ? undefined : parseMoney(value);
   const note = trimmed(values.note);
+  const photoFocus = cleanFocus(values.photoFocus, values.photos);
   return {
     type: "diorama",
     id: context.id,
     name: values.name.trim(),
     photos: [...values.photos],
+    ...(photoFocus ? { photoFocus } : {}),
     links: linesOf(values.links),
     studioFiles: values.studioFiles.map((file) => ({ ...file })),
     createdAt: existing?.createdAt ?? context.createdAt,

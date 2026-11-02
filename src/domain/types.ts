@@ -29,6 +29,12 @@ export interface ManualValue {
   enteredOn: IsoDate;
 }
 
+/** A point of a photo in percent from its top left corner, whole numbers from 0 to 100. */
+export interface PhotoFocus {
+  x: number;
+  y: number;
+}
+
 /** Fields shared by minifigs, sets and special parts. */
 interface ItemBase {
   id: Id;
@@ -44,6 +50,8 @@ interface ItemBase {
   manualValue?: ManualValue;
   /** Paths of own photos in storage, in order; the first one is the cover. */
   photos: string[];
+  /** The part of a photo to show where it fills a box, by path; none means the middle. */
+  photoFocus?: Record<string, PhotoFocus>;
   catalogImageUrl?: string;
   /** Links kept at the object (F3), e.g. the Rebrickable or SetDB page. */
   links: string[];
@@ -138,6 +146,7 @@ export interface Diorama {
   id: Id;
   name: string;
   photos: string[];
+  photoFocus?: Record<string, PhotoFocus>;
   links: string[];
   pieceCount?: number;
   /** MOCs have no market value; Stephan may estimate one (F10). */

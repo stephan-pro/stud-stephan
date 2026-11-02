@@ -1,6 +1,7 @@
 // The showcase (F11): which tiles there are, filtered and sorted. Copies of the same figure share
 // one tile with a count ("×3", F5).
 
+import type { PhotoFocusMap } from "./photoFocus";
 import { itemNumber } from "./prices";
 import type {
   Collection,
@@ -9,6 +10,7 @@ import type {
   Manufacturer,
   ManufacturerKind,
   Minifig,
+  PhotoFocus,
   PricePoint,
   ShowcaseItem,
   SpecialPart,
@@ -77,11 +79,22 @@ export function groupCopies(minifigs: readonly Minifig[]): CopyGroup[] {
   }));
 }
 
-export type CoverImage = { kind: "photo"; path: string } | { kind: "catalog"; url: string };
+export type CoverImage =
+  | { kind: "photo"; path: string; focus?: PhotoFocus }
+  | { kind: "catalog"; url: string };
+
+/** An own photo with its point, as boxes that fill their area need it. */
+export function photoImage(
+  object: { readonly photoFocus?: PhotoFocusMap | undefined },
+  path: string,
+): CoverImage {
+  const focus = object.photoFocus?.[path];
+  return focus ? { kind: "photo", path, focus } : { kind: "photo", path };
+}
 
 /** The gallery of a detail page: own photos in order, the catalog image last (S2). */
 export function galleryImages(item: ShowcaseItem): CoverImage[] {
-  const images: CoverImage[] = item.photos.map((path) => ({ kind: "photo", path }));
+  const images: CoverImage[] = item.photos.map((path) => photoImage(item, path));
   if (item.catalogImageUrl) images.push({ kind: "catalog", url: item.catalogImageUrl });
   return images;
 }
@@ -91,7 +104,7 @@ export function coverImage(entry: ShowcaseEntry): CoverImage | undefined {
   const items = entryItems(entry);
   for (const item of items) {
     const path = item.photos[0];
-    if (path) return { kind: "photo", path };
+    if (path) return photoImage(item, path);
   }
   const url = items.find((item) => item.catalogImageUrl)?.catalogImageUrl;
   return url ? { kind: "catalog", url } : undefined;

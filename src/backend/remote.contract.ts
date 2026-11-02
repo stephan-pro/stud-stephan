@@ -366,6 +366,48 @@ export function describeRemoteContract(name: string, setup: () => Promise<Contra
         });
       });
 
+      it("Der Bildausschnitt eines Fotos wird mit dem Objekt gespeichert und geladen", async () => {
+        const folder = await ownFolder(a);
+        const photo = `${folder}rex.webp`;
+        const photoFocus = { [photo]: { x: 0, y: 100 } };
+        await a.save("minifig", aMinifig({ id: "rex", photos: [photo], photoFocus }));
+        await a.save("diorama", aDiorama({ id: "umbara", photos: [photo], photoFocus }));
+        const loaded = await a.load();
+        expect(loaded.minifigs.find((m) => m.id === "rex")?.photoFocus).toEqual(photoFocus);
+        expect(loaded.dioramas.find((d) => d.id === "umbara")?.photoFocus).toEqual(photoFocus);
+      });
+
+      it("Ein Bildausschnitt außerhalb von 0 bis 100 Prozent oder ohne ganze Zahlen wird abgelehnt", async () => {
+        const folder = await ownFolder(a);
+        const photo = `${folder}rex.webp`;
+        const tooMany = Object.fromEntries(
+          Array.from({ length: LIMITS.photosPerObject + 1 }, (_, i) => [
+            `${folder}${i}.webp`,
+            { x: 1, y: 1 },
+          ]),
+        );
+        for (const photoFocus of [
+          { [photo]: { x: 101, y: 50 } },
+          { [photo]: { x: 50, y: -1 } },
+          { [photo]: { x: 50.5, y: 50 } },
+          { [photo]: { x: "50", y: 50 } },
+          { [photo]: { x: 50 } },
+          { [photo]: { x: 50, y: 50, z: 1 } },
+          { [photo]: 5 },
+          tooMany,
+          [],
+          "mitte",
+        ]) {
+          await expect(
+            a.save(
+              "minifig",
+              aMinifig({ id: "rex", photos: [photo], photoFocus } as unknown as Partial<Minifig>),
+            ),
+          ).rejects.toMatchObject({ permanent: true, reason: "invalid_object" });
+        }
+        expect((await a.load()).minifigs).toEqual([]);
+      });
+
       it("Ein Objekt über 32 KB wird abgelehnt", async () => {
         await expect(
           a.save("minifig", aMinifig({ note: "x".repeat(LIMITS.objectBytes + 1) })),

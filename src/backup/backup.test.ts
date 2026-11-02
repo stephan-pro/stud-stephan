@@ -467,6 +467,24 @@ describe("Ersetzen", () => {
     expect(await other.remote.storageUsage()).toBe(await original.remote.storageUsage());
   });
 
+  it("F15 Der Bildausschnitt eines Fotos folgt dem Foto auf den neuen Pfad", async () => {
+    const original = newPerson();
+    await fillCollection(original.remote);
+    const { source, backup } = await backupOf(original.remote);
+    const other = newPerson();
+
+    await restoreBackup({ remote: other.remote, source, backup, sleep });
+
+    const rex = (await other.remote.load()).minifigs.find((m) => m.id === "minifig-rex");
+    expect(rex?.photos).toHaveLength(2);
+    expect(rex?.photoFocus).toEqual({ [rex?.photos[1] ?? ""]: { x: 30, y: 70 } });
+    expect(JSON.stringify(backup.manifest.collection)).toContain("fotos/000002.webp");
+    const inFile = backup.manifest.collection.minifigs.find((m) => m.id === "minifig-rex");
+    expect(Object.keys(inFile?.photoFocus ?? {})).toEqual([
+      expect.stringMatching(/^fotos\/\d{6}\.webp$/),
+    ]);
+  });
+
   it("F15 Die Dateien bekommen neue Pfade; Namen aus der Datei werden nie als Speicherpfad übernommen", async () => {
     const original = newPerson();
     await fillCollection(original.remote);

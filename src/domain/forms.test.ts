@@ -212,6 +212,26 @@ describe("F5 Aus dem Formular wird eine Figur", () => {
     });
   });
 
+  it("Der Bildausschnitt wird mit den Fotos gespeichert, nur für gelistete Fotos und nicht die Mitte", () => {
+    const item = buildItem(
+      "minifig",
+      filled({
+        photos: ["a.webp", "b.webp"],
+        photoFocus: {
+          "a.webp": { x: 30, y: 70 },
+          "b.webp": { x: 50, y: 50 },
+          "gone.webp": { x: 1, y: 1 },
+        },
+      }),
+      context(),
+    );
+    expect(item.photoFocus).toEqual({ "a.webp": { x: 30, y: 70 } });
+    expect(buildItem("minifig", filled({ photos: ["a.webp"] }), context())).not.toHaveProperty(
+      "photoFocus",
+    );
+    expect(formFromItem(item).photoFocus).toEqual({ "a.webp": { x: 30, y: 70 } });
+  });
+
   it("F4 Leere Felder werden nicht gespeichert", () => {
     const item = buildItem("minifig", filled(), context());
     expect(Object.keys(item).sort()).toEqual(

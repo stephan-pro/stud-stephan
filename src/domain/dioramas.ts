@@ -1,12 +1,12 @@
 // Figures in dioramas (F8). A figure stands in at most one diorama: the minifig holds the one
 // `dioramaId`, so two dioramas can never claim the same figure.
 
-import { type CoverImage, normalize } from "./showcase";
+import { type CoverImage, normalize, photoImage } from "./showcase";
 import type { Collection, Diorama, Id, Minifig } from "./types";
 
 /** The photos of a diorama in their order, the first is the cover (S5, S6). */
 export function dioramaImages(diorama: Diorama): CoverImage[] {
-  return diorama.photos.map((path) => ({ kind: "photo", path }));
+  return diorama.photos.map((path) => photoImage(diorama, path));
 }
 
 export function figuresInDiorama(collection: Collection, dioramaId: Id): Minifig[] {

@@ -959,6 +959,17 @@ export const TEXTS = {
       makeCover: (index: number) => `Foto ${index} zum Titelbild machen`,
       remove: (index: number) => `Foto ${index} entfernen`,
       cover: "Titelbild",
+      setFocus: (index: number) => `Bildausschnitt von Foto ${index} festlegen`,
+      focus: {
+        title: "Bildausschnitt",
+        close: "Bildausschnitt schließen",
+        hint: "Tippe auf die Stelle, die in Kacheln und kleinen Bildern sichtbar bleiben soll, meist die Figur. Mit den Pfeiltasten verschiebst du den Punkt, mit Umschalt feiner.",
+        areaLabel: (name: string) => `Bildausschnitt von ${name}`,
+        valueText: (x: number, y: number) => `${x} % von links, ${y} % von oben`,
+        preview: "So sieht die Kachel aus.",
+        reset: "Mitte",
+        done: "Fertig",
+      },
       working: "Wird verkleinert …",
       sending: (attempt: number, attempts: number) =>
         attempt === 1

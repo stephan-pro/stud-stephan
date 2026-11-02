@@ -4,6 +4,7 @@
 
 import type { CatalogExtras } from "./catalog";
 import { parseMoney } from "./money";
+import { cleanFocus } from "./photoFocus";
 import { shortSetNumber } from "./showcase";
 import type {
   Cents,
@@ -17,6 +18,7 @@ import type {
   Minifig,
   ModPart,
   ModPosition,
+  PhotoFocus,
   SetStatus,
   ShowcaseItem,
   SpecialPartKind,
@@ -77,6 +79,8 @@ export interface FormValues {
   note: string;
   /** Paths in storage, in order; the first one is the cover. */
   photos: string[];
+  /** The point of each photo that matters, by path; none means the middle. */
+  photoFocus: Record<string, PhotoFocus>;
   mods: ModPart[];
 }
 
@@ -177,6 +181,7 @@ export function emptyForm(): FormValues {
     links: "",
     note: "",
     photos: [],
+    photoFocus: {},
     mods: [],
   };
 }
@@ -252,6 +257,7 @@ export function formFromItem(item: ShowcaseItem, sets: readonly LegoSet[] = []):
     links: item.links.join("\n"),
     note: item.note ?? "",
     photos: [...item.photos],
+    photoFocus: { ...item.photoFocus },
   };
   if (item.type === "minifig") {
     const own = sets.find((set) => set.id === item.fromSet?.setId);
@@ -415,6 +421,7 @@ export function buildItem(type: FormType, values: FormValues, context: BuildCont
   const note = trimmed(values.note);
   const purchaseCents = purchase === undefined ? undefined : parseMoney(purchase);
   const catalogImageUrl = existing?.catalogImageUrl ?? context.catalog?.imageUrl;
+  const photoFocus = cleanFocus(values.photoFocus, values.photos);
 
   const base = {
     id: context.id,
@@ -422,6 +429,7 @@ export function buildItem(type: FormType, values: FormValues, context: BuildCont
     manufacturer: manufacturerOf(values),
     condition: values.condition,
     photos: [...values.photos],
+    ...(photoFocus ? { photoFocus } : {}),
     links: linesOf(values.links),
     createdAt: existing?.createdAt ?? context.createdAt,
     ...(theme ? { theme } : {}),

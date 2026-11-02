@@ -76,6 +76,7 @@ export async function fillCollection(remote: Remote): Promise<Collection> {
     aMinifig({
       id: "minifig-rex",
       photos: [rexOne, rexTwo],
+      photoFocus: { [rexTwo]: { x: 30, y: 70 } },
       dioramaId: "diorama-umbara",
       fromSet: { label: "75372-1", setId: "set-75372" },
       mods: [{ id: "mod-1", position: "head", description: "Neuer Kopf", price: 450 }],
@@ -164,23 +165,29 @@ export async function fingerprint(remote: Remote): Promise<unknown> {
   const collection = await remote.load();
   const sum = async (bucket: "photos" | "studio-files", path: string) =>
     crc32(await remote.getFile(bucket, path));
-  const photos = async (paths: readonly string[]) =>
-    Promise.all(paths.map((path) => sum("photos", path)));
+  // Photos and the points keyed by their paths, both by the checksum of the photo.
+  const withPhotos = async <T extends { photos: string[]; photoFocus?: Record<string, unknown> }>(
+    o: T,
+  ) => ({
+    ...o,
+    photos: await Promise.all(o.photos.map((path) => sum("photos", path))),
+    photoFocus: Object.fromEntries(
+      await Promise.all(
+        Object.entries(o.photoFocus ?? {}).map(async ([path, point]) => [
+          String(await sum("photos", path)),
+          point,
+        ]),
+      ),
+    ),
+  });
   return {
     ...collection,
-    minifigs: await Promise.all(
-      collection.minifigs.map(async (o) => ({ ...o, photos: await photos(o.photos) })),
-    ),
-    sets: await Promise.all(
-      collection.sets.map(async (o) => ({ ...o, photos: await photos(o.photos) })),
-    ),
-    specialParts: await Promise.all(
-      collection.specialParts.map(async (o) => ({ ...o, photos: await photos(o.photos) })),
-    ),
+    minifigs: await Promise.all(collection.minifigs.map(withPhotos)),
+    sets: await Promise.all(collection.sets.map(withPhotos)),
+    specialParts: await Promise.all(collection.specialParts.map(withPhotos)),
     dioramas: await Promise.all(
       collection.dioramas.map(async (o) => ({
-        ...o,
-        photos: await photos(o.photos),
+        ...(await withPhotos(o)),
         studioFiles: await Promise.all(
           o.studioFiles.map(async (file) => ({
             ...file,

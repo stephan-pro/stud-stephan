@@ -3,7 +3,7 @@
 // as storage paths: the import gives every file a new path.
 
 import type { Bucket, ObjectKind } from "../backend/rules";
-import type { Collection } from "../domain/types";
+import type { Collection, PhotoFocus } from "../domain/types";
 
 export const BACKUP_APP = "stud-stephan";
 /** The layout of the ZIP (names, `daten.json`); the data's own version is `schemaVersion`. */
@@ -120,22 +120,39 @@ export function remapFiles(
   collection: BackupCollection,
   map: (bucket: Bucket, path: string) => string | undefined,
 ): BackupCollection {
-  const photos = (paths: readonly string[]) =>
-    paths.flatMap((path) => {
-      const mapped = map("photos", path);
-      return mapped === undefined ? [] : [mapped];
+  // A photo's point (`photoFocus`, keyed by path) follows its photo; the map is asked once per path.
+  const withPhotos = <T extends { photos: string[]; photoFocus?: Record<string, PhotoFocus> }>(
+    object: T,
+  ): T => {
+    const { photoFocus, ...rest } = object;
+    const mapped = new Map<string, string>();
+    const photos = object.photos.flatMap((path) => {
+      const entry = map("photos", path);
+      if (entry === undefined) return [];
+      mapped.set(path, entry);
+      return [entry];
     });
+    // Something that is no map of points stays as it is: reading a backup refuses it afterwards.
+    const isMap =
+      typeof photoFocus === "object" && photoFocus !== null && !Array.isArray(photoFocus);
+    const focus = isMap
+      ? Object.fromEntries(
+          Object.entries(photoFocus).flatMap(([path, point]) => {
+            const entry = mapped.get(path);
+            return entry === undefined ? [] : [[entry, point]];
+          }),
+        )
+      : photoFocus;
+    const keep = focus !== undefined && !(isMap && Object.keys(focus).length === 0);
+    return { ...rest, photos, ...(keep ? { photoFocus: focus } : {}) } as T;
+  };
   return {
     ...collection,
-    minifigs: collection.minifigs.map((object) => ({ ...object, photos: photos(object.photos) })),
-    sets: collection.sets.map((object) => ({ ...object, photos: photos(object.photos) })),
-    specialParts: collection.specialParts.map((object) => ({
-      ...object,
-      photos: photos(object.photos),
-    })),
+    minifigs: collection.minifigs.map(withPhotos),
+    sets: collection.sets.map(withPhotos),
+    specialParts: collection.specialParts.map(withPhotos),
     dioramas: collection.dioramas.map((object) => ({
-      ...object,
-      photos: photos(object.photos),
+      ...withPhotos(object),
       studioFiles: object.studioFiles.flatMap((file) => {
         const path = map("studio-files", file.path);
         return path === undefined ? [] : [{ ...file, path }];
