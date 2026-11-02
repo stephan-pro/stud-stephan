@@ -2407,6 +2407,13 @@ a.diorama-row .copy-row__name {
   flex: 1;
 }
 
+.diorama-row__text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .choose-row {
   width: 100%;
   font: inherit;

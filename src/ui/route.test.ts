@@ -18,6 +18,7 @@ import {
   SIDEBAR_NAVIGATION,
   searchHash,
   seriesHash,
+  setAssignHash,
 } from "./route";
 import { TEXTS } from "./texts";
 
@@ -277,6 +278,24 @@ describe("P10 Adressen der Dioramen", () => {
     "#/erfassen/diorama/x",
   ])("P10 Die unvollständige Adresse %s öffnet die Vitrine", (hash) => {
     expect(parseLocation(hash)).toEqual({ route: "showcase" });
+  });
+});
+
+describe("Steht in: Adresse zum Zuordnen von Figuren zu einem Set", () => {
+  it("Die Adresse gehört zur Vitrine und führt zum Set zurück", () => {
+    expect(setAssignHash("set-1")).toBe("#/vitrine/set/set-1/zuordnen");
+    expect(parseLocation("#/vitrine/set/set-1/zuordnen")).toEqual({
+      route: "showcase",
+      assignSet: "set-1",
+    });
+    expect(locationHash(parseLocation("#/vitrine/set/a%20b/zuordnen"))).toBe(
+      "#/vitrine/set/a%20b/zuordnen",
+    );
+  });
+
+  it("Nur Sets haben diese Seite", () => {
+    expect(parseLocation("#/vitrine/figur/x/zuordnen")).toEqual({ route: "showcase" });
+    expect(parseLocation("#/vitrine/set//zuordnen")).toEqual({ route: "showcase" });
   });
 });
 

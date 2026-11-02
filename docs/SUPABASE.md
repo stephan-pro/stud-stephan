@@ -85,6 +85,7 @@ Die Zeitstempel der Dateien stehen im Repo (`supabase/migrations/`). Fehlt eine 
 | `20261102130000_event_trigger_rights.sql` (nach P11) | Nimmt `anon` und `authenticated` das Ausführungsrecht an Event-Trigger-Funktionen mit SECURITY DEFINER in `public` (betrifft `rls_auto_enable()` von „Enable automatic RLS“; Security-Advisor-Warnungen vom 01.11.2026) | eingespielt (SQL Editor, vom PO gemeldet); die Datei darf mehrfach laufen |
 | `20261103120000_series.sql` (P12) | Warteschlange für den Aufbau der Reihen (`series_builds`, `series_build_sets`) und ihre Funktionen, nur für die Edge Functions | eingespielt (P12, vom PO bestätigt); die Datei darf mehrfach laufen |
 | `20261104120000_photo_focus.sql` | Funktion `check_photo_focus` und vier Trigger, die `photoFocus` (Bildausschnitt) prüfen | eingespielt 02.11.2026 (offenbar per `db push`); Funktion und alle vier Trigger vom PO per SQL-Abfrage bestätigt; nicht wiederholbar, läuft nicht noch einmal |
+| `20261105120000_stands_in.sql` („Steht in“) | Funktion `check_minifig_place` mit Trigger an `minifigs` (`standsInSetId` ist ein Text, nie zusammen mit `dioramaId`) und Funktion `release_figures_of_set` mit Trigger an `lego_sets` (gelöschtes Set nimmt die Figuren wieder heraus) | **noch nicht eingespielt**; im SQL Editor ausführen (Schritte oben), die Datei darf mehrfach laufen |
 
 ## Edge Functions (P7)
 

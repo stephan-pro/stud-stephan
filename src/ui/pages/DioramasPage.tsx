@@ -1,9 +1,5 @@
-import {
-  dioramaImages,
-  figuresInDiorama,
-  figuresWithoutDiorama,
-  filterDioramas,
-} from "../../domain/dioramas";
+import { dioramaImages, figuresInDiorama, filterDioramas } from "../../domain/dioramas";
+import { figuresNotOnDisplay } from "../../domain/placement";
 import type { Diorama } from "../../domain/types";
 import { Cover } from "../components/Cover";
 import { Icon } from "../components/Icon";
@@ -26,29 +22,29 @@ function factsOf(diorama: Diorama, figures: number): string {
 }
 
 /**
- * S5: the dioramas as big picture cards, with a banner on top that counts the figures that stand in
- * none and opens the showcase filtered to them.
+ * S5: the dioramas as big picture cards, with a banner on top that counts the figures that are not
+ * displayed (in no diorama and in no own set) and opens the showcase filtered to them.
  */
 export function DioramasPage({
   data,
   query = "",
-  onShowWithoutDiorama,
+  onShowNotOnDisplay,
 }: {
   readonly data: LoadedCollection;
   /** The search of the page header (P15). */
   readonly query?: string;
-  /** Shows the showcase with the filter "ohne Diorama". */
-  readonly onShowWithoutDiorama: () => void;
+  /** Shows the showcase with the filter "nicht ausgestellt". */
+  readonly onShowNotOnDisplay: () => void;
 }) {
   if (data.state.status !== "ready") return <Unready data={data} />;
   const { collection } = data.state;
-  const without = figuresWithoutDiorama(collection).length;
+  const without = figuresNotOnDisplay(collection).length;
   const shown = filterDioramas(collection, query);
 
   return (
     <>
       {without > 0 && (
-        <button type="button" class="without-banner pressable" onClick={onShowWithoutDiorama}>
+        <button type="button" class="without-banner pressable" onClick={onShowNotOnDisplay}>
           <Scribbles id="without-banner-scribbles" />
           <span class="without-banner__text">
             <span class="without-banner__count">{T.withoutBanner.count(without)}</span>

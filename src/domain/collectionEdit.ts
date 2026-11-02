@@ -56,14 +56,26 @@ export function withRestored(
   const linked = (figure: Minifig) =>
     kind === "diorama"
       ? figure.dioramaId === id
-      : kind === "legoSet" && figure.fromSet?.setId === id;
+      : kind === "legoSet" && (figure.fromSet?.setId === id || figure.standsInSetId === id);
   const wasLinked = new Set(before.minifigs.filter(linked).map((figure) => figure.id));
+  const wasStanding = new Set(
+    before.minifigs.filter((figure) => figure.standsInSetId === id).map((figure) => figure.id),
+  );
+  const wasFromSet = new Set(
+    before.minifigs.filter((figure) => figure.fromSet?.setId === id).map((figure) => figure.id),
+  );
   return {
     ...restored,
     minifigs: restored.minifigs.map((figure) => {
       if (!wasLinked.has(figure.id)) return figure;
       if (kind === "diorama") return { ...figure, dioramaId: id };
-      return { ...figure, fromSet: { ...figure.fromSet, setId: id } };
+      const back = wasFromSet.has(figure.id)
+        ? { ...figure, fromSet: { ...figure.fromSet, setId: id } }
+        : figure;
+      // A figure that has meanwhile been put into a diorama stays there (never both).
+      return wasStanding.has(figure.id) && !figure.dioramaId
+        ? { ...back, standsInSetId: id }
+        : back;
     }),
   };
 }
@@ -86,10 +98,13 @@ export function withoutObject(collection: Collection, kind: ObjectKind, id: Id):
   if (kind === "legoSet") {
     return {
       ...rest,
-      minifigs: rest.minifigs.map((minifig) => {
+      minifigs: rest.minifigs.map((figure) => {
+        if (figure.standsInSetId !== id && figure.fromSet?.setId !== id) return figure;
+        // A deleted set no longer displays figures; they stay, displayed nowhere of their own.
+        const { standsInSetId: _, ...minifig } = figure;
         if (minifig.fromSet?.setId !== id) return minifig;
-        const { setId: _, ...fromSet } = minifig.fromSet;
-        const { fromSet: __, ...without } = minifig;
+        const { setId: __, ...fromSet } = minifig.fromSet;
+        const { fromSet: ___, ...without } = minifig;
         return Object.keys(fromSet).length === 0 ? without : { ...without, fromSet };
       }),
     };

@@ -1,16 +1,8 @@
 // What the detail pages (S2 figure, S3 set, S4 special part) need besides the object itself:
-// other copies, the set a figure comes from, the diorama it stands in, the figures of a set.
+// other copies, the set a figure comes from, the figures of a set. Where a figure stands is in `placement.ts`.
 
 import { groupCopies, showcaseItems } from "./showcase";
-import type {
-  CatalogFigure,
-  Collection,
-  Diorama,
-  Id,
-  LegoSet,
-  Minifig,
-  ShowcaseItem,
-} from "./types";
+import type { CatalogFigure, Collection, Id, LegoSet, Minifig, ShowcaseItem } from "./types";
 
 export function findItem(
   collection: Collection,
@@ -32,11 +24,6 @@ export function otherCopies(collection: Collection, minifig: Minifig): Minifig[]
 export function ownSetOf(collection: Collection, minifig: Minifig): LegoSet | undefined {
   const setId = minifig.fromSet?.setId;
   return setId ? collection.sets.find((set) => set.id === setId) : undefined;
-}
-
-export function dioramaOf(collection: Collection, minifig: Minifig): Diorama | undefined {
-  const { dioramaId } = minifig;
-  return dioramaId ? collection.dioramas.find((diorama) => diorama.id === dioramaId) : undefined;
 }
 
 /** A figure the catalog lists in a set, with the own copies of it. */

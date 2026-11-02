@@ -203,6 +203,7 @@ export class FakeStore {
     }
     if (objectKind === "legoSet") {
       for (const minifig of data.objects.minifig.values()) {
+        if (minifig.standsInSetId === id) delete minifig.standsInSetId;
         const fromSet = minifig.fromSet as Json | undefined;
         if (fromSet?.setId === id) {
           delete fromSet.setId;

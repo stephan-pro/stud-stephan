@@ -1,13 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  dioramaOf,
-  findItem,
-  otherCopies,
-  ownSetOf,
-  setFigureProgress,
-  setFigures,
-} from "./details";
-import { aCollection, aDiorama, aMinifig, aSet, aSpecialPart } from "./fixtures";
+import { findItem, otherCopies, ownSetOf, setFigureProgress, setFigures } from "./details";
+import { aCollection, aMinifig, aSet, aSpecialPart } from "./fixtures";
 
 describe("F5 Weitere Exemplare", () => {
   const trooper = (id: string, createdAt: string, fields = {}) =>
@@ -31,20 +24,13 @@ describe("F5 Weitere Exemplare", () => {
 
 describe("F5 und F8 Herkunft und Diorama einer Figur", () => {
   const set = aSet({ id: "set-1" });
-  const diorama = aDiorama({ id: "d-1" });
-  const collection = aCollection({ sets: [set], dioramas: [diorama] });
+  const collection = aCollection({ sets: [set] });
 
   it("F5 „Stammt aus Set“ verlinkt zum eigenen Set, wenn es in der Sammlung ist", () => {
     expect(ownSetOf(collection, aMinifig({ fromSet: { label: "x", setId: "set-1" } }))).toBe(set);
     expect(ownSetOf(collection, aMinifig({ fromSet: { label: "75372-1" } }))).toBeUndefined();
     expect(ownSetOf(collection, aMinifig({ fromSet: { setId: "gone" } }))).toBeUndefined();
     expect(ownSetOf(collection, aMinifig())).toBeUndefined();
-  });
-
-  it("F8 An der Figur ist das Diorama sichtbar, in dem sie steht", () => {
-    expect(dioramaOf(collection, aMinifig({ dioramaId: "d-1" }))).toBe(diorama);
-    expect(dioramaOf(collection, aMinifig({ dioramaId: "gone" }))).toBeUndefined();
-    expect(dioramaOf(collection, aMinifig())).toBeUndefined();
   });
 });
 

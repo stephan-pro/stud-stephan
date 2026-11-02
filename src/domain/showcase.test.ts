@@ -102,7 +102,9 @@ describe("F11 Vitrine", () => {
   });
   const items = [rex, fives, guard, set, coin];
   const filter = (fields: Partial<typeof NO_FILTER>) =>
-    filterShowcase(items, { ...NO_FILTER, ...fields }).map((item) => item.id);
+    filterShowcase(items, { ...NO_FILTER, ...fields }, new Set(["fives", "guard"])).map(
+      (item) => item.id,
+    );
 
   it("F11 Ohne Filter zeigt die Vitrine alle Figuren, Sets und Sonderteile", () => {
     expect(filter({})).toEqual(["rex", "fives", "guard", "set", "coin"]);
@@ -137,8 +139,8 @@ describe("F11 Vitrine", () => {
     expect(filter({ modified: "no" })).toEqual(["fives", "guard"]);
   });
 
-  it("F11 Filter ohne Diorama zeigt nur Figuren ohne Diorama", () => {
-    expect(filter({ withoutDiorama: true })).toEqual(["fives", "guard"]);
+  it("F11 Filter „Nur nicht ausgestellte Figuren“ zeigt nur Figuren, die nirgends stehen", () => {
+    expect(filter({ notOnDisplay: true })).toEqual(["fives", "guard"]);
   });
 
   it("F11 Suche in Name, Nummer, Thema und Hersteller, ohne Groß-/Kleinschreibung", () => {
@@ -175,7 +177,7 @@ describe("F11 Vitrine", () => {
         manufacturers: ["lego"],
         conditions: ["new"],
         modified: "no",
-        withoutDiorama: true,
+        notOnDisplay: true,
       }),
     ).toBe(5);
   });
@@ -228,21 +230,21 @@ describe("F11 Vitrine", () => {
     expect(galleryImages(aMinifig())).toEqual([]);
   });
 
-  it("F5 Die Kachel zeigt Anzahl, Mod, fehlendes Diorama und den Wert des wertvollsten Exemplars", () => {
+  it("F5 Die Kachel zeigt Anzahl, Mod, „nicht ausgestellt“ und den Wert des wertvollsten Exemplars", () => {
     const prices = [aPrice("sw0194", "2026-10-27", { used: 3850, new: 5200 })];
     const copies = [
       aMinifig({ id: "c1", dioramaId: "d" }),
       aMinifig({ id: "c2", condition: "new", mods: [mod] }),
     ];
     const [group] = toEntries(copies);
-    expect(tileFacts(group as ShowcaseEntry, prices)).toEqual({
+    expect(tileFacts(group as ShowcaseEntry, prices, new Set(["c2"]))).toEqual({
       name: "Captain Rex",
       manufacturer: { kind: "lego" },
       number: "sw0194",
       theme: "Star Wars",
       copies: 2,
       modified: true,
-      withoutDiorama: true,
+      notOnDisplay: true,
       cents: 5200,
       valueMissing: false,
     });
@@ -267,7 +269,7 @@ describe("F11 Vitrine", () => {
     expect(tileFacts(entry as ShowcaseEntry, [])).toMatchObject({
       number: "75372-1",
       modified: false,
-      withoutDiorama: false,
+      notOnDisplay: false,
     });
     expect(shortSetNumber("75372-1")).toBe("75372");
     expect(shortSetNumber("BB-1234")).toBe("BB-1234");

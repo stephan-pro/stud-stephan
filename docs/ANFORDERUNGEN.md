@@ -93,11 +93,15 @@ Mehrere Exemplare:
 - Felder: Name, Fotos, Links (z. B. Rebrickable), Teilezahl (optional), Notiz.
 - **Studio-Datei hochladen:** eine oder mehrere `.io`-Dateien je MOC; jederzeit wieder herunterladbar. Die App dient damit als dauerhafter Ablageort.
 - Beliebig viele Figuren aus der Sammlung lassen sich zuordnen. Eine Figur steht in höchstens einem Diorama.
-- An jeder Figur ist sichtbar, in welchem Diorama sie steht.
+- An jeder Figur ist sichtbar, wo sie steht („Steht in“).
+- **Steht in:** Eine Figur kann statt in einem Diorama auch in einem eigenen Set ausgestellt sein. Ihr Ort ist ein Diorama oder ein eigenes Set oder keiner, nie beides. Stammt eine Figur aus einem eigenen Set mit Status „vollständig“ und hat keinen eigenen Ort, gilt sie als in diesem Set ausgestellt (Automatik); bei „Figuren entnommen“ und „zerlegt“ nicht. Die Seite des Sets zeigt die „Ausgestellten Figuren“, auch Figuren aus anderen Sets. Eine Figur, die weder in einem Diorama noch in einem Set steht, ist „nicht ausgestellt“.
 
 Akzeptanzkriterien:
-- Figur einem Diorama zuordnen → sie erscheint in der Detailansicht des Dioramas und verschwindet aus dem Filter „ohne Diorama“.
-- Diorama löschen → zugeordnete Figuren bleiben erhalten und gelten wieder als „ohne Diorama“.
+- Figur einem Diorama zuordnen → sie erscheint in der Detailansicht des Dioramas und verschwindet aus dem Filter „nicht ausgestellt“.
+- Diorama löschen → zugeordnete Figuren bleiben erhalten und sind wieder „nicht ausgestellt“.
+- Figur einem Set zuordnen → sie steht nicht mehr in ihrem Diorama (nie beides), erscheint unter „Ausgestellte Figuren“ des Sets und verschwindet aus dem Filter „nicht ausgestellt“.
+- Eine Figur aus einem eigenen, vollständigen Set ohne eigenen Ort steht automatisch in diesem Set; wird der Status „Figuren entnommen“ oder „zerlegt“, nicht mehr.
+- Set löschen → Figuren, die darin standen, bleiben erhalten und stehen nicht mehr in einem Set.
 - Hochgeladene Studio-Datei herunterladen → die Datei ist byte-gleich mit dem Original.
 
 ### F9 Sonderteile
@@ -120,14 +124,14 @@ Akzeptanzkriterien:
 
 ### F11 Vitrine (Startseite)
 - Bildraster aller Objekte, eigene Fotos vor Katalogbild; gleiche Figuren gruppiert (F5).
-- Suche, Filter (Objektart, Thema/Reihe, Hersteller, Zustand, modifiziert, ohne Diorama) und Sortierung (zuletzt hinzugefügt, Name, Wert).
+- Suche, Filter (Objektart, Thema/Reihe, Hersteller, Zustand, modifiziert, nicht ausgestellt) und Sortierung (zuletzt hinzugefügt, Name, Wert).
 - Tipp auf ein Bild öffnet die Detailansicht.
 
 ### F12 Dashboard
 - Gesamtwert mit Verlauf; Kaufsumme gegenüber aktuellem Wert; Ausgaben für Mods.
 - Anzahl je Objektart; Verteilung nach Thema/Reihe.
 - Wertvollste Objekte.
-- Figuren ohne Diorama.
+- Figuren, die nicht ausgestellt sind (weder in einem Diorama noch in einem Set).
 
 ### F13 Fehlende Figuren
 - Stephan wählt eine Reihe oder ein Thema (z. B. „Star Wars – The Clone Wars“).

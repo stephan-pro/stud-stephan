@@ -1,7 +1,14 @@
 import { useState } from "preact/hooks";
 import type { Remote } from "../../backend/remote";
 import { withSaved } from "../../domain/collectionEdit";
-import { assignableFigures, figuresToMove, figuresToSave } from "../../domain/dioramas";
+import {
+  assignableFigures,
+  figuresToMove,
+  figuresToSave,
+  placeName,
+  placeOf,
+  type Target,
+} from "../../domain/placement";
 import { galleryImages } from "../../domain/showcase";
 import type { Id, Minifig } from "../../domain/types";
 import { Cover } from "../components/Cover";
@@ -10,7 +17,7 @@ import { Icon } from "../components/Icon";
 import { Sheet } from "../components/Sheet";
 import { Unready } from "../components/Unready";
 import { ReadOnlyNote } from "../components/WriteLink";
-import { dioramaHash, routeHash } from "../route";
+import { detailHash, dioramaHash, routeHash } from "../route";
 import { TEXTS } from "../texts";
 import { type LoadedCollection, useWritable } from "../useCollection";
 
@@ -19,19 +26,22 @@ const T = TEXTS.dioramas.assign;
 type Which = "without" | "all";
 
 /**
- * S6a: puts figures into a diorama. The list offers the figures that are in no diorama (or all of
- * them); a figure that stands in another diorama says so ("steht in: …") and is moved only after
- * the person confirmed. A figure stands in at most one diorama (F8).
+ * S6a: puts figures into a diorama or into an own set ("Steht in"). The list offers the figures
+ * that are displayed nowhere (or all of them); a figure that stands elsewhere says so ("steht in:
+ * …") and is moved only after the person confirmed. A figure stands in one place at most (F8).
  */
 export function AssignPage({
   data,
+  kind,
   id,
   remote,
 }: {
   readonly data: LoadedCollection;
+  readonly kind: Target["kind"];
   readonly id: string;
   readonly remote: Remote | undefined;
 }) {
+  const target: Target = { kind, id };
   const [which, setWhich] = useState<Which>("without");
   const [query, setQuery] = useState("");
   const [chosen, setChosen] = useState<readonly Id[]>([]);
@@ -40,7 +50,8 @@ export function AssignPage({
   const [failure, setFailure] = useState<string | undefined>();
   const writable = useWritable();
 
-  const back = dioramaHash({ kind: "detail", id });
+  const back =
+    kind === "diorama" ? dioramaHash({ kind: "detail", id }) : detailHash({ type: "legoSet", id });
   const closeLink = (
     <a class="icon-button back-link pressable" href={back} aria-label={T.close}>
       <Icon name="close" />
@@ -56,8 +67,11 @@ export function AssignPage({
     );
   }
   const { collection } = data.state;
-  const diorama = collection.dioramas.find((candidate) => candidate.id === id);
-  if (!diorama) {
+  const exists =
+    kind === "diorama"
+      ? collection.dioramas.some((candidate) => candidate.id === id)
+      : collection.sets.some((candidate) => candidate.id === id);
+  if (!exists) {
     return (
       <>
         <header class="page-header">{closeLink}</header>
@@ -65,23 +79,33 @@ export function AssignPage({
           <h1 class="card__title" id="not-found-title" tabIndex={-1}>
             {TEXTS.dioramas.notFound.title}
           </h1>
-          <p class="card__text">{TEXTS.dioramas.notFound.text}</p>
-          <a class="button button--secondary pressable" href={routeHash("dioramas")}>
-            {TEXTS.dioramas.back}
+          <p class="card__text">
+            {kind === "diorama" ? TEXTS.dioramas.notFound.text : TEXTS.detail.notFound.text}
+          </p>
+          <a
+            class="button button--secondary pressable"
+            href={routeHash(kind === "diorama" ? "dioramas" : "showcase")}
+          >
+            {kind === "diorama" ? TEXTS.dioramas.back : TEXTS.detail.stand.backToShowcase}
           </a>
         </section>
       </>
     );
   }
 
-  const shown = assignableFigures(collection, id, { onlyWithout: which === "without", query });
-  const nameOfDiorama = (figure: Minifig) =>
-    collection.dioramas.find((candidate) => candidate.id === figure.dioramaId)?.name;
+  const shown = assignableFigures(collection, target, { onlyWithout: which === "without", query });
+  const nameOfPlace = (figure: Minifig) => {
+    const place = placeOf(collection, figure);
+    return place ? placeName(place) : undefined;
+  };
   // A figure chosen earlier may have left the list by a new filter; it stays chosen.
   const valid = chosen.filter((figureId) =>
-    collection.minifigs.some((figure) => figure.id === figureId && figure.dioramaId !== id),
+    collection.minifigs.some(
+      (figure) =>
+        figure.id === figureId && figuresToSave(collection, target, [figureId]).length === 1,
+    ),
   );
-  const moves = figuresToMove(collection, id, valid);
+  const moves = figuresToMove(collection, target, valid);
 
   const toggle = (figureId: Id) =>
     setChosen((current) =>
@@ -98,7 +122,7 @@ export function AssignPage({
     }
     setSaving(true);
     setFailure(undefined);
-    const toSave = figuresToSave(collection, id, valid);
+    const toSave = figuresToSave(collection, target, valid);
     const results = await Promise.allSettled(
       toSave.map((figure) => remote.save("minifig", figure)),
     );
@@ -161,7 +185,7 @@ export function AssignPage({
         <ul class="pick-grid">
           {shown.map((figure) => {
             const picked = valid.includes(figure.id);
-            const elsewhere = nameOfDiorama(figure);
+            const elsewhere = nameOfPlace(figure);
             return (
               <li key={figure.id}>
                 <button

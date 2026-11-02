@@ -1,6 +1,8 @@
 // Figures in dioramas (F8). A figure stands in at most one diorama: the minifig holds the one
-// `dioramaId`, so two dioramas can never claim the same figure.
+// `dioramaId`, so two dioramas can never claim the same figure. Where figures can be put and what
+// "not displayed" means (diorama or own set) is in `placement.ts`.
 
+import { figureAt } from "./placement";
 import { type CoverImage, normalize, photoImage } from "./showcase";
 import type { Collection, Diorama, Id, Minifig } from "./types";
 
@@ -11,11 +13,6 @@ export function dioramaImages(diorama: Diorama): CoverImage[] {
 
 export function figuresInDiorama(collection: Collection, dioramaId: Id): Minifig[] {
   return collection.minifigs.filter((minifig) => minifig.dioramaId === dioramaId);
-}
-
-/** "N Figuren haben noch kein Diorama". */
-export function figuresWithoutDiorama(collection: Collection): Minifig[] {
-  return collection.minifigs.filter((minifig) => !minifig.dioramaId);
 }
 
 /**
@@ -39,57 +36,6 @@ export function filterDioramas(collection: Collection, query: string): Diorama[]
   });
 }
 
-/** Of the chosen figures, those that already stand in another diorama ("steht in: …"). */
-export function figuresToMove(
-  collection: Collection,
-  dioramaId: Id,
-  minifigIds: readonly Id[],
-): { minifig: Minifig; from: Diorama }[] {
-  const chosen = new Set(minifigIds);
-  return collection.minifigs.flatMap((minifig) => {
-    if (!chosen.has(minifig.id) || !minifig.dioramaId || minifig.dioramaId === dioramaId) return [];
-    const from = collection.dioramas.find((diorama) => diorama.id === minifig.dioramaId);
-    return from ? [{ minifig, from }] : [];
-  });
-}
-
-/** The figures that can be put into this diorama (those already in it are not offered), A–Z. */
-export function assignableFigures(
-  collection: Collection,
-  dioramaId: Id,
-  options: { readonly onlyWithout: boolean; readonly query: string },
-): Minifig[] {
-  const query = options.query.trim().toLowerCase();
-  return collection.minifigs
-    .filter((minifig) => {
-      if (minifig.dioramaId === dioramaId) return false;
-      if (options.onlyWithout && minifig.dioramaId) return false;
-      if (query === "") return true;
-      return (
-        minifig.name.toLowerCase().includes(query) ||
-        (minifig.bricklinkId?.toLowerCase().includes(query) ?? false)
-      );
-    })
-    .sort((a, b) => a.name.localeCompare(b.name, "de") || (a.id < b.id ? -1 : 1));
-}
-
-/** The figures as they must be saved to stand in the diorama; those already there are left out. */
-export function figuresToSave(
-  collection: Collection,
-  dioramaId: Id,
-  minifigIds: readonly Id[],
-): Minifig[] {
-  const chosen = new Set(minifigIds);
-  return collection.minifigs
-    .filter((minifig) => chosen.has(minifig.id) && minifig.dioramaId !== dioramaId)
-    .map((minifig) => ({ ...minifig, dioramaId }));
-}
-
-/** The figure as it must be saved to stand in no diorama. */
-export function figureWithoutDiorama(minifig: Minifig): Minifig {
-  return withoutDiorama(minifig);
-}
-
 function withoutDiorama(minifig: Minifig): Minifig {
   const { dioramaId: _, ...rest } = minifig;
   return rest;
@@ -108,7 +54,7 @@ export function assignToDiorama(
   return {
     ...collection,
     minifigs: collection.minifigs.map((minifig) =>
-      chosen.has(minifig.id) ? { ...minifig, dioramaId } : minifig,
+      chosen.has(minifig.id) ? figureAt(minifig, { kind: "diorama", id: dioramaId }) : minifig,
     ),
   };
 }
@@ -118,12 +64,12 @@ export function removeFromDiorama(collection: Collection, minifigIds: readonly I
   return {
     ...collection,
     minifigs: collection.minifigs.map((minifig) =>
-      chosen.has(minifig.id) ? withoutDiorama(minifig) : minifig,
+      chosen.has(minifig.id) && minifig.dioramaId ? withoutDiorama(minifig) : minifig,
     ),
   };
 }
 
-/** Deletes the diorama; its figures stay in the collection and are "ohne Diorama" again. */
+/** Deletes the diorama; its figures stay in the collection and stand in no diorama any more. */
 export function removeDiorama(collection: Collection, dioramaId: Id): Collection {
   return {
     ...collection,

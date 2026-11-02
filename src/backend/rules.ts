@@ -183,6 +183,17 @@ export interface SplitObject {
 }
 
 /**
+ * Where a figure stands ("Steht in"): the own set it is displayed in is a text id, and a figure
+ * stands in a diorama or in a set, never in both. Matches `check_minifig_place` in
+ * `20261105120000_stands_in.sql`.
+ */
+function isPlace(minifig: Json): boolean {
+  const { standsInSetId, dioramaId } = minifig;
+  if (standsInSetId === undefined) return true;
+  return isText(standsInSetId, LIMITS.idLength) && (dioramaId === undefined || dioramaId === null);
+}
+
+/**
  * Checks an object the owner saves, in the order the database does, and splits it; a string is
  * the reason for refusing it.
  */
@@ -209,6 +220,7 @@ export function checkObject(
   ) {
     return "invalid_object";
   }
+  if (kind === "minifig" && !isPlace(object)) return "invalid_object";
   const { photos: rawPhotos, studioFiles: rawFiles, ...rest } = object;
   let data: Json = object;
   let photos: string[] = [];

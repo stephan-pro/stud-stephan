@@ -2,6 +2,7 @@
 // one tile with a count ("×3", F5).
 
 import type { PhotoFocusMap } from "./photoFocus";
+import { idsNotOnDisplay } from "./placement";
 import { itemNumber } from "./prices";
 import type {
   Collection,
@@ -126,8 +127,8 @@ export interface ShowcaseFilter {
   conditions: Condition[];
   /** "Modifiziert": egal · ja · nein. Ja/nein only applies to figures. */
   modified: "any" | "yes" | "no";
-  /** "Nur Figuren ohne Diorama". */
-  withoutDiorama: boolean;
+  /** "Nur nicht ausgestellte Figuren": in no diorama and in no own set (`placement.ts`). */
+  notOnDisplay: boolean;
 }
 
 export const NO_FILTER: ShowcaseFilter = {
@@ -137,7 +138,7 @@ export const NO_FILTER: ShowcaseFilter = {
   manufacturers: [],
   conditions: [],
   modified: "any",
-  withoutDiorama: false,
+  notOnDisplay: false,
 };
 
 /** Number on the "Filter" button: each restricting part of the filter sheet counts once. */
@@ -147,7 +148,7 @@ export function activeFilterCount(filter: ShowcaseFilter): number {
     filter.manufacturers.length > 0,
     filter.conditions.length > 0,
     filter.modified !== "any",
-    filter.withoutDiorama,
+    filter.notOnDisplay,
   ].filter(Boolean).length;
 }
 
@@ -169,12 +170,14 @@ function themeSelected(themes: ReadonlySet<string>, theme: string | undefined): 
 }
 
 /**
- * The F11 filters. Modified yes/no and "ohne Diorama" are properties of figures, so they show
- * figures only.
+ * The F11 filters. Modified yes/no and "nicht ausgestellt" are properties of figures, so they
+ * show figures only. `notOnDisplay` holds the ids of the figures displayed nowhere
+ * (`idsNotOnDisplay`); it takes the own sets into account, which the items alone do not.
  */
 export function filterShowcase(
   items: readonly ShowcaseItem[],
   filter: ShowcaseFilter,
+  notOnDisplay: ReadonlySet<string> = new Set(),
 ): ShowcaseItem[] {
   const themes = new Set(filter.themes.map(normalize));
   return items.filter((item) => {
@@ -186,7 +189,9 @@ export function filterShowcase(
     if (filter.modified !== "any") {
       if (item.type !== "minifig" || isModified(item) !== (filter.modified === "yes")) return false;
     }
-    if (filter.withoutDiorama && (item.type !== "minifig" || item.dioramaId)) return false;
+    if (filter.notOnDisplay && (item.type !== "minifig" || !notOnDisplay.has(item.id))) {
+      return false;
+    }
     return matchesQuery(item, filter.query);
   });
 }
@@ -230,14 +235,18 @@ export interface TileFacts {
   /** Copies behind the tile; more than one shows "×3". */
   copies: number;
   modified: boolean;
-  /** Some copy stands in no diorama (figures only). */
-  withoutDiorama: boolean;
+  /** Some copy is displayed nowhere, in no diorama and in no own set (figures only). */
+  notOnDisplay: boolean;
   /** Value of the most valuable copy; "ohne Wert" instead when `valueMissing`. */
   cents: number;
   valueMissing: boolean;
 }
 
-export function tileFacts(entry: ShowcaseEntry, prices: readonly PricePoint[]): TileFacts {
+export function tileFacts(
+  entry: ShowcaseEntry,
+  prices: readonly PricePoint[],
+  notOnDisplay: ReadonlySet<string> = new Set(),
+): TileFacts {
   const items = entryItems(entry);
   const first = items[0] as ShowcaseItem;
   const valuations = items.map((item) => valueOfItem(item, prices));
@@ -246,7 +255,8 @@ export function tileFacts(entry: ShowcaseEntry, prices: readonly PricePoint[]): 
     manufacturer: first.manufacturer,
     copies: items.length,
     modified: entry.type === "minifig" && entry.copies.some(isModified),
-    withoutDiorama: entry.type === "minifig" && entry.copies.some((copy) => !copy.dioramaId),
+    notOnDisplay:
+      entry.type === "minifig" && entry.copies.some((copy) => notOnDisplay.has(copy.id)),
     cents: Math.max(...valuations.map((valuation) => valuation.cents)),
     valueMissing: valuations.every((valuation) => valuation.ownValueMissing),
   };
@@ -324,6 +334,6 @@ export function showcase(
   filter: ShowcaseFilter,
   sort: ShowcaseSort,
 ): ShowcaseEntry[] {
-  const items = filterShowcase(showcaseItems(collection), filter);
+  const items = filterShowcase(showcaseItems(collection), filter, idsNotOnDisplay(collection));
   return sortShowcase(toEntries(items), sort, collection.prices);
 }

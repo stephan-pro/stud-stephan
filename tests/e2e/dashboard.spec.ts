@@ -2,9 +2,9 @@ import { expect, type Page, test } from "@playwright/test";
 import { DEMO_COLLECTION, DEMO_TODAY } from "../../src/demo/collection";
 import { latestPriceDate, mostValuable, themeShares } from "../../src/domain/dashboard";
 import { formatDate } from "../../src/domain/dates";
-import { figuresWithoutDiorama } from "../../src/domain/dioramas";
 import { aCollection, aMinifig, aPrice } from "../../src/domain/fixtures";
 import { formatMoney, formatMoneyWhole, formatPercentChange } from "../../src/domain/money";
+import { figuresNotOnDisplay } from "../../src/domain/placement";
 import { totals } from "../../src/domain/totals";
 import { VALUE_PERIODS, valueTrend, weeklyChange } from "../../src/domain/valueHistory";
 import { describeChart } from "../../src/ui/chartText";
@@ -147,12 +147,14 @@ test("F12 Ein Eintrag der Bestenliste öffnet die Detailseite", async ({ page })
   await expect(heading(page)).toContainText(best.item.name);
 });
 
-test("F12 „Ohne Diorama“ öffnet die Vitrine, gefiltert auf diese Figuren", async ({ page }) => {
+test("F12 „Nicht ausgestellt“ öffnet die Vitrine, gefiltert auf diese Figuren", async ({
+  page,
+}) => {
   await fixToday(page);
   await signInDirectly(page, undefined, DEMO_COLLECTION);
   await page.goto("#/dashboard");
-  const without = figuresWithoutDiorama(DEMO_COLLECTION).length;
-  const banner = page.getByRole("button", { name: new RegExp(T.withoutDiorama) });
+  const without = figuresNotOnDisplay(DEMO_COLLECTION).length;
+  const banner = page.getByRole("button", { name: new RegExp(T.notOnDisplay) });
   await expect(banner).toContainText(TEXTS.dioramas.withoutBanner.count(without));
   await banner.click();
   await expect(page).toHaveURL(/#\/vitrine$/);

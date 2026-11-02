@@ -508,7 +508,7 @@ test.describe("Bearbeiten, weiteres Exemplar, Löschen (mit Beispielsammlung)", 
         modsBefore,
       );
       // The diorama is not in the form and stays; the day of "Erworben" stays.
-      await expect(page.getByRole("region", { name: TEXTS.detail.diorama.title })).toContainText(
+      await expect(page.getByRole("region", { name: TEXTS.detail.stand.title })).toContainText(
         DEMO_COLLECTION.dioramas.find((diorama) => diorama.id === "diorama-umbara")?.name ?? "?",
       );
       await expect(page.getByRole("region", { name: TEXTS.detail.origin.title })).toContainText(

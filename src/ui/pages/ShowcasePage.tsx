@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "preact/hooks";
 import { formatMoneyWhole, formatPercentChange } from "../../domain/money";
+import { idsNotOnDisplay } from "../../domain/placement";
 import {
   activeFilterCount,
   type CopyGroup,
@@ -136,6 +137,10 @@ export function ShowcasePage({ data, view, onView }: ShowcasePageProps) {
   };
   const { state } = data;
   const collection = state.status === "ready" ? state.collection : undefined;
+  const notOnDisplay = useMemo(
+    () => (collection ? idsNotOnDisplay(collection) : new Set<string>()),
+    [collection],
+  );
 
   const entries = useMemo(
     () => (collection ? showcase(collection, view.filter, view.sort) : []),
@@ -255,7 +260,7 @@ export function ShowcasePage({ data, view, onView }: ShowcasePageProps) {
                 <Tile
                   key={entry.key}
                   entry={entry}
-                  facts={tileFacts(entry, collection.prices)}
+                  facts={tileFacts(entry, collection.prices, notOnDisplay)}
                   onChooseCopy={(group, element) => {
                     opener.current = element;
                     setChosen(group);

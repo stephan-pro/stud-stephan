@@ -49,7 +49,7 @@ export function Tile({ entry, facts, onChooseCopy }: TileProps) {
   const markers: { text: string; dark?: boolean }[] = [];
   if (facts.copies > 1) markers.push({ text: T.copies(facts.copies), dark: true });
   if (facts.modified) markers.push({ text: T.modified });
-  if (facts.withoutDiorama) markers.push({ text: T.withoutDiorama });
+  if (facts.notOnDisplay) markers.push({ text: T.notOnDisplay });
   if (entry.type === "legoSet") markers.push({ text: T.set });
   if (entry.type === "specialPart") {
     markers.push({ text: TEXTS.specialPartKinds[entry.item.kind].chip });

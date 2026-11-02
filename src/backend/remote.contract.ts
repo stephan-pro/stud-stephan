@@ -3,7 +3,6 @@
 // (`supabase/tests/contract.test.ts`). Each test gets two fresh, signed-in people A and B.
 
 import { beforeEach, describe, expect, it } from "vitest";
-import { figuresWithoutDiorama } from "../domain/dioramas";
 import {
   aCollection,
   aDiorama,
@@ -13,6 +12,7 @@ import {
   aSpecialPart,
   aWish,
 } from "../domain/fixtures";
+import { figuresNotOnDisplay } from "../domain/placement";
 import type { Minifig, StudioFile } from "../domain/types";
 import type { Remote } from "./remote";
 import { LIMITS, MAX_FILE_BYTES } from "./rules";
@@ -189,24 +189,54 @@ export function describeRemoteContract(name: string, setup: () => Promise<Contra
         expect(await a.getFile("photos", cover)).toHaveLength(1_000);
       });
 
-      it("F8 Diorama löschen → zugeordnete Figuren bleiben erhalten und gelten wieder als „ohne Diorama“", async () => {
+      it("F8 Diorama löschen → zugeordnete Figuren bleiben erhalten und sind wieder „nicht ausgestellt“", async () => {
         const studioPath = await a.putFile("studio-files", "umbara.io", someBytes(800), STUDIO);
         await a.save("diorama", aDiorama({ id: "umbara", studioFiles: [aStudioFile(studioPath)] }));
         await a.save("minifig", aMinifig({ id: "rex", dioramaId: "umbara" }));
         await a.save("minifig", aMinifig({ id: "cody", dioramaId: "umbara" }));
-        expect(figuresWithoutDiorama(await a.load())).toEqual([]);
+        expect(figuresNotOnDisplay(await a.load())).toEqual([]);
 
         await a.remove("diorama", "umbara");
 
         const collection = await a.load();
         expect(collection.dioramas).toEqual([]);
-        expect(figuresWithoutDiorama(collection).map((minifig) => minifig.id)).toEqual([
+        expect(figuresNotOnDisplay(collection).map((minifig) => minifig.id)).toEqual([
           "cody",
           "rex",
         ]);
         await expect(a.getFile("studio-files", studioPath)).rejects.toMatchObject({
           reason: "not_found",
         });
+      });
+
+      it("Steht in: Eine Figur steht in einem Set oder einem Diorama, nie in beidem", async () => {
+        await a.save("legoSet", aSet({ id: "castle" }));
+        await a.save("minifig", aMinifig({ id: "mickey", standsInSetId: "castle" }));
+        expect((await a.load()).minifigs[0]?.standsInSetId).toBe("castle");
+
+        await expect(
+          a.save("minifig", aMinifig({ id: "both", standsInSetId: "castle", dioramaId: "umbara" })),
+        ).rejects.toMatchObject({ reason: "invalid_object", permanent: true });
+        await expect(
+          a.save("minifig", aMinifig({ id: "empty", standsInSetId: "" })),
+        ).rejects.toMatchObject({ reason: "invalid_object" });
+        expect((await a.load()).minifigs.map((minifig) => minifig.id)).toEqual(["mickey"]);
+      });
+
+      it("Steht in: Set löschen → die Figur bleibt und steht nirgends mehr", async () => {
+        await a.save("legoSet", aSet({ id: "castle" }));
+        await a.save("legoSet", aSet({ id: "other" }));
+        await a.save("minifig", aMinifig({ id: "mickey", standsInSetId: "castle" }));
+        await a.save("minifig", aMinifig({ id: "donald", standsInSetId: "other" }));
+
+        await a.remove("legoSet", "castle");
+
+        const { minifigs } = await a.load();
+        expect(minifigs.map((minifig) => [minifig.id, minifig.standsInSetId])).toEqual([
+          ["donald", "other"],
+          ["mickey", undefined],
+        ]);
+        expect(minifigs[1]).not.toHaveProperty("standsInSetId");
       });
 
       it("Set löschen → Figuren bleiben, „Stammt aus Set“ bleibt ohne Verknüpfung", async () => {

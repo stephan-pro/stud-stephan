@@ -140,7 +140,7 @@ test.describe("mit Beispielsammlung", () => {
     expect(await columns()).toBeLessThanOrEqual(6);
   });
 
-  test("P5 F5 Marker ×3, Mod, Kein Diorama und Set auf den Kacheln, Wert und Platzhalter ohne Foto", async ({
+  test("P5 F5 Marker ×3, Mod, Nicht ausgestellt und Set auf den Kacheln, Wert und Platzhalter ohne Foto", async ({
     page,
   }) => {
     await page.goto("#/vitrine");
@@ -149,7 +149,7 @@ test.describe("mit Beispielsammlung", () => {
     await expect(tile("Clone Trooper Phase II")).toContainText("×3");
     await expect(tile("Captain Rex")).toContainText(T.tile.modified);
     await expect(tile("Captain Rex")).not.toContainText("×");
-    await expect(tile("ARC Trooper Fives")).toContainText(T.tile.withoutDiorama);
+    await expect(tile("ARC Trooper Fives")).toContainText(T.tile.notOnDisplay);
     await expect(tile("Clone Trooper & Battle Droid")).toContainText(T.tile.set);
     await expect(tile("Sammelmünze")).toContainText(TEXTS.specialPartKinds.gwp.chip);
     await expect(tile("Captain Rex")).toContainText("sw0194 · Star Wars");
@@ -274,7 +274,7 @@ test.describe("mit Beispielsammlung", () => {
     });
   }
 
-  test("P5 F11 Hauptthema nimmt Unterthemen mit, Hersteller, Zustand, modifiziert und ohne Diorama", async ({
+  test("P5 F11 Hauptthema nimmt Unterthemen mit, Hersteller, Zustand, modifiziert und nicht ausgestellt", async ({
     page,
   }) => {
     await page.goto("#/vitrine");
@@ -302,8 +302,8 @@ test.describe("mit Beispielsammlung", () => {
 
     await page.getByRole("button", { name: T.filterButtonActive(4) }).click();
     await choose(TEXTS.filter.reset);
-    await choose(TEXTS.filter.withoutDiorama);
-    await closeWith({ withoutDiorama: true });
+    await choose(TEXTS.filter.notOnDisplay);
+    await closeWith({ notOnDisplay: true });
     await expect(page.getByRole("button", { name: T.filterButtonActive(1) })).toBeVisible();
 
     await page.getByRole("button", { name: T.filterButtonActive(1) }).click();
@@ -364,7 +364,7 @@ test.describe("mit Beispielsammlung", () => {
       await expect(origin).toContainText("BrickLink-Händler");
       await expect(origin).toContainText("März 2025");
       await expect(origin).toContainText("einzeln gekauft");
-      await expect(page.getByRole("region", { name: TEXTS.detail.diorama.title })).toContainText(
+      await expect(page.getByRole("region", { name: TEXTS.detail.stand.title })).toContainText(
         "Umbara-Gefecht",
       );
 
@@ -463,7 +463,7 @@ test.describe("mit Beispielsammlung", () => {
       await expect(origin).toContainText("Beigabe zu einer Bestellung");
       await expect(origin).toContainText("Mai 2025");
       await expect(page.getByRole("region", { name: TEXTS.detail.mods.title })).toHaveCount(0);
-      await expect(page.getByRole("region", { name: TEXTS.detail.diorama.title })).toHaveCount(0);
+      await expect(page.getByRole("region", { name: TEXTS.detail.stand.title })).toHaveCount(0);
       await expect(page.getByRole("region", { name: TEXTS.detail.copies.title })).toHaveCount(0);
       await expectNoAccessibilityViolations(page);
     });

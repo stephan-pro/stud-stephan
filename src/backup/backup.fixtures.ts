@@ -82,7 +82,10 @@ export async function fillCollection(remote: Remote): Promise<Collection> {
       mods: [{ id: "mod-1", position: "head", description: "Neuer Kopf", price: 450 }],
     }),
   );
-  await remote.save("minifig", aMinifig({ id: "minifig-cody", name: "Commander Cody" }));
+  await remote.save(
+    "minifig",
+    aMinifig({ id: "minifig-cody", name: "Commander Cody", standsInSetId: "set-75372" }),
+  );
   await remote.save("specialPart", aSpecialPart({ id: "part-coin" }));
   await remote.save("wishItem", aWish({ id: "wish-1" }));
   await remote.savePrice(aPrice("sw0194", "2026-10-26", { used: 3850, new: 5200 }));

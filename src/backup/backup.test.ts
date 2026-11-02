@@ -307,6 +307,19 @@ describe("Prüfung vor dem Import", () => {
     ).toBe("invalidData");
     expect(
       await broken((p) => {
+        const cody = p.manifest.collection.minifigs.find((m) => m.id === "minifig-cody");
+        (cody as { standsInSetId: string }).standsInSetId = "gibt-es-nicht";
+      }),
+    ).toBe("invalidData");
+    expect(
+      await broken((p) => {
+        // Steht in: a diorama and a set at the same time is not a place.
+        const cody = p.manifest.collection.minifigs.find((m) => m.id === "minifig-cody");
+        (cody as { dioramaId: string }).dioramaId = "diorama-umbara";
+      }),
+    ).toBe("invalidData");
+    expect(
+      await broken((p) => {
         (p.manifest.collection.minifigs[0] as { fromSet: unknown }).fromSet = {
           setId: "gibt-es-nicht",
         };

@@ -1,7 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { expect, type Page, test } from "@playwright/test";
 import { DEMO_COLLECTION } from "../../src/demo/collection";
-import { figuresInDiorama, figuresWithoutDiorama } from "../../src/domain/dioramas";
+import { figuresInDiorama } from "../../src/domain/dioramas";
+import { figuresNotOnDisplay } from "../../src/domain/placement";
 import { TEXTS } from "../../src/ui/texts";
 import {
   expectNoAccessibilityViolations,
@@ -23,7 +24,7 @@ const SIZES = [
   ["PC", PC],
 ] as const;
 
-const without = figuresWithoutDiorama(DEMO_COLLECTION);
+const without = figuresNotOnDisplay(DEMO_COLLECTION);
 const umbara = DEMO_COLLECTION.dioramas.find((diorama) => diorama.id === "diorama-umbara");
 const kamino = DEMO_COLLECTION.dioramas.find((diorama) => diorama.id === "diorama-kamino");
 if (!umbara || !kamino || without.length < 2) throw new Error("Beispielsammlung passt nicht");
@@ -79,9 +80,9 @@ test.describe("Liste der Dioramen (S5)", () => {
       await page.setViewportSize(viewport);
       await page.goto("#/dioramen");
       await expect(heading(page)).toHaveText("Dioramen");
-      await expect(
-        page.getByRole("button", { name: /haben noch kein Diorama|hat noch kein/ }),
-      ).toContainText(D.withoutBanner.count(without.length));
+      await expect(page.getByRole("button", { name: /nicht ausgestellt/ })).toContainText(
+        D.withoutBanner.count(without.length),
+      );
       const card = page.getByRole("link", { name: /Umbara-Gefecht/ });
       await expect(card).toContainText(`${D.figures(inUmbara.length)} · 1.240 Teile`);
       await expect(page.getByRole("link", { name: /Kamino-Hangar/ })).toBeVisible();
@@ -92,7 +93,7 @@ test.describe("Liste der Dioramen (S5)", () => {
 
   test("P10 Das Banner öffnet die Vitrine mit dem Filter „ohne Diorama“", async ({ page }) => {
     await page.goto("#/dioramen");
-    await page.getByRole("button", { name: /haben noch kein Diorama|hat noch kein/ }).click();
+    await page.getByRole("button", { name: /nicht ausgestellt/ }).click();
     await expect(page).toHaveURL(/#\/vitrine$/);
     await expect(
       page.getByRole("button", { name: TEXTS.showcase.filterButtonActive(1) }),
@@ -144,7 +145,7 @@ test.describe("Detail eines Dioramas (S6) und Figuren zuordnen (S6a)", () => {
     const [first] = inUmbara;
     if (!first) throw new Error("keine Figur");
     await page.goto(`#/vitrine/figur/${first.id}`);
-    const section = page.getByRole("region", { name: TEXTS.detail.diorama.title });
+    const section = page.getByRole("region", { name: TEXTS.detail.stand.title });
     await expect(section).toContainText("Umbara-Gefecht");
     await section.getByRole("link", { name: /Umbara-Gefecht/ }).click();
     await expect(page).toHaveURL(/#\/dioramen\/diorama-umbara$/);
@@ -185,11 +186,11 @@ test.describe("Detail eines Dioramas (S6) und Figuren zuordnen (S6a)", () => {
       ).toBeVisible();
       // The banner counts one figure less, and the server has it, too.
       await page.goto("#/dioramen");
-      await expect(page.getByRole("button", { name: /noch kein Diorama/ })).toContainText(
+      await expect(page.getByRole("button", { name: /nicht ausgestellt/ })).toContainText(
         D.withoutBanner.count(without.length - 1),
       );
       await page.reload();
-      await expect(page.getByRole("button", { name: /noch kein Diorama/ })).toContainText(
+      await expect(page.getByRole("button", { name: /nicht ausgestellt/ })).toContainText(
         D.withoutBanner.count(without.length - 1),
       );
     });
@@ -233,10 +234,10 @@ test.describe("Detail eines Dioramas (S6) und Figuren zuordnen (S6a)", () => {
     page,
   }) => {
     await page.goto(`#/vitrine/figur/${free.id}`);
-    const section = page.getByRole("region", { name: TEXTS.detail.diorama.title });
-    await expect(section).toContainText(TEXTS.detail.diorama.none);
-    await section.getByRole("button", { name: D.figureSection.assign }).click();
-    const sheet = page.getByRole("dialog", { name: D.figureSection.chooseTitle });
+    const section = page.getByRole("region", { name: TEXTS.detail.stand.title });
+    await expect(section).toContainText(TEXTS.detail.stand.none);
+    await section.getByRole("button", { name: TEXTS.detail.stand.choose }).click();
+    const sheet = page.getByRole("dialog", { name: TEXTS.detail.stand.sheetTitle });
     await expectNoAccessibilityViolations(page);
     await sheet.getByRole("button", { name: /Kamino-Hangar/ }).click();
     await expect(section.getByRole("link", { name: /Kamino-Hangar/ })).toBeVisible();
@@ -244,12 +245,12 @@ test.describe("Detail eines Dioramas (S6) und Figuren zuordnen (S6a)", () => {
     await page.reload();
     await expect(
       page
-        .getByRole("region", { name: TEXTS.detail.diorama.title })
+        .getByRole("region", { name: TEXTS.detail.stand.title })
         .getByRole("link", { name: /Kamino-Hangar/ }),
     ).toBeVisible();
-    await page.getByRole("button", { name: D.figureSection.take }).click();
-    await expect(page.getByRole("region", { name: TEXTS.detail.diorama.title })).toContainText(
-      TEXTS.detail.diorama.none,
+    await page.getByRole("button", { name: TEXTS.detail.stand.takeFromDiorama }).click();
+    await expect(page.getByRole("region", { name: TEXTS.detail.stand.title })).toContainText(
+      TEXTS.detail.stand.none,
     );
   });
 });
@@ -275,14 +276,14 @@ test.describe("Diorama löschen", () => {
       const toast = page.locator(".toast", { hasText: TEXTS.remove.done("Umbara-Gefecht") });
       await expect(toast).toBeVisible();
       await expect(page.getByRole("link", { name: /Umbara-Gefecht/ })).toHaveCount(0);
-      await expect(page.getByRole("button", { name: /noch kein Diorama/ })).toContainText(
+      await expect(page.getByRole("button", { name: /nicht ausgestellt/ })).toContainText(
         D.withoutBanner.count(without.length + inUmbara.length),
       );
       await expectNoAccessibilityViolations(page);
 
       await toast.getByRole("button", { name: TEXTS.remove.undo }).click();
       await expect(page.getByRole("link", { name: /Umbara-Gefecht/ })).toBeVisible();
-      await expect(page.getByRole("button", { name: /noch kein Diorama/ })).toContainText(
+      await expect(page.getByRole("button", { name: /nicht ausgestellt/ })).toContainText(
         D.withoutBanner.count(without.length),
       );
       // The server never heard of it.
@@ -307,8 +308,8 @@ test.describe("Diorama löschen", () => {
     await expect(page.getByRole("link", { name: /Kamino-Hangar/ })).toBeVisible();
     await page.goto(`#/vitrine/figur/${first.id}`);
     await expect(heading(page)).toHaveText(first.name);
-    await expect(page.getByRole("region", { name: TEXTS.detail.diorama.title })).toContainText(
-      TEXTS.detail.diorama.none,
+    await expect(page.getByRole("region", { name: TEXTS.detail.stand.title })).toContainText(
+      TEXTS.detail.stand.none,
     );
   });
 });

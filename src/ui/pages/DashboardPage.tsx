@@ -1,8 +1,8 @@
 import { useMemo, useState } from "preact/hooks";
 import { latestPriceDate, mostValuable, themeShares } from "../../domain/dashboard";
 import { formatDate } from "../../domain/dates";
-import { figuresWithoutDiorama } from "../../domain/dioramas";
 import { formatMoney, formatMoneyWhole, formatMoneyWholeDifference } from "../../domain/money";
+import { figuresNotOnDisplay } from "../../domain/placement";
 import { galleryImages } from "../../domain/showcase";
 import { totals } from "../../domain/totals";
 import type { Collection } from "../../domain/types";
@@ -209,22 +209,22 @@ function Top({ collection }: { readonly collection: Collection }) {
 
 /**
  * S11: the total value with its history, the sums, the counts, the share per sub theme, the most
- * valuable objects and the figures without a diorama.
+ * valuable objects and the figures that are not displayed.
  */
 export function DashboardPage({
   data,
   today,
-  onShowWithoutDiorama,
+  onShowNotOnDisplay,
 }: {
   readonly data: LoadedCollection;
   /** "YYYY-MM-DD", the day the periods end on. */
   readonly today: string;
-  /** Shows the showcase with the filter "ohne Diorama". */
-  readonly onShowWithoutDiorama: () => void;
+  /** Shows the showcase with the filter "nicht ausgestellt". */
+  readonly onShowNotOnDisplay: () => void;
 }) {
   if (data.state.status !== "ready") return <Unready data={data} />;
   const { collection } = data.state;
-  const without = figuresWithoutDiorama(collection).length;
+  const without = figuresNotOnDisplay(collection).length;
   const priced = latestPriceDate(collection, today);
   const B = TEXTS.dioramas.withoutBanner;
 
@@ -236,11 +236,11 @@ export function DashboardPage({
       <Themes collection={collection} />
       <Top collection={collection} />
       {without > 0 && (
-        <button type="button" class="without-banner pressable" onClick={onShowWithoutDiorama}>
+        <button type="button" class="without-banner pressable" onClick={onShowNotOnDisplay}>
           <Scribbles id="dashboard-without-scribbles" />
           <span class="without-banner__text">
             <span class="without-banner__count">{B.count(without)}</span>
-            <span class="without-banner__label">{TEXTS.dashboard.withoutDiorama}</span>
+            <span class="without-banner__label">{TEXTS.dashboard.notOnDisplay}</span>
           </span>
           <span class="without-banner__action">{B.action}</span>
         </button>

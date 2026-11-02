@@ -51,7 +51,7 @@ interface FilterSheetProps {
 }
 
 /**
- * S1a: theme (two levels), maker, condition, modified and "ohne Diorama". Every change applies at
+ * S1a: theme (two levels), maker, condition, modified and "nicht ausgestellt". Every change applies at
  * once, and the button at the bottom says how many tiles that leaves.
  */
 export function FilterSheet({ collection, filter, sort, onChange, onClose }: FilterSheetProps) {
@@ -90,7 +90,7 @@ export function FilterSheet({ collection, filter, sort, onChange, onClose }: Fil
                 manufacturers: [],
                 conditions: [],
                 modified: "any",
-                withoutDiorama: false,
+                notOnDisplay: false,
               })
             }
           >
@@ -166,10 +166,10 @@ export function FilterSheet({ collection, filter, sort, onChange, onClose }: Fil
       </fieldset>
       <div class="chips">
         <ToggleChip
-          pressed={filter.withoutDiorama}
-          onClick={() => set({ withoutDiorama: !filter.withoutDiorama })}
+          pressed={filter.notOnDisplay}
+          onClick={() => set({ notOnDisplay: !filter.notOnDisplay })}
         >
-          {T.withoutDiorama}
+          {T.notOnDisplay}
         </ToggleChip>
       </div>
     </Sheet>

@@ -134,7 +134,17 @@ function Shell({
   }, [online]);
   const firstPage = useRef(true);
   const removal = usePendingRemoval(remote, data);
-  const { route, detail, form, search: catalogSearch, photo, link, diorama, series } = page;
+  const {
+    route,
+    detail,
+    form,
+    search: catalogSearch,
+    photo,
+    link,
+    diorama,
+    assignSet,
+    series,
+  } = page;
   const address = locationHash(page);
   const name = detail
     ? detailName(data, detail)
@@ -152,9 +162,9 @@ function Shell({
     removal.remove(item);
   };
 
-  /** The banner of the dioramas: the showcase, filtered to the figures that stand in none. */
-  const showWithoutDiorama = () => {
-    setView({ ...view, filter: { ...view.filter, withoutDiorama: true } });
+  /** The banner of the dioramas: the showcase, filtered to the figures displayed nowhere. */
+  const showNotOnDisplay = () => {
+    setView({ ...view, filter: { ...view.filter, notOnDisplay: true } });
     location.hash = routeHash("showcase");
   };
 
@@ -240,7 +250,7 @@ function Shell({
           </button>
           <Sidebar current={route} />
           <main
-            class={`page page--${route}${form || (diorama && diorama.kind !== "detail") ? " page--form" : ""}`}
+            class={`page page--${route}${form || assignSet || (diorama && diorama.kind !== "detail") ? " page--form" : ""}`}
           >
             {savedAt !== undefined ? (
               <div class="banner banner--offline" role="status">
@@ -273,7 +283,7 @@ function Shell({
                   />
                 )}
                 {diorama.kind === "assign" && (
-                  <AssignPage data={data} id={diorama.id} remote={remote} />
+                  <AssignPage data={data} kind="diorama" id={diorama.id} remote={remote} />
                 )}
                 {(diorama.kind === "new" || diorama.kind === "edit") && (
                   <DioramaFormPage
@@ -283,6 +293,10 @@ function Shell({
                     remote={remote}
                   />
                 )}
+              </div>
+            ) : assignSet ? (
+              <div class="detail">
+                <AssignPage key={address} data={data} kind="set" id={assignSet} remote={remote} />
               </div>
             ) : series?.kind === "detail" ? (
               <div class="detail">
@@ -367,7 +381,7 @@ function Shell({
                   <DioramasPage
                     data={data}
                     query={dioramaSearch.query}
-                    onShowWithoutDiorama={showWithoutDiorama}
+                    onShowNotOnDisplay={showNotOnDisplay}
                   />
                 )}
                 {route === "wishlist" &&
@@ -380,7 +394,7 @@ function Shell({
                   <DashboardPage
                     data={data}
                     today={today()}
-                    onShowWithoutDiorama={showWithoutDiorama}
+                    onShowNotOnDisplay={showNotOnDisplay}
                   />
                 )}
               </>
@@ -399,6 +413,7 @@ function Shell({
             !catalogSearch &&
             !photo &&
             !link &&
+            !assignSet &&
             (!diorama || diorama.kind === "detail") && <PhoneNavigation current={route} />}
         </div>
       </WritableContext.Provider>

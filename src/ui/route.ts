@@ -135,6 +135,8 @@ export interface PageLocation {
   readonly forWish?: true;
   /** A page of the dioramas (P10). */
   readonly diorama?: DioramaPage;
+  /** Putting figures into the own set `assignSet` ("Steht in"), "#/vitrine/set/<id>/zuordnen". */
+  readonly assignSet?: string;
   /** A page of the series (P12), below the wishlist. */
   readonly series?: SeriesPage;
 }
@@ -170,6 +172,11 @@ export function parseLocation(hash: string): PageLocation {
   if (route === "showcase" && segments.length === 4 && fourth === EDIT_PATH) {
     const id = decode(third ?? "");
     if (type && id) return { route, form: { type, mode: "edit", id } };
+    return { route: DEFAULT_ROUTE };
+  }
+  if (route === "showcase" && segments.length === 4 && fourth === ASSIGN_PATH) {
+    const id = decode(third ?? "");
+    if (type === "legoSet" && id) return { route, assignSet: id };
     return { route: DEFAULT_ROUTE };
   }
   if (route === "capture" && segments.length === 2 && type) {
@@ -318,6 +325,11 @@ export function dioramaHash(page: DioramaPage): string {
   return page.kind === "edit" ? `${base}/${EDIT_PATH}` : base;
 }
 
+/** The link target for putting figures into an own set: "#/vitrine/set/<id>/zuordnen". */
+export function setAssignHash(setId: string): string {
+  return `${detailHash({ type: "legoSet", id: setId })}/${ASSIGN_PATH}`;
+}
+
 /** The link target of a page of the series, e.g. "#/wunschliste/reihen/7". */
 export function seriesHash(page: SeriesPage): string {
   const base = `${routeHash("wishlist")}/${SERIES_PATH}`;
@@ -328,6 +340,7 @@ export function seriesHash(page: SeriesPage): string {
 export function locationHash(page: PageLocation): string {
   if (page.series) return seriesHash(page.series);
   if (page.diorama) return dioramaHash(page.diorama);
+  if (page.assignSet) return setAssignHash(page.assignSet);
   if (page.form) return formHash(page.form);
   if (page.link) return linkHash(page.link, page.forWish === true);
   if (page.search) return searchHash(page.search, page.forWish === true);

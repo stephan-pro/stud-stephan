@@ -61,7 +61,7 @@ Text auf `--accent`, `--pop` und allen Tints ist immer `--ink`. Text auf `--nav`
 ## 6. Komponenten
 
 - **Sammlungskarte (Vitrine oben):** `--accent`, Rahmen, Kritzel. Inhalt: „Stud Stephan“ + Wachstums-Pill · Trennlinie · „Deine Sammlung ist **4.820 €** wert“ · Pills „Figuren · Sets · Dioramen“.
-- **Kachel (Vitrine):** weiß, Rahmen, Foto-Bereich oben (Seitenverhältnis 4 : 3, `--ratio-tile`; eigene Fotos füllen um ihren Bildausschnitt, Standard die Mitte) mit Markern „×3“ (`--ink`), „Mod“ (weiß mit Rahmen), „Kein Diorama“; darunter Name, Metazeile, Preis in Mali.
+- **Kachel (Vitrine):** weiß, Rahmen, Foto-Bereich oben (Seitenverhältnis 4 : 3, `--ratio-tile`; eigene Fotos füllen um ihren Bildausschnitt, Standard die Mitte) mit Markern „×3“ (`--ink`), „Mod“ (weiß mit Rahmen), „Nicht ausgestellt“ (weder in einem Diorama noch in einem Set); darunter Name, Metazeile, Preis in Mali.
 - **Wert-Karte (Details):** wie Sammlungskarte, mit Kaufpreis, Differenz, Mini-Verlauf, Preis im anderen Zustand, „Stand vom …“.
 - **Chips:** aktiv `--ink` gefüllt mit weißer Schrift, sonst weiß mit Rahmen.
 - **Haupt-Knopf:** `--ink`, weiße Schrift, Höhe 52 px. **Zweit-Knopf:** weiß mit Rahmen. **Gefahr:** weiß, Rahmen und Schrift `--danger`.

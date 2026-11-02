@@ -57,12 +57,12 @@ flowchart TD
 ### S1 Vitrine (Startseite, `Main.dc.html`)
 - Oben: Auswahl Objektart als Chips – Alle · Figuren · Sets · Sonderteile.
 - Darunter: Sortierung und Knopf „Filter“ mit Anzahl aktiver Filter.
-- Bildraster: große Kacheln (Handy 2 Spalten, PC 5–6). Je Kachel: Foto, Name, Wert. Kleine Marker: „×3“ (mehrere Exemplare), „Mod“ (modifiziert), „Kein Diorama“.
+- Bildraster: große Kacheln (Handy 2 Spalten, PC 5–6). Je Kachel: Foto, Name, Wert. Kleine Marker: „×3“ (mehrere Exemplare), „Mod“ (modifiziert), „Nicht ausgestellt“ (weder in einem Diorama noch in einem eigenen Set).
 - Gruppen-Kachel (×3) öffnet eine Auswahl der Exemplare, dann S2.
 - **Leerer Zustand (erste Nutzung):** Begrüßung und Knopf „Erste Figur erfassen“.
 
 ### S1a Filter (`Filter.dc.html`; Bottom-Sheet am Handy, Seitenpanel am PC)
-- Thema/Reihe, Hersteller, Zustand (neu/gebraucht), modifiziert ja/nein, ohne Diorama.
+- Thema/Reihe, Hersteller, Zustand (neu/gebraucht), modifiziert ja/nein, „Nur nicht ausgestellte Figuren“.
 - „Zurücksetzen“ und „N Ergebnisse anzeigen“.
 
 ### S2 Detail Minifigur (`Figur.dc.html`)
@@ -71,7 +71,7 @@ Reihenfolge von oben:
 2. Name, Katalognummer, Hersteller, Thema/Reihe; Marker Zustand und „Modifiziert“.
 3. **Wert-Karte:** aktueller Wert groß, darunter Kaufpreis und Differenz, Mini-Verlauf, Preis im anderen Zustand, „Stand vom …“.
 4. **Herkunft:** Quelle, Datum, Kaufpreis; „Stammt aus Set“ (verlinkt zu S3, falls in der Sammlung).
-5. **Diorama:** Name mit Vorschaubild (verlinkt zu S6) oder Knopf „Einem Diorama zuordnen“.
+5. **Steht in:** das Diorama (verlinkt zu S6) oder das eigene Set (verlinkt zu S3) mit Vorschaubild und Namen, dazu „Aus dem Diorama nehmen“ bzw. „Aus dem Set nehmen“. Steht die Figur nirgends: „Diese Figur ist nicht ausgestellt“ und der Knopf „Diorama oder Set wählen“ (Blatt mit Umschalter Diorama · Set, bei Sets Suche und Bild). Stammt die Figur aus einem eigenen Set mit Status „vollständig“ und hat keinen eigenen Ort, steht sie automatisch in diesem Set („Set, automatisch“, ohne „Aus dem Set nehmen“, dafür „Woanders ausstellen“).
 6. **Modifikationen:** Liste der getauschten Teile mit Position, Anbieter, Preis; Summe „Ausgaben für Mods“.
 7. **Weitere Exemplare:** kleine Kacheln der anderen Exemplare (falls vorhanden).
 8. Notiz.
@@ -82,6 +82,7 @@ Reihenfolge von oben:
 - Marker Zustand und **Status** (vollständig · Figuren entnommen · zerlegt).
 - Wert-Karte wie S2.
 - **Enthaltene Figuren:** Raster aller Figuren des Sets; vorhandene farbig und verlinkt, fehlende ausgegraut mit „＋ Wunschliste“.
+- **Ausgestellte Figuren:** die Figuren, die in diesem Set stehen, auch solche aus anderen Sets („automatisch“ bei Figuren aus diesem vollständigen Set); Knopf „Figuren zuordnen“ → S6a für das Set (`#/vitrine/set/<id>/zuordnen`).
 - Herkunft, Links, Notiz. Aktionen wie S2.
 
 ### S4 Detail Sonderteil (`Sonderteil.dc.html`)
@@ -89,7 +90,7 @@ Reihenfolge von oben:
 
 ### S5 Dioramen (`Dioramen.dc.html`)
 - Große Bildkarten (Handy 1 Spalte, PC 3): Foto, Name, „12 Figuren“.
-- Oben ein Hinweis-Banner: „37 Figuren haben noch kein Diorama“ → öffnet die Vitrine mit diesem Filter.
+- Oben ein Hinweis-Banner: „37 Figuren sind nicht ausgestellt“ → öffnet die Vitrine mit diesem Filter.
 
 ### S6 Detail Diorama (`Diorama.dc.html`)
 1. Fotogalerie, groß.
@@ -99,8 +100,8 @@ Reihenfolge von oben:
 5. Notiz. Aktionen: Bearbeiten · Löschen.
 
 ### S6a Figuren zuordnen (`Zuordnen.dc.html`)
-- Suchfeld, Filter „nur ohne Diorama“ (voreingestellt).
-- Raster mit Mehrfachauswahl (Häkchen). Figuren aus anderen Dioramen sind markiert („steht in: …“); Auswahl verschiebt sie mit Rückfrage.
+- Suchfeld, Filter „Nur nicht ausgestellte“ (voreingestellt) · „Alle“.
+- Raster mit Mehrfachauswahl (Häkchen). Figuren, die woanders stehen (anderes Diorama oder eigenes Set), sind markiert („steht in: …“); Auswahl verschiebt sie mit Rückfrage. Dieselbe Seite gibt es für ein Set (`#/vitrine/set/<id>/zuordnen`, Schließen führt zum Set); Figuren, die schon automatisch in diesem Set stehen, werden nicht angeboten.
 - Unten: „N Figuren zuordnen“.
 
 ### S7 Erfassen (`Erfassen.dc.html`; Bottom-Sheet am Handy, Dialog am PC)
@@ -158,7 +159,7 @@ Reihenfolge von oben:
 - Kacheln: Kaufsumme · Wertdifferenz · Ausgaben für Mods · Objekte ohne Wert.
 - Anzahl je Objektart; Verteilung nach Thema/Reihe (Balken).
 - Top 10 wertvollste Objekte (verlinkt zu S2/S3).
-- „Ohne Diorama“ (Anzahl, verlinkt zur gefilterten Vitrine).
+- „Nicht ausgestellt“ (Anzahl der Figuren ohne Diorama und ohne eigenes Set, verlinkt zur gefilterten Vitrine).
 - Fußzeile: „Preise Stand vom …“.
 
 ### S12 Einstellungen (`Einstellungen.dc.html`)

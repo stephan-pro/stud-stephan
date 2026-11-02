@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { figuresInDiorama, figuresWithoutDiorama } from "../domain/dioramas";
+import { figuresInDiorama } from "../domain/dioramas";
 import { formatMoney, formatMoneyDifference } from "../domain/money";
+import { figuresNotOnDisplay } from "../domain/placement";
 import { itemsToPrice } from "../domain/prices";
 import { seriesProgress } from "../domain/series";
 import { groupCopies, NO_FILTER, showcase } from "../domain/showcase";
@@ -30,7 +31,7 @@ describe("P3 Demo-Daten passen zum Klick-Dummy", () => {
     expect(formatMoney(modSpend(rex))).toBe(euro("14,50 €"));
   });
 
-  it("P3 Vitrine: Clone Trooper Phase II ×3 zu 6,20 €, Fives ohne Diorama zu 24,00 €", () => {
+  it("P3 Vitrine: Clone Trooper Phase II ×3 zu 6,20 €, Fives nicht ausgestellt zu 24,00 €", () => {
     const groups = groupCopies(demo.minifigs);
     const troopers = groups.find((group) => group.copies[0]?.name === "Clone Trooper Phase II");
     expect(troopers?.copies).toHaveLength(3);
@@ -64,7 +65,7 @@ describe("P3 Demo-Daten passen zum Klick-Dummy", () => {
       "umbara-gefecht-v3.io",
       "umbara-gefecht-v2.io",
     ]);
-    expect(figuresWithoutDiorama(demo).map((minifig) => minifig.name)).toEqual([
+    expect(figuresNotOnDisplay(demo).map((minifig) => minifig.name)).toEqual([
       "ARC Trooper Fives",
       "Wookiee-Krieger",
       "Kai",

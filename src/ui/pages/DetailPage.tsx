@@ -2,7 +2,6 @@ import { useState } from "preact/hooks";
 import type { Remote } from "../../backend/remote";
 import { formatMonth } from "../../domain/dates";
 import {
-  dioramaOf,
   findItem,
   otherCopies,
   ownSetOf,
@@ -10,6 +9,7 @@ import {
   setFigures,
 } from "../../domain/details";
 import { formatMoney } from "../../domain/money";
+import { figuresInSet } from "../../domain/placement";
 import { priceHistory } from "../../domain/prices";
 import { galleryImages, shortSetNumber } from "../../domain/showcase";
 import type {
@@ -30,7 +30,7 @@ import {
 import { CopyRow } from "../components/CopyRow";
 import { Cover } from "../components/Cover";
 import { BackBar, NoteAndLinks, originRows, Rows, Section } from "../components/DetailParts";
-import { FigureDiorama } from "../components/FigureDiorama";
+import { FigureStand } from "../components/FigureStand";
 import { Gallery } from "../components/Gallery";
 import { Icon } from "../components/Icon";
 import { RemoveSheet } from "../components/RemoveSheet";
@@ -38,7 +38,7 @@ import { ValueCard } from "../components/ValueCard";
 import { WishSheet } from "../components/WishSheet";
 import { WriteLink } from "../components/WriteLink";
 import { manufacturerLabel, safeUrl } from "../labels";
-import { type DetailRef, detailHash, formHash, routeHash } from "../route";
+import { type DetailRef, detailHash, formHash, routeHash, setAssignHash } from "../route";
 import { TEXTS } from "../texts";
 import { type LoadedCollection, useWritable } from "../useCollection";
 import { wishActions } from "../wishActions";
@@ -85,7 +85,6 @@ function MinifigDetail({
 }) {
   const valuation = valueOfItem(minifig, collection.prices);
   const set = ownSetOf(collection, minifig);
-  const diorama = dioramaOf(collection, minifig);
   const copies = otherCopies(collection, minifig);
   const fromSetLabel = minifig.fromSet?.label ?? set?.name;
   const rows = originRows([
@@ -135,13 +134,7 @@ function MinifigDetail({
           <Rows rows={rows} />
         </Section>
       )}
-      <FigureDiorama
-        minifig={minifig}
-        diorama={diorama}
-        collection={collection}
-        remote={remote}
-        update={update}
-      />
+      <FigureStand minifig={minifig} collection={collection} remote={remote} update={update} />
       {minifig.mods.length > 0 && (
         <Section
           id="mods"
@@ -221,6 +214,7 @@ function SetDetail({
   const valuation = valueOfItem(set, collection.prices);
   const figures = setFigures(collection, set);
   const progress = setFigureProgress(figures);
+  const displayed = figuresInSet(collection, set.id);
   const meta = [
     set.setNumber ? shortSetNumber(set.setNumber) : undefined,
     manufacturerLabel(set.manufacturer),
@@ -336,6 +330,36 @@ function SetDetail({
             })}
           </ul>
         )}
+      </Section>
+      <Section id="displayed" title={T.set.displayedTitle}>
+        {displayed.length === 0 ? (
+          <p class="card__text">{T.set.displayedNone}</p>
+        ) : (
+          <ul class="figure-grid figure-grid--round">
+            {displayed.map(({ minifig, automatic }) => (
+              <li key={minifig.id}>
+                <a
+                  class="figure-tile pressable"
+                  href={detailHash({ type: "minifig", id: minifig.id })}
+                >
+                  <Cover
+                    image={galleryImages(minifig)[0]}
+                    alt=""
+                    tintKey={minifig.id}
+                    scribbleId={`displayed-${minifig.id}`}
+                    variant="small"
+                  />
+                  <span class="figure-tile__name">{minifig.name}</span>
+                  {automatic && <span class="tile__meta">{T.set.displayedAutomatic}</span>}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+        <WriteLink class="button button--pop pressable" href={setAssignHash(set.id)}>
+          <Icon name="plus" size={20} />
+          {T.set.displayedAssign}
+        </WriteLink>
       </Section>
       {facts.length > 0 && (
         <Section id="set" title={T.set.title}>
