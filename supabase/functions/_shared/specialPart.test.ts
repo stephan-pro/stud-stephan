@@ -235,7 +235,7 @@ describe("Sonderteile: Katalogeintrag", () => {
 });
 
 describe("Sonderteile: Anfrage an die Funktion", () => {
-  it("die Art „specialPart“ wird angenommen, der Verweis darf einen Typ tragen (nur dort)", () => {
+  it("die Art „specialPart“ wird angenommen, der Verweis darf einen Typ tragen (nicht bei Sets)", () => {
     expect(parseCatalogRequest({ op: "search", kind: "specialPart", query: "5010325" })).toEqual({
       op: "search",
       kind: "specialPart",
@@ -247,7 +247,7 @@ describe("Sonderteile: Anfrage an die Funktion", () => {
       ref: "GEAR:5010325",
     });
     expect(
-      parseCatalogRequest({ op: "item", kind: "minifig", ref: "GEAR:5010325" }),
+      parseCatalogRequest({ op: "item", kind: "legoSet", ref: "GEAR:5010325" }),
     ).toBeUndefined();
     expect(parseCatalogRequest({ op: "item", kind: "specialPart", ref: "a b" })).toBeUndefined();
     expect(parseCatalogRequest({ op: "item", kind: "gear", ref: "5010325" })).toBeUndefined();

@@ -548,6 +548,20 @@ describe("Rebrickable und BrickLink: nur die Nummer aus der Adresse, kein Abruf"
       "legoSet",
       "75372-1",
     ],
+    // A part (?P=) is a Big Fig, a figure that BrickLink lists as a part (the Rancor of 75005).
+    [
+      "https://www.bricklink.com/v2/catalog/catalogitem.page?P=11323pb01c01",
+      "bricklink",
+      "minifig",
+      "PART:11323pb01c01",
+    ],
+    [
+      "https://www.bricklink.com/v2/catalog/catalogitem.page?P=11323pb01c01&C=11#T=C",
+      "bricklink",
+      "minifig",
+      "PART:11323pb01c01",
+    ],
+    ["https://www.bricklink.com/catalogitem.asp?P=973c01", "bricklink", "minifig", "PART:973c01"],
     // Special parts: gear (?G=) and books (?B=) name their type, the catalog asks only that one.
     [
       "https://www.bricklink.com/v2/catalog/catalogitem.page?G=5010325",
@@ -601,7 +615,10 @@ describe("Rebrickable und BrickLink: nur die Nummer aus der Adresse, kein Abruf"
     expect(catalogLink(new URL("https://rebrickable.com/sets/"))).toBeUndefined();
     expect(catalogLink(new URL("https://rebrickable.com/sets/..%2f..%2fadmin/"))).toBeUndefined();
     expect(
-      catalogLink(new URL("https://www.bricklink.com/v2/catalog/catalogitem.page?P=3001")),
+      catalogLink(new URL("https://www.bricklink.com/v2/catalog/catalogitem.page?I=3001")),
+    ).toBeUndefined();
+    expect(
+      catalogLink(new URL("https://www.bricklink.com/v2/catalog/catalogitem.page?P=a%20b")),
     ).toBeUndefined();
     expect(
       catalogLink(new URL("https://www.bricklink.com/v2/catalog/catalogitem.page?S=a%20b")),

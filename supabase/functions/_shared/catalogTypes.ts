@@ -11,17 +11,30 @@ export type SpecialPartType = "GEAR" | "SET" | "BOOK";
 
 export const SPECIAL_PART_TYPES: readonly SpecialPartType[] = ["GEAR", "SET", "BOOK"];
 
+/**
+ * The BrickLink types a figure can be: a minifig, or a part (Big Figs such as the Rancor of 75005
+ * are "Large Figure" parts, `11323pb01c01`). The catalog tries them in this order. A figure without
+ * a stored type is a minifig.
+ */
+export type FigureType = "MINIFIG" | "PART";
+
+export const FIGURE_TYPES: readonly FigureType[] = ["MINIFIG", "PART"];
+
+/** Every kind of BrickLink item the app keeps for an object. */
+export type BricklinkItemType = FigureType | SpecialPartType;
+
 /** One line of a search: enough to pick the right one. */
 export interface CatalogHit {
   kind: CatalogKind;
   /**
    * What `item` takes to read the full entry: a BrickLink number, or for a figure found by name a
    * Rebrickable number ("fig-014663") that `item` turns into a BrickLink number if it can. For a
-   * special part the type goes first ("GEAR:5010325"), so the entry is read with one call.
+   * special part and for a figure that is a BrickLink part the type goes first ("GEAR:5010325",
+   * "PART:11323pb01c01"), so the entry is read with one call.
    */
   ref: string;
-  /** Special part: the BrickLink type the number was found under. */
-  bricklinkType?: SpecialPartType;
+  /** The BrickLink type the number was found under: always for a special part, for a figure only a part. */
+  bricklinkType?: BricklinkItemType;
   /** The BrickLink number (figure) or set number; missing for a figure found by name. */
   number?: string;
   name: string;
@@ -36,6 +49,8 @@ export interface CatalogFigureInfo {
   name: string;
   quantity: number;
   imageUrl?: string;
+  /** `PART` for a Big Fig (a "Large Figure" part); none for a minifig. */
+  bricklinkType?: FigureType;
 }
 
 export interface CatalogSetInfo {
@@ -48,8 +63,8 @@ export interface CatalogItem {
   kind: CatalogKind;
   /** BrickLink number of the figure or number of the set; empty if the figure could not be found at BrickLink. */
   number: string;
-  /** Special part: the BrickLink type the number was found under; it belongs to `number`. */
-  bricklinkType?: SpecialPartType;
+  /** The BrickLink type the number was found under (special part; figure: only `PART`); it belongs to `number`. */
+  bricklinkType?: BricklinkItemType;
   name: string;
   year?: number;
   /** "Star Wars – The Clone Wars": main theme, sub theme. */
@@ -78,20 +93,28 @@ export type CatalogFailure =
   | "limit_reached"
   | "unavailable";
 
-/** "GEAR:5010325": a special part's reference with its type; a plain number has none. */
-export function specialPartRef(type: SpecialPartType, number: string): string {
+/** "GEAR:5010325", "PART:11323pb01c01": a reference with its BrickLink type; a plain number has none. */
+export function typedRef(type: BricklinkItemType, number: string): string {
   return `${type}:${number}`;
 }
 
-/** The type and number of a reference "GEAR:5010325"; nothing for a plain number. */
-export function parseSpecialPartRef(
+/** The type and number of a reference "GEAR:5010325" if the type is one of `types`; nothing for a plain number. */
+export function parseTypedRef<T extends string>(
   ref: string,
-): { type: SpecialPartType; number: string } | undefined {
+  types: readonly T[],
+): { type: T; number: string } | undefined {
   const [prefix, ...rest] = ref.split(":");
-  const type = SPECIAL_PART_TYPES.find((candidate) => candidate === prefix?.toUpperCase());
+  const type = types.find((candidate) => candidate === prefix?.toUpperCase());
   const number = rest.join(":");
   return type && number !== "" ? { type, number } : undefined;
 }
+
+export const specialPartRef = (type: SpecialPartType, number: string) => typedRef(type, number);
+
+export const parseSpecialPartRef = (ref: string) => parseTypedRef(ref, SPECIAL_PART_TYPES);
+
+/** A figure's reference: "PART:11323pb01c01" or "MINIFIG:sw0194"; a plain number gives nothing. */
+export const parseFigureRef = (ref: string) => parseTypedRef(ref, FIGURE_TYPES);
 
 /** Longest search text the function takes. */
 export const MAX_QUERY_LENGTH = 100;

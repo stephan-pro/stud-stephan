@@ -12,9 +12,12 @@ import {
   type SourceState,
 } from "./catalog";
 
-/** A special part's reference carries its BrickLink type, like the real function's hits. */
+/**
+ * A special part's and a Big Fig's reference carries its BrickLink type, like the real function's
+ * hits; a minifig's and a set's is the plain number.
+ */
 function refOf(item: CatalogItem): string {
-  return item.kind === "specialPart" && item.bricklinkType
+  return item.kind !== "legoSet" && item.bricklinkType
     ? `${item.bricklinkType}:${item.number}`
     : item.number;
 }

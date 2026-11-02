@@ -20,8 +20,14 @@ const BASE = "https://api.bricklink.com/api/store/v1";
 /** How long one BrickLink call may take. */
 const CALL_TIMEOUT_MS = 20_000;
 
-/** Minifigs and sets, and gear and books for special parts (GWP, Insiders rewards). */
-export type ItemType = "MINIFIG" | "SET" | "GEAR" | "BOOK";
+/**
+ * Minifigs and sets, parts for Big Figs ("Large Figure" parts such as the Rancor of 75005), and gear
+ * and books for special parts (GWP, Insiders rewards).
+ */
+export type ItemType = "MINIFIG" | "PART" | "SET" | "GEAR" | "BOOK";
+
+/** The BrickLink category of the Big Figs; the lists of a set's parts tell them from ordinary parts by it. */
+const LARGE_FIGURE_CATEGORY = /^large figures?$/i;
 
 export interface BricklinkItem {
   number: string;
@@ -36,6 +42,8 @@ export interface BricklinkEntry {
   name: string;
   quantity: number;
   imageUrl?: string;
+  /** `PART` for a Big Fig among the minifigs of a set; none for a minifig. */
+  bricklinkType?: "PART";
 }
 
 export interface BricklinkCategory {
@@ -53,15 +61,19 @@ export interface BricklinkPrice {
 
 export interface BricklinkClient {
   item(type: ItemType, number: string): Promise<BricklinkItem>;
-  /** The minifigs in a set. */
+  /** The figures in a set: minifigs and Big Figs. */
   minifigsOfSet(setNumber: string): Promise<BricklinkEntry[]>;
   /**
-   * What a set holds in one call: its minifigs and its sets. Collectible minifigure series hold
-   * one set per figure ("coltlbm-1"), and only that set holds the minifig (P12).
+   * What a set holds in one call: its figures and its sets. Figures are the minifigs and the Big
+   * Figs (parts of the category "Large Figure", marked `bricklinkType: "PART"`). Collectible
+   * minifigure series hold one set per figure ("coltlbm-1"), and only that set holds the minifig
+   * (P12).
    */
   contentsOfSet(setNumber: string): Promise<{ minifigs: BricklinkEntry[]; sets: BricklinkEntry[] }>;
   /** The sets a minifig comes in. */
   setsOfMinifig(number: string): Promise<BricklinkEntry[]>;
+  /** The sets an item (a minifig or a Big Fig part) comes in. */
+  setsOf(type: "MINIFIG" | "PART", number: string): Promise<BricklinkEntry[]>;
   category(id: number): Promise<BricklinkCategory>;
   /** Price guide "sold", last 6 months, EUR (as checked in P2). */
   price(type: ItemType, number: string, condition: "new" | "used"): Promise<BricklinkPrice>;
@@ -92,12 +104,35 @@ function failureOf(httpStatus: number, body: unknown): CatalogError | undefined 
   return new CatalogError("unavailable", `BrickLink: Code ${code} ${text}`.trim());
 }
 
-function entriesOf(data: unknown, wanted: ItemType): BricklinkEntry[] {
+/** Whether a list of items holds parts at all (then the Big Fig category is worth looking up). */
+function hasParts(data: unknown): boolean {
+  return list(data).some(
+    (group) =>
+      isRecord(group) &&
+      list(group.entries).some(
+        (entry) => isRecord(entry) && isRecord(entry.item) && entry.item.type === "PART",
+      ),
+  );
+}
+
+/**
+ * The entries of one item type in the lists of BrickLink's subsets and supersets, each number once
+ * with its quantities added. For parts only those of the given categories count (`categories`).
+ */
+function entriesOf(
+  data: unknown,
+  wanted: ItemType,
+  categories?: ReadonlySet<number>,
+): BricklinkEntry[] {
   const found = new Map<string, BricklinkEntry>();
   for (const group of list(data)) {
     if (!isRecord(group)) continue;
     for (const entry of list(group.entries)) {
       if (!isRecord(entry) || !isRecord(entry.item) || entry.item.type !== wanted) continue;
+      if (categories) {
+        const category = num(entry.item.category_id);
+        if (category === undefined || !categories.has(category)) continue;
+      }
       const number = str(entry.item.no);
       const rawName = str(entry.item.name);
       const name = rawName === undefined ? undefined : decodeEntities(rawName);
@@ -105,7 +140,14 @@ function entriesOf(data: unknown, wanted: ItemType): BricklinkEntry[] {
       const quantity = num(entry.quantity) ?? 1;
       const known = found.get(number);
       if (known) known.quantity += quantity;
-      else found.set(number, { number, name, quantity });
+      else {
+        found.set(number, {
+          number,
+          name,
+          quantity,
+          ...(wanted === "PART" ? { bricklinkType: "PART" as const } : {}),
+        });
+      }
     }
   }
   return [...found.values()];
@@ -141,6 +183,29 @@ export function createBricklink(options: BricklinkOptions): BricklinkClient {
     return isRecord(body) ? body.data : undefined;
   }
 
+  // The ids of the Big Fig categories, asked once per client (one call for the whole category list).
+  let largeFigures: Promise<ReadonlySet<number>> | undefined;
+  async function largeFigureCategories(): Promise<ReadonlySet<number>> {
+    const data = await get("/categories");
+    const ids = new Set<number>();
+    for (const entry of list(data)) {
+      if (!isRecord(entry)) continue;
+      const id = num(entry.category_id);
+      const name = str(entry.category_name);
+      if (id !== undefined && name !== undefined && LARGE_FIGURE_CATEGORY.test(name.trim())) {
+        ids.add(id);
+      }
+    }
+    return ids;
+  }
+  const bigFigCategories = () => {
+    largeFigures ??= largeFigureCategories().catch((error: unknown) => {
+      largeFigures = undefined;
+      throw error;
+    });
+    return largeFigures;
+  };
+
   const enc = encodeURIComponent;
   return {
     async item(type, number) {
@@ -169,17 +234,25 @@ export function createBricklink(options: BricklinkOptions): BricklinkClient {
         break_minifigs: "false",
         break_build: "false",
       });
-      return {
-        minifigs: entriesOf(data, "MINIFIG").map((entry) => ({
-          ...entry,
-          imageUrl: minifigImage(entry.number),
-        })),
-        sets: entriesOf(data, "SET"),
-      };
+      const minifigs: BricklinkEntry[] = entriesOf(data, "MINIFIG").map((entry) => ({
+        ...entry,
+        imageUrl: minifigImage(entry.number),
+      }));
+      // Big Figs are parts of the category "Large Figure" (the Rancor of 75005 is "11323pb01c01").
+      // They have no picture in the lists, and the category list is only asked if there are parts.
+      if (hasParts(data)) {
+        const categories = await bigFigCategories();
+        if (categories.size > 0) minifigs.push(...entriesOf(data, "PART", categories));
+      }
+      return { minifigs, sets: entriesOf(data, "SET") };
     },
 
     async setsOfMinifig(number) {
-      return entriesOf(await get(`/items/MINIFIG/${enc(number)}/supersets`), "SET");
+      return this.setsOf("MINIFIG", number);
+    },
+
+    async setsOf(type, number) {
+      return entriesOf(await get(`/items/${type}/${enc(number)}/supersets`), "SET");
     },
 
     async category(id) {

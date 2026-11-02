@@ -250,6 +250,34 @@ describe("Sonderteile im Preisabruf", () => {
   });
 });
 
+describe("Big Figs im Preisabruf", () => {
+  it("Eine Figur oder ein Wunsch mit Typ PART kommt als „PART:Nummer“ in die Warteschlange, eine Minifigur mit der nackten Nummer", async () => {
+    const person = await signedIn();
+    await save(
+      person,
+      "minifig",
+      aMinifig({ id: "rancor", bricklinkId: "11323pb01c01", bricklinkType: "PART" }),
+    );
+    await save(person, "minifig", aMinifig({ id: "luke", bricklinkId: "sw0434" }));
+    await save(
+      person,
+      "wishItem",
+      aWish({ id: "wish-rancor-2", bricklinkId: "973c01", bricklinkType: "PART" }),
+    );
+    await call("price_run_begin", { p_owner: person.id, p_trigger: "manual" });
+    const { data } = await admin
+      .from("price_run_items")
+      .select("item_type, bricklink_id")
+      .eq("owner", person.id)
+      .order("bricklink_id");
+    expect(data).toEqual([
+      { item_type: "minifig", bricklink_id: "PART:11323pb01c01" },
+      { item_type: "minifig", bricklink_id: "PART:973c01" },
+      { item_type: "minifig", bricklink_id: "sw0434" },
+    ]);
+  });
+});
+
 describe("P11 Rechte", () => {
   it("Die App liest nur ihren eigenen Stand und kann die Warteschlange nicht ändern", async () => {
     expect(await new SupabasePriceRunner(stranger.client).status()).toBeNull();

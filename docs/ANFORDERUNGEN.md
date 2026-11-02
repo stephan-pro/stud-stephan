@@ -107,6 +107,7 @@ Akzeptanzkriterien:
 
 ### F9 Sonderteile
 - Felder: Art (GWP, Sammelmünze, Sonstiges), Name, Nummer (optional), Jahr (optional), Hersteller, Zustand, Quelle, Kaufpreis, Wert, Fotos, Notiz.
+- **BrickLink-Typ:** Die App merkt sich, welche Art BrickLink-Eintrag ein Objekt ist (Minifigur, Teil, Set, Gear, Buch). Eine Big Fig (z. B. der Rancor aus 75005, bei BrickLink ein Teil der Kategorie „Large Figure“) ist eine Figur der App und hat den Typ Teil; Katalog, Preisabruf und Link richten sich nach dem Typ. Die Big Figs eines Sets zählen zu seinen Figuren.
 - **Aus dem Katalog:** Offizielle GWPs und Insiders-Prämien (z. B. 5010325) werden wie Figuren und Sets über „Nummer oder Suche“ oder per Link (BrickLink, LEGO.com) aus dem BrickLink-Katalog übernommen: Name, Bild, Jahr, Kategorie. Gespeichert werden die Nummer und der BrickLink-Typ (Gear, Set, Buch). Nur mit Typ bekommt ein Sonderteil von LEGO den Marktwert (F10); sonst gilt der eigene Wert.
 
 ### F10 Wert und Wertentwicklung

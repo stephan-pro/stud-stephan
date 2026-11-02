@@ -82,9 +82,9 @@ export function parseCatalogRequest(body: unknown): CatalogRequest | undefined {
   }
   if (body.op === "item") {
     const ref = str(body.ref);
-    // A special part's reference may carry its BrickLink type: "GEAR:5010325".
-    const allowed =
-      body.kind === "specialPart" ? /^[A-Za-z0-9._:-]{1,50}$/ : /^[A-Za-z0-9._-]{1,50}$/;
+    // The reference of a special part or a figure may carry its BrickLink type: "GEAR:5010325",
+    // "PART:11323pb01c01".
+    const allowed = body.kind === "legoSet" ? /^[A-Za-z0-9._-]{1,50}$/ : /^[A-Za-z0-9._:-]{1,50}$/;
     if (ref === undefined || !allowed.test(ref)) return undefined;
     return { op: "item", kind: body.kind, ref };
   }

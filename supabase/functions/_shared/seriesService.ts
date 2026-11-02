@@ -9,6 +9,7 @@
 
 import type { BricklinkClient } from "./bricklinkClient.ts";
 import type { CatalogStore } from "./catalogStore.ts";
+import { typedRef } from "./catalogTypes.ts";
 import { CatalogError } from "./json.ts";
 import { MAX_ATTEMPTS, nextCountDay } from "./priceRunService.ts";
 import type { RebrickableClient, RebrickableThemeNode } from "./rebrickableClient.ts";
@@ -418,14 +419,20 @@ async function figuresOfSet(
 ): Promise<SeriesFigureInfo[]> {
   return cached(
     deps,
-    // "figures2": the first version stored names with HTML characters.
-    `series:figures2:${setNumber}`,
+    // "figures2": the first version stored names with HTML characters. "figures3": Big Figs count
+    // as figures now, so lists cached before do not have them.
+    `series:figures3:${setNumber}`,
     async () => {
       const { minifigs, sets } = await deps.bricklink.contentsOfSet(setNumber);
       const found = new Map<string, SeriesFigureInfo>();
       for (const entry of minifigs) {
-        found.set(entry.number, {
-          number: entry.number,
+        // A Big Fig (a BrickLink part) carries its type in the number, "PART:11323pb01c01": the
+        // series store keeps only number, name and picture, and the app reads the type from it.
+        const number = entry.bricklinkType
+          ? typedRef(entry.bricklinkType, entry.number)
+          : entry.number;
+        found.set(number, {
+          number,
           name: entry.name,
           ...(entry.imageUrl === undefined ? {} : { imageUrl: entry.imageUrl }),
         });

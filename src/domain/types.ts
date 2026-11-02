@@ -2,7 +2,11 @@
 // the rules live in the other files of `src/domain/`.
 // Money is always whole cents (1250 = 12,50 €), days are "YYYY-MM-DD", points in time ISO 8601.
 
-import type { SpecialPartType } from "../../supabase/functions/_shared/catalogTypes";
+import type {
+  BricklinkItemType,
+  FigureType,
+  SpecialPartType,
+} from "../../supabase/functions/_shared/catalogTypes";
 
 /** Version of this data shape; goes into every export (F15) and is checked on import. */
 export const SCHEMA_VERSION = 1;
@@ -97,6 +101,12 @@ export interface Minifig extends ItemBase {
    * price (UMSETZUNG.md section 1). Customs and other manufacturers have none.
    */
   bricklinkId?: string;
+  /**
+   * `PART` for a Big Fig, which BrickLink lists as a part (`bricklinkId` "11323pb01c01"); none for
+   * a minifig. It belongs to the number: another number leaves it out. It decides what the price
+   * run asks BrickLink for.
+   */
+  bricklinkType?: FigureType;
   fromSet?: FromSet;
   mods: ModPart[];
   /** The one diorama the figure stands in (F8); none if missing. Never together with `standsInSetId`. */
@@ -110,6 +120,8 @@ export interface Minifig extends ItemBase {
 export interface CatalogFigure {
   name: string;
   bricklinkId?: string;
+  /** `PART` for a Big Fig (a "Large Figure" part); none for a minifig. */
+  bricklinkType?: FigureType;
   imageUrl?: string;
   quantity?: number;
 }
@@ -130,10 +142,16 @@ export interface LegoSet extends ItemBase {
 export type SpecialPartKind = "gwp" | "coin" | "other";
 
 /**
- * What BrickLink calls a special part: gear, a set (polybag, promo set) or a book. Found in the
- * catalog by number (`SpecialPartType` of the function `catalog`).
+ * The kind of BrickLink item an object is (the BrickLink item types the app uses): a minifig or a
+ * part (Big Figs), a set, gear or a book. Found in the catalog by number.
  */
-export type BricklinkType = SpecialPartType;
+export type BricklinkType = BricklinkItemType;
+
+/**
+ * What BrickLink calls a figure: a minifig (the default, nothing is stored) or a part (a Big Fig
+ * such as the Rancor of 75005, a "Large Figure" part). Only `PART` is ever stored.
+ */
+export type { FigureType };
 
 export interface SpecialPart extends ItemBase {
   type: "specialPart";
@@ -141,11 +159,12 @@ export interface SpecialPart extends ItemBase {
   /** Optional; for LEGO the BrickLink number ("5010325", a set "5008889-1"). */
   number?: string;
   /**
-   * The BrickLink type `number` was found under in the catalog. Together with the number it gives
-   * the market value of an official LEGO special part; without it the part keeps its own value.
-   * It belongs to the number: another number leaves it out.
+   * What BrickLink calls a special part: gear, a set (polybag, promo set) or a book. It is the
+   * type `number` was found under in the catalog. Together with the number it gives the market
+   * value of an official LEGO special part; without it the part keeps its own value. It belongs to
+   * the number: another number leaves it out.
    */
-  bricklinkType?: BricklinkType;
+  bricklinkType?: SpecialPartType;
   year?: number;
 }
 
@@ -182,6 +201,8 @@ export interface WishItem {
   name: string;
   /** For a wished figure. */
   bricklinkId?: string;
+  /** For a wished figure that is a Big Fig: `PART`, as at {@link Minifig}. */
+  bricklinkType?: FigureType;
   /** For a wished set. */
   setNumber?: string;
   manufacturer: Manufacturer;

@@ -373,7 +373,7 @@ describe("Katalog: Eintrag (F2)", () => {
 
   it("Ein Thema ohne Oberthema bleibt einstufig", async () => {
     const routes: Route[] = [
-      ...brickLinkRoutes().filter(([match]) => !match.startsWith("/categories/")),
+      ...brickLinkRoutes().filter(([match]) => !match.startsWith("/categories")),
       ["/categories/65", brickLink({ category_name: "Town" })],
       ...rebrickableRoutes(),
     ];

@@ -1,4 +1,4 @@
-// The catalog (F2): search by number or name, and the full entry of a figure or set.
+// The catalog (F2): search by number or name, and the full entry of a figure, set or special part.
 //
 // Numbers are BrickLink numbers (UMSETZUNG.md section 1): BrickLink gives name, year, picture, the
 // minifigs in a set and the sets of a minifig. Rebrickable adds the name search (BrickLink has none),
@@ -14,10 +14,14 @@ import {
   type CatalogItem,
   type CatalogKind,
   type CatalogSetInfo,
+  FIGURE_TYPES,
+  type FigureType,
+  parseFigureRef,
   parseSpecialPartRef,
   SPECIAL_PART_TYPES,
   type SpecialPartType,
   specialPartRef,
+  typedRef,
 } from "./catalogTypes.ts";
 import { CatalogError, decodeNames, joinTheme } from "./json.ts";
 import type { RebrickableClient } from "./rebrickableClient.ts";
@@ -35,6 +39,11 @@ const MAX_SETS_TRIED = 2;
 
 /** A BrickLink minifig number: letters, then digits ("sw0194", "coltlbm28", "hp001"). */
 const MINIFIG_NUMBER = /^[a-z]{2,8}\d{1,6}[a-z]{0,2}$/i;
+/**
+ * A BrickLink part number of a Big Fig: digits, a printed or assembled variant ("pb01", "c01"):
+ * "11323pb01c01" (the Rancor of 75005), "973c01". Plain digits are not one (they are set numbers).
+ */
+const PART_NUMBER = /^\d{2,6}[a-z]{1,4}\d{1,4}(?:[a-z]{1,2}\d{1,3})*$/i;
 const REBRICKABLE_FIG = /^fig-\d+$/i;
 const SET_NUMBER = /^\d{3,7}(-\d{1,2})?$/;
 /** A special part's number: one token with at least one digit ("5010325", "5010325-1", "gear012"). */
@@ -56,7 +65,10 @@ export function classifyQuery(kind: CatalogKind, text: string): Query {
       : { by: "name", text: query };
   }
   if (REBRICKABLE_FIG.test(query)) return { by: "number", ref: query.toLowerCase() };
-  return MINIFIG_NUMBER.test(query)
+  // "PART:11323pb01c01" names the type; a plain number is tried as a minifig, then as a part.
+  const typed = parseFigureRef(query);
+  if (typed) return { by: "number", ref: typedRef(typed.type, typed.number.toLowerCase()) };
+  return MINIFIG_NUMBER.test(query) || PART_NUMBER.test(query)
     ? { by: "number", ref: query.toLowerCase() }
     : { by: "name", text: query };
 }
@@ -160,6 +172,29 @@ async function findSpecialPart(
   return undefined;
 }
 
+/**
+ * A figure by BrickLink number: a minifig, else a part (Big Figs such as the Rancor are "Large
+ * Figure" parts). "Not found" goes on to the next type, any other failure ends the search; a
+ * reference with a type ("PART:11323pb01c01") asks that type only.
+ */
+async function findFigure(
+  deps: CatalogDeps,
+  ref: string,
+): Promise<{ type: FigureType; item: BricklinkItem } | undefined> {
+  const typed = parseFigureRef(ref);
+  const types = typed ? [typed.type] : FIGURE_TYPES;
+  const number = typed?.number ?? ref;
+  for (const type of types) {
+    try {
+      return { type, item: await deps.bricklink.item(type, number) };
+    } catch (error) {
+      if (error instanceof CatalogError && error.failure === "not_found") continue;
+      throw error;
+    }
+  }
+  return undefined;
+}
+
 export async function searchCatalog(
   deps: CatalogDeps,
   kind: CatalogKind,
@@ -186,8 +221,21 @@ export async function searchCatalog(
   }
   if (query.by === "number") {
     try {
-      const item = await deps.bricklink.item(kind === "legoSet" ? "SET" : "MINIFIG", query.ref);
-      const hit: CatalogHit = { kind, ref: item.number, number: item.number, name: item.name };
+      // A figure may be a minifig or a part (Big Fig); only a part keeps its type in the hit.
+      const found =
+        kind === "legoSet"
+          ? { type: "SET" as const, item: await deps.bricklink.item("SET", query.ref) }
+          : await findFigure(deps, query.ref);
+      if (!found) return [];
+      const { type, item } = found;
+      const isPart = type === "PART";
+      const hit: CatalogHit = {
+        kind,
+        ref: isPart ? typedRef("PART", item.number) : item.number,
+        number: item.number,
+        name: item.name,
+      };
+      if (isPart) hit.bricklinkType = "PART";
       if (item.year !== undefined) hit.year = item.year;
       if (item.imageUrl !== undefined) hit.imageUrl = item.imageUrl;
       return [hit];
@@ -285,12 +333,14 @@ function figureInfo(entry: {
   name: string;
   quantity: number;
   imageUrl?: string;
+  bricklinkType?: "PART";
 }): CatalogFigureInfo {
   return {
     number: entry.number,
     name: entry.name,
     quantity: entry.quantity,
     ...(entry.imageUrl === undefined ? {} : { imageUrl: entry.imageUrl }),
+    ...(entry.bricklinkType === undefined ? {} : { bricklinkType: entry.bricklinkType }),
   };
 }
 
@@ -304,10 +354,16 @@ async function minifigItem(
 ): Promise<{ value: CatalogItem; complete: boolean }> {
   if (REBRICKABLE_FIG.test(ref)) return resolveRebrickableFigure(deps, ref);
   const incomplete = { value: false };
-  const base = await deps.bricklink.item("MINIFIG", ref);
+  // A minifig, else a part (a Big Fig such as the Rancor); the type is kept for a part only.
+  const found = await findFigure(deps, ref);
+  if (!found) {
+    throw new CatalogError("not_found", "BrickLink: weder Minifigur noch Teil mit dieser Nummer");
+  }
+  const { type, item: base } = found;
   const theme = await optional(() => bricklinkTheme(deps, base.categoryId), incomplete);
-  const sets = await optional(() => deps.bricklink.setsOfMinifig(ref), incomplete);
+  const sets = await optional(() => deps.bricklink.setsOf(type, base.number), incomplete);
   const item: CatalogItem = { kind: "minifig", number: base.number, name: base.name };
+  if (type === "PART") item.bricklinkType = "PART";
   if (base.year !== undefined) item.year = base.year;
   if (theme !== undefined) item.theme = theme;
   if (base.imageUrl !== undefined) item.imageUrl = base.imageUrl;
@@ -327,7 +383,9 @@ async function resolveRebrickableFigure(
   for (const setNumber of setNumbers.slice(0, MAX_SETS_TRIED)) {
     const entries = await optional(() => deps.bricklink.minifigsOfSet(setNumber), incomplete);
     const match = entries?.find((entry) => sameName(entry.name, fig.name));
-    if (match) return minifigItem(deps, match.number);
+    if (match) {
+      return minifigItem(deps, match.bricklinkType ? typedRef("PART", match.number) : match.number);
+    }
   }
   const item: CatalogItem = { kind: "minifig", number: "", name: fig.name };
   if (fig.imageUrl !== undefined) item.imageUrl = fig.imageUrl;

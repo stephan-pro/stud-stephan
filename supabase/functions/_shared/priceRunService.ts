@@ -10,7 +10,7 @@
 //   run waits until the next day (UTC, like the count).
 
 import type { BricklinkClient, BricklinkPrice, ItemType } from "./bricklinkClient.ts";
-import { parseSpecialPartRef } from "./catalogTypes.ts";
+import { parseFigureRef, parseSpecialPartRef } from "./catalogTypes.ts";
 import { CatalogError } from "./json.ts";
 import type { ClaimedItem, ItemOutcome, PriceRunStore } from "./priceRunStore.ts";
 
@@ -46,12 +46,16 @@ export function bricklinkNumber(item: Pick<ClaimedItem, "itemType" | "bricklinkI
 /**
  * What to ask BrickLink for: the type and the number. A special part carries its BrickLink type in
  * the key ("GEAR:5010325"); a key without a valid type cannot be asked for and counts as unknown.
+ * A figure is a minifig unless its key says it is a part ("PART:11323pb01c01", a Big Fig).
  */
 export function bricklinkTarget(item: Pick<ClaimedItem, "itemType" | "bricklinkId">): {
   readonly type: ItemType;
   readonly number: string;
 } {
-  if (item.itemType === "minifig") return { type: "MINIFIG", number: bricklinkNumber(item) };
+  if (item.itemType === "minifig") {
+    const typed = parseFigureRef(item.bricklinkId.trim());
+    return typed ?? { type: "MINIFIG", number: bricklinkNumber(item) };
+  }
   if (item.itemType === "legoSet") return { type: "SET", number: bricklinkNumber(item) };
   const typed = parseSpecialPartRef(item.bricklinkId.trim());
   if (!typed) throw new CatalogError("not_found", "Sonderteil ohne BrickLink-Typ");

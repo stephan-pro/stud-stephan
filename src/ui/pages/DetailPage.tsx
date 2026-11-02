@@ -88,6 +88,11 @@ function MinifigDetail({
   const copies = otherCopies(collection, minifig);
   const fromSetLabel = minifig.fromSet?.label ?? set?.name;
   const rows = originRows([
+    // Only a Big Fig has a stored type: BrickLink lists it as a part, which gives its price.
+    {
+      label: T.origin.bricklinkType,
+      value: minifig.bricklinkType === "PART" ? TEXTS.search.bricklinkTypes.PART : undefined,
+    },
     { label: T.origin.source, value: minifig.source },
     {
       label: T.origin.acquired,

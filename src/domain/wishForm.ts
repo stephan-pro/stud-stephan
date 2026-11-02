@@ -96,6 +96,8 @@ export interface WishSource {
   readonly name: string;
   /** BrickLink number of the figure, or number of the set. */
   readonly number?: string | undefined;
+  /** `PART` for a figure that BrickLink lists as a part (a Big Fig). */
+  readonly bricklinkType?: "PART" | undefined;
   readonly theme?: string | undefined;
   readonly imageUrl?: string | undefined;
   /** The series it was wished from (F13). */
@@ -113,6 +115,7 @@ export function wishSourceOfItem(item: CatalogItem, link?: string): WishSource {
     type: item.kind === "legoSet" ? "legoSet" : "minifig",
     name: item.name,
     number: item.number === "" ? undefined : item.number,
+    bricklinkType: item.kind === "minifig" && item.bricklinkType === "PART" ? "PART" : undefined,
     theme: item.theme,
     imageUrl: item.imageUrl,
     links: link ? [link] : [],
@@ -152,6 +155,7 @@ export function wishSourceOfFigure(
     type: "minifig",
     name: figure.name,
     number: figure.bricklinkId,
+    bricklinkType: figure.bricklinkType === "PART" ? "PART" : undefined,
     imageUrl: figure.imageUrl,
     theme: context.theme,
     fromSeries: context.fromSeries,
@@ -179,6 +183,9 @@ export function newWish(
       : source.type === "minifig"
         ? { bricklinkId: number }
         : { setNumber: number }),
+    ...(number !== undefined && source.type === "minifig" && source.bricklinkType === "PART"
+      ? { bricklinkType: "PART" as const }
+      : {}),
     ...(source.theme ? { theme: source.theme } : {}),
     ...(source.imageUrl ? { imageUrl: source.imageUrl } : {}),
     ...(source.fromSeries ? { fromSeries: source.fromSeries } : {}),
@@ -262,7 +269,13 @@ export function formFromWish(wish: WishItem): CatalogForm {
   return {
     values,
     prefilled,
-    extras: wish.imageUrl ? { imageUrl: wish.imageUrl } : {},
+    extras: {
+      ...(wish.imageUrl ? { imageUrl: wish.imageUrl } : {}),
+      // A wished Big Fig stays a part when it is received.
+      ...(wish.type === "minifig" && wish.bricklinkType && wish.bricklinkId
+        ? { bricklink: { type: wish.bricklinkType, number: wish.bricklinkId } }
+        : {}),
+    },
     sets: [],
     numberMissing: false,
     origin: "wish",

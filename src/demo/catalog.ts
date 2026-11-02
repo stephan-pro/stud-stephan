@@ -62,6 +62,28 @@ export const DEMO_CATALOG: readonly CatalogItem[] = [
       { number: "sw1308", name: "Commander Bly", quantity: 1 },
     ],
   },
+  // A Big Fig: BrickLink lists the Rancor of 75005 as a part ("Large Figure"), not as a minifig.
+  {
+    kind: "minifig",
+    number: "11323pb01c01",
+    bricklinkType: "PART",
+    name: "Large Figure, Rancor",
+    year: 2013,
+    theme: "Large Figure",
+    sets: [{ number: "75005-1", name: "Rancor Pit" }],
+  },
+  {
+    kind: "legoSet",
+    number: "75005-1",
+    name: "Rancor Pit",
+    year: 2013,
+    theme: "Star Wars – Episode 6",
+    pieceCount: 380,
+    figures: [
+      { number: "sw0434", name: "Luke Skywalker", quantity: 1 },
+      { number: "11323pb01c01", name: "Large Figure, Rancor", quantity: 1, bricklinkType: "PART" },
+    ],
+  },
   {
     kind: "legoSet",
     number: "75345-1",

@@ -41,15 +41,23 @@ export function filterSeries(
   return figures.filter(({ status }) => (status === "present") === (filter === "present"));
 }
 
-/** The figures a build found as the catalog figures `seriesProgress` takes. */
+/**
+ * The figures a build found as the catalog figures `seriesProgress` takes. A Big Fig (a BrickLink
+ * part) comes with its type in the number, "PART:11323pb01c01"; the series store keeps only number,
+ * name and picture.
+ */
 export function catalogFiguresOf(
   found: readonly { number: string; name: string; imageUrl?: string }[],
 ): CatalogFigure[] {
-  return found.map((figure) => ({
-    name: figure.name,
-    bricklinkId: figure.number,
-    ...(figure.imageUrl ? { imageUrl: figure.imageUrl } : {}),
-  }));
+  return found.map((figure) => {
+    const part = /^PART:(.+)$/.exec(figure.number);
+    return {
+      name: figure.name,
+      bricklinkId: part?.[1] ?? figure.number,
+      ...(part ? { bricklinkType: "PART" as const } : {}),
+      ...(figure.imageUrl ? { imageUrl: figure.imageUrl } : {}),
+    };
+  });
 }
 
 /** Share of the series that is present, whole percent (the bar's width). */

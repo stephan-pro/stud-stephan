@@ -69,6 +69,7 @@ const POSITIONS = ["head", "torso", "arms", "hands", "legs", "headgear", "access
 const SET_STATUS = ["complete", "figuresRemoved", "disassembled"];
 const SPECIAL_KINDS = ["gwp", "coin", "other"];
 const BRICKLINK_TYPES = ["GEAR", "SET", "BOOK"];
+const FIGURE_TYPES = ["MINIFIG", "PART"];
 const PRIORITIES = ["high", "medium", "low"];
 
 function isManufacturer(value: unknown): boolean {
@@ -109,6 +110,7 @@ function wrongField(kind: ObjectKind, object: Json): string | undefined {
         typeOf("priority", (v) => PRIORITIES.includes(v as string)),
         typeOf("desiredCondition", (v) => CONDITIONS.includes(v as string)),
         missing("targetPrice", isWhole),
+        missing("bricklinkType", (v) => FIGURE_TYPES.includes(v as string)),
       );
     } else {
       checks.push(
@@ -134,6 +136,7 @@ function wrongField(kind: ObjectKind, object: Json): string | undefined {
                 optional(mod.price, isWhole),
             ),
         ),
+        missing("bricklinkType", (v) => FIGURE_TYPES.includes(v as string)),
         missing("fromSet", isObject),
         missing("dioramaId", isText),
         missing("standsInSetId", (v) => v === null || isText(v)),

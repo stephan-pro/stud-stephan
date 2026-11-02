@@ -10,6 +10,7 @@ import {
   wishableFigures,
   wishForFigure,
   wishSourceOfFigure,
+  wishSourceOfItem,
   wishValuesOf,
   withWishValues,
 } from "./wishForm";
@@ -63,6 +64,36 @@ describe("F14 Wunsch anlegen und bearbeiten", () => {
     expect(validateWish({ ...values, targetPrice: "20 Euro" })).toEqual({ targetPrice: "money" });
     expect(validateWish({ ...values, targetPrice: "-5" })).toEqual({ targetPrice: "money" });
     expect(validateWish({ ...values, note: "x".repeat(5001) })).toEqual({ note: "tooLong" });
+  });
+
+  it("Eine Big Fig bleibt ein Teil: der Wunsch behält den Typ und das Formular „Erhalten“ gibt ihn weiter; eine Minifigur bekommt keinen", () => {
+    const rancor = wishSourceOfFigure({
+      name: "Large Figure, Rancor",
+      bricklinkId: "11323pb01c01",
+      bricklinkType: "PART",
+    });
+    const wish = newWish(rancor, newWishValues("minifig"), CONTEXT);
+    expect(wish).toMatchObject({ bricklinkId: "11323pb01c01", bricklinkType: "PART" });
+    expect(formFromWish(wish).extras).toEqual({
+      bricklink: { type: "PART", number: "11323pb01c01" },
+    });
+    const plain = newWish(
+      wishSourceOfFigure({ name: "Luke", bricklinkId: "sw0434" }),
+      newWishValues("minifig"),
+      CONTEXT,
+    );
+    expect(plain).not.toHaveProperty("bricklinkType");
+    expect(formFromWish(plain).extras).toEqual({});
+    // From the catalog's entry of the part, too; a special part is never a wish.
+    expect(
+      wishSourceOfItem(
+        { kind: "minifig", number: "11323pb01c01", bricklinkType: "PART", name: "Rancor" },
+        undefined,
+      ),
+    ).toMatchObject({ type: "minifig", bricklinkType: "PART" });
+    expect(
+      wishSourceOfItem({ kind: "minifig", number: "sw0434", name: "Luke" }).bricklinkType,
+    ).toBeUndefined();
   });
 
   it("F13 Aus einer fehlenden Reihen-Figur wird ein Wunsch mit Nummer, Reihe und Zielpreis", () => {

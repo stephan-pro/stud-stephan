@@ -8,6 +8,7 @@ import {
   marketPrice,
   type PriceResult,
   priceHistory,
+  priceNumber,
   recordPriceRun,
 } from "./prices";
 import { valueOfItem } from "./value";
@@ -87,6 +88,33 @@ describe("F10 Preisabruf", () => {
       { date: LAST_WEEK, cents: 1400 },
       { date: TODAY, cents: 1500 },
     ]);
+  });
+
+  it("Der Preisabruf fragt eine Big Fig (Typ PART) unter „PART:Nummer“ ab, eine Minifigur unter der Nummer, Wünsche ebenso", () => {
+    const rancor = aMinifig({ bricklinkId: "11323pb01c01", bricklinkType: "PART" });
+    const withBigFigs = aCollection({
+      minifigs: [
+        rancor,
+        aMinifig({ bricklinkId: " 11323PB01C01 ", bricklinkType: "PART", condition: "new" }),
+        aMinifig({ bricklinkId: "sw0194" }),
+      ],
+      wishlist: [aWish({ bricklinkId: "973c01", bricklinkType: "PART" })],
+    });
+    expect(itemsToPrice(withBigFigs)).toEqual([
+      { itemType: "minifig", bricklinkId: "PART:11323pb01c01" },
+      { itemType: "minifig", bricklinkId: "sw0194" },
+      { itemType: "minifig", bricklinkId: "PART:973c01" },
+    ]);
+    const prices = [
+      aPrice("PART:11323pb01c01", TODAY, { used: 8000, new: 12050 }),
+      // The same number as a minifig is another item.
+      aPrice("11323pb01c01", TODAY, { used: 1 }),
+    ];
+    expect(marketPrice(rancor, "used", prices)).toEqual({ cents: 8000, date: TODAY });
+    expect(valueOfItem(rancor, prices)).toMatchObject({ kind: "market", cents: 8000 });
+    expect(priceNumber(rancor)).toBe("PART:11323pb01c01");
+    expect(priceNumber(aMinifig({ bricklinkId: "sw0194" }))).toBe("sw0194");
+    expect(priceNumber(aMinifig({ bricklinkId: " ", bricklinkType: "PART" }))).toBeUndefined();
   });
 
   it("Ein Sonderteil ohne BrickLink-Typ bleibt beim eigenen Wert, auch wenn eine Nummer da ist", () => {

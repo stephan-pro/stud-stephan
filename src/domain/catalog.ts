@@ -11,7 +11,10 @@ import type { BricklinkType, CatalogFigure } from "./types";
 export interface CatalogExtras {
   readonly imageUrl?: string;
   readonly figures?: readonly CatalogFigure[];
-  /** Special part: the BrickLink type and the number it was found under; they give its price. */
+  /**
+   * The BrickLink type and the number it was found under, for a special part (gear, set, book) and
+   * for a figure that is a part (Big Fig); they give the price.
+   */
   readonly bricklink?: { readonly type: BricklinkType; readonly number: string };
 }
 
@@ -38,6 +41,7 @@ export function containedFigures(item: CatalogItem): CatalogFigure[] {
     bricklinkId: figure.number,
     quantity: figure.quantity,
     ...(figure.imageUrl ? { imageUrl: figure.imageUrl } : {}),
+    ...(figure.bricklinkType === "PART" ? { bricklinkType: "PART" as const } : {}),
   }));
 }
 
@@ -79,7 +83,8 @@ export function formFromCatalog(item: CatalogItem, link?: string): CatalogForm {
     extras: {
       ...(item.imageUrl ? { imageUrl: item.imageUrl } : {}),
       ...(item.kind === "legoSet" ? { figures: containedFigures(item) } : {}),
-      ...(item.kind === "specialPart" && item.bricklinkType && item.number
+      // The type belongs to the number: a special part's gear/set/book, a Big Fig's part.
+      ...(item.kind !== "legoSet" && item.bricklinkType && item.number
         ? { bricklink: { type: item.bricklinkType, number: item.number } }
         : {}),
     },

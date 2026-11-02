@@ -4,7 +4,7 @@
 // Merlins Steine page is read once; any other page gives its title and picture (Open Graph).
 // Nothing of a page is passed on except the few fields below; the page itself is never returned.
 
-import { specialPartRef } from "./catalogTypes.ts";
+import { specialPartRef, typedRef } from "./catalogTypes.ts";
 import type { LinkAnswer, PageFields } from "./linkTypes.ts";
 import { extractPreview, extractSetPage } from "./pageParser.ts";
 import {
@@ -28,8 +28,8 @@ const BRICKLINK_NUMBER = /^[A-Za-z0-9._-]{1,50}$/;
 
 /**
  * The catalog entry a Rebrickable or BrickLink address names, if it is one of those. Only the
- * address is read: `/sets/75372-1/…`, `/minifigs/fig-014663/…` (Rebrickable) and `?S=75372-1` or
- * `?M=sw0194` (BrickLink catalog page).
+ * address is read: `/sets/75372-1/…`, `/minifigs/fig-014663/…` (Rebrickable) and `?S=75372-1`,
+ * `?M=sw0194`, `?P=11323pb01c01`, `?G=5010325`, `?B=5000001` (BrickLink catalog page).
  */
 export function catalogLink(url: URL): Extract<LinkAnswer, { kind: "catalog" }> | undefined {
   if (hostIs(url, "rebrickable.com")) {
@@ -45,6 +45,7 @@ export function catalogLink(url: URL): Extract<LinkAnswer, { kind: "catalog" }> 
   if (hostIs(url, "bricklink.com") && /catalogitem\.(page|asp)$/i.test(url.pathname)) {
     const set = url.searchParams.get("S");
     const figure = url.searchParams.get("M");
+    const part = url.searchParams.get("P");
     const gear = url.searchParams.get("G");
     const book = url.searchParams.get("B");
     if (set && BRICKLINK_NUMBER.test(set)) {
@@ -54,6 +55,16 @@ export function catalogLink(url: URL): Extract<LinkAnswer, { kind: "catalog" }> 
     }
     if (figure && BRICKLINK_NUMBER.test(figure)) {
       return { kind: "catalog", source: "bricklink", catalogKind: "minifig", ref: figure };
+    }
+    // A part (`?P=`) is a Big Fig here (the Rancor of 75005 is `P=11323pb01c01`): a figure whose
+    // BrickLink type is PART. The address says the type, so the catalog asks that one.
+    if (part && BRICKLINK_NUMBER.test(part)) {
+      return {
+        kind: "catalog",
+        source: "bricklink",
+        catalogKind: "minifig",
+        ref: typedRef("PART", part),
+      };
     }
     // Gear and books are special parts; the address says the type, so the catalog asks that one.
     if (gear && BRICKLINK_NUMBER.test(gear)) {

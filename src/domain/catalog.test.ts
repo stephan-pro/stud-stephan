@@ -153,6 +153,62 @@ describe("P7 F2 Formular aus dem Katalog", () => {
     });
   });
 
+  it("Eine Big Fig füllt Name, Nummer, Thema, Set und merkt sich den Typ PART; die Figuren eines Sets behalten ihn", () => {
+    const rancor: CatalogItem = {
+      kind: "minifig",
+      number: "11323pb01c01",
+      bricklinkType: "PART",
+      name: "Large Figure, Rancor",
+      year: 2013,
+      theme: "Large Figure",
+      imageUrl: "https://img.bricklink.com/ItemImage/PN/0/11323pb01c01.png",
+      sets: [{ number: "75005-1", name: "Rancor Pit" }],
+    };
+    const form = formFromCatalog(rancor);
+    expect(form.values).toMatchObject({
+      name: "Large Figure, Rancor",
+      number: "11323pb01c01",
+      theme: "Large Figure",
+      fromSet: "75005",
+    });
+    expect(form.extras).toEqual({
+      imageUrl: rancor.imageUrl,
+      bricklink: { type: "PART", number: "11323pb01c01" },
+    });
+    const figure = buildItem("minifig", form.values, {
+      ...CONTEXT,
+      id: "minifig-rancor",
+      catalog: form.extras,
+    });
+    expect(figure).toMatchObject({ bricklinkId: "11323pb01c01", bricklinkType: "PART" });
+
+    const pit: CatalogItem = {
+      kind: "legoSet",
+      number: "75005-1",
+      name: "Rancor Pit",
+      figures: [
+        { number: "sw0434", name: "Luke Skywalker", quantity: 1 },
+        {
+          number: "11323pb01c01",
+          name: "Large Figure, Rancor",
+          quantity: 1,
+          bricklinkType: "PART",
+        },
+      ],
+    };
+    expect(containedFigures(pit)).toEqual([
+      { name: "Luke Skywalker", bricklinkId: "sw0434", quantity: 1 },
+      {
+        name: "Large Figure, Rancor",
+        bricklinkId: "11323pb01c01",
+        quantity: 1,
+        bricklinkType: "PART",
+      },
+    ]);
+    // Big Figs count among the figures of the set.
+    expect(formFromCatalog(pit).values.minifigCount).toBe("2");
+  });
+
   it("Ein Eintrag ohne BrickLink-Typ (alter Zwischenspeicher) macht ein Sonderteil ohne Typ", () => {
     const form = formFromCatalog({ kind: "specialPart", number: "5010325", name: "Karte" });
     expect(form.extras).toEqual({});

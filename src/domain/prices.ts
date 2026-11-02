@@ -39,12 +39,17 @@ export function itemNumber(item: Priceable): string | undefined {
  * The number an object's price is kept under (`PricePoint.bricklinkId`). For a special part it is
  * the BrickLink type and the number in one text ("GEAR:5010325"), because the number alone does
  * not say what to ask BrickLink for; a part that was not taken from the catalog has no type and
- * therefore no price.
+ * therefore no price. A figure is its plain BrickLink number, except a Big Fig (a BrickLink part):
+ * "PART:11323pb01c01". Sets are always sets.
  */
 export function priceNumber(item: Priceable): string | undefined {
-  if (item.type !== "specialPart") return itemNumber(item);
-  const number = item.number?.trim();
-  return number && item.bricklinkType ? `${item.bricklinkType}:${number}` : undefined;
+  if (item.type === "specialPart") {
+    const number = item.number?.trim();
+    return number && item.bricklinkType ? `${item.bricklinkType}:${number}` : undefined;
+  }
+  const number = itemNumber(item);
+  if (item.type === "minifig" && number && item.bricklinkType === "PART") return `PART:${number}`;
+  return number;
 }
 
 /** "minifig:sw0194"; case and surrounding spaces of the number do not matter. */

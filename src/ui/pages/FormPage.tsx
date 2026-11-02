@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { type Catalog, CatalogCallError } from "../../backend/catalog";
 import type { LinkPreviewer, PageFields } from "../../backend/linkPreview";
 import { type Remote, RemoteError, saveItem } from "../../backend/remote";
-import { type CatalogForm, formFromCatalog } from "../../domain/catalog";
+import { type CatalogExtras, type CatalogForm, formFromCatalog } from "../../domain/catalog";
 import { withoutObject, withSavedItem } from "../../domain/collectionEdit";
 import { findItem } from "../../domain/details";
 import {
   buildItem,
   emptyForm,
+  extrasForCopy,
   type FieldError,
   type FieldKey,
   type FormErrors,
@@ -74,11 +75,16 @@ function saveFailure(error: unknown): string {
   return navigator.onLine ? T.saveFailed.server : T.saveFailed.offline;
 }
 
+/** What a form starts from: its values, the object being changed and the catalog data it keeps. */
+interface FormStart {
+  readonly values: FormValues;
+  readonly existing: ShowcaseItem | undefined;
+  /** What another copy of a figure keeps of the catalog's data (its BrickLink type). */
+  readonly extras?: CatalogExtras;
+}
+
 /** The form to start from and the object being changed, or `undefined` if there is none to find. */
-function startOf(
-  form: FormRef,
-  collection: Collection,
-): { values: FormValues; existing: ShowcaseItem | undefined } | undefined {
+function startOf(form: FormRef, collection: Collection): FormStart | undefined {
   // A catalog form starts from the entry, which `CatalogFormLoader` fetches first.
   if (form.mode === "new" || form.mode === "catalog" || form.mode === "link") {
     return { values: emptyForm(), existing: undefined };
@@ -88,8 +94,13 @@ function startOf(
   const item = findItem(collection, form.type, form.id);
   if (!item) return undefined;
   if (form.mode === "copy") {
+    const extras = item.type === "minifig" ? extrasForCopy(item) : undefined;
     return item.type === "minifig"
-      ? { values: formForCopy(item, collection.sets), existing: undefined }
+      ? {
+          values: formForCopy(item, collection.sets),
+          existing: undefined,
+          ...(extras ? { extras } : {}),
+        }
       : undefined;
   }
   return { values: formFromItem(item, collection.sets), existing: item };
@@ -157,7 +168,7 @@ function useLinkImage(
 interface FormBodyProps {
   readonly form: FormRef;
   readonly collection: Collection;
-  readonly start: { values: FormValues; existing: ShowcaseItem | undefined };
+  readonly start: FormStart;
   readonly remote: Remote | undefined;
   readonly update: LoadedCollection["update"];
   /** The picture of the page the form was started from; it becomes the first own photo on saving. */
@@ -293,7 +304,7 @@ function FormBody({
     setFailure(undefined);
     // The page's picture becomes the first own photo (made small first, like a chosen one).
     let photos = values.photos;
-    let extras = catalogForm?.extras;
+    let extras = catalogForm?.extras ?? start.extras;
     if (linkImage?.status === "ready" && takeImage) {
       try {
         if (imagePath.current === undefined) {

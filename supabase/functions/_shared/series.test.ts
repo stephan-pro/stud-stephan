@@ -428,6 +428,53 @@ describe("P12 Aufbau in Portionen", () => {
     expect(store.state(`${summary.id}|7675-1`)).toBe("done");
   });
 
+  it("Eine Big Fig (Teil der Kategorie Large Figure) zählt zu den Figuren der Reihe, mit ihrem Typ in der Nummer", async () => {
+    const store = new MemorySeriesStore();
+    const deps = seriesDeps(store, {
+      extra: [
+        [
+          "/items/SET/75372-1/subsets",
+          brickLink([
+            {
+              match_no: "0",
+              entries: [
+                { item: { no: "sw0434", name: "Luke Skywalker", type: "MINIFIG" }, quantity: 1 },
+                {
+                  item: {
+                    no: "11323pb01c01",
+                    name: "Large Figure, Rancor",
+                    type: "PART",
+                    category_id: 1081,
+                  },
+                  quantity: 1,
+                },
+                {
+                  item: { no: "3001", name: "Brick 2 x 4", type: "PART", category_id: 5 },
+                  quantity: 9,
+                },
+              ],
+            },
+          ]),
+        ],
+        [
+          "/categories",
+          brickLink([
+            { category_id: 5, category_name: "Brick" },
+            { category_id: 1081, category_name: "Large Figure" },
+          ]),
+        ],
+      ],
+    });
+    const summary = await startSeries(deps, "stephan", 2);
+    await workOnSeries(deps, { budgetMs: 50_000 });
+    const detail = await store.detail("stephan", summary.id, false);
+    const numbers = detail?.figures.map((figure) => figure.number) ?? [];
+    expect(numbers).toContain("sw0434");
+    expect(numbers).toContain("PART:11323pb01c01");
+    expect(numbers).not.toContain("3001");
+    expect(numbers.some((number) => number.includes("3001"))).toBe(false);
+  });
+
   it("F13 Eine Sammelserie enthält ein Set je Figur; die Figuren werden eine Ebene tiefer gelesen", async () => {
     const inner = (no: string, type: string, name: string) => ({
       match_no: "0",

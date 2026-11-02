@@ -293,6 +293,25 @@ describe("Prüfung vor dem Import", () => {
     ).toBe("invalidData");
   });
 
+  it("Der Typ PART einer Figur und eines Wunsches wird gelesen; ein anderer Typ wird abgelehnt", async () => {
+    expect(
+      await broken((p) => {
+        (p.manifest.collection.minifigs[0] as { bricklinkType: string }).bricklinkType = "PART";
+        (p.manifest.collection.wishlist[0] as { bricklinkType: string }).bricklinkType = "PART";
+      }),
+    ).toBeUndefined();
+    expect(
+      await broken((p) => {
+        (p.manifest.collection.minifigs[0] as { bricklinkType: string }).bricklinkType = "GEAR";
+      }),
+    ).toBe("invalidData");
+    expect(
+      await broken((p) => {
+        (p.manifest.collection.wishlist[0] as { bricklinkType: string }).bricklinkType = "SET";
+      }),
+    ).toBe("invalidData");
+  });
+
   it("Ein Sonderteil mit BrickLink-Typ wird gelesen; ein unbekannter Typ oder ein Jahr als Text wird abgelehnt", async () => {
     expect(
       await broken((p) => {

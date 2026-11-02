@@ -6,6 +6,7 @@ import {
   buildMod,
   emptyForm,
   emptyMod,
+  extrasForCopy,
   fieldsOf,
   firstError,
   firstModError,
@@ -460,6 +461,63 @@ describe("F9 Sonderteile", () => {
     const part = aSpecialPart({ kind: "gwp", number: "5008" });
     expect(formFromItem(part)).toMatchObject({ kind: "gwp", number: "5008" });
     expect(formFromItem(aSpecialPart()).number).toBe("");
+  });
+
+  describe("Big Fig aus dem Katalog: BrickLink-Typ PART an der Figur", () => {
+    const fromCatalog = { bricklink: { type: "PART" as const, number: "11323pb01c01" } };
+    const rancor = filled({ name: "Large Figure, Rancor", number: "11323pb01c01" });
+
+    it("Der Typ PART bleibt an der Figur, solange die Nummer die des Katalogs ist", () => {
+      const item = buildItem("minifig", rancor, context({ catalog: fromCatalog }));
+      expect(item).toMatchObject({
+        type: "minifig",
+        bricklinkId: "11323pb01c01",
+        bricklinkType: "PART",
+      });
+      const spaced = buildItem(
+        "minifig",
+        { ...rancor, number: " 11323PB01C01 " },
+        context({ catalog: fromCatalog }),
+      );
+      expect(spaced).toMatchObject({ bricklinkType: "PART" });
+      const other = buildItem(
+        "minifig",
+        { ...rancor, number: "11323" },
+        context({ catalog: fromCatalog }),
+      );
+      expect(other).not.toHaveProperty("bricklinkType");
+    });
+
+    it("Eine Minifigur und eine Figur von Hand haben keinen Typ; ein Typ MINIFIG wird nicht gespeichert", () => {
+      expect(buildItem("minifig", filled({ number: "sw0194" }), context())).not.toHaveProperty(
+        "bricklinkType",
+      );
+      const asMinifig = buildItem(
+        "minifig",
+        filled({ number: "sw0194" }),
+        context({ catalog: { bricklink: { type: "MINIFIG", number: "sw0194" } } }),
+      );
+      expect(asMinifig).not.toHaveProperty("bricklinkType");
+    });
+
+    it("Beim Bearbeiten bleibt der Typ bei gleicher Nummer, bei einer anderen fällt er weg", () => {
+      const existing = aMinifig({ bricklinkId: "11323pb01c01", bricklinkType: "PART" });
+      const form = formFromItem(existing);
+      expect(buildItem("minifig", form, context({ existing }))).toMatchObject({
+        bricklinkType: "PART",
+      });
+      const changed = buildItem("minifig", { ...form, number: "sw0194" }, context({ existing }));
+      expect(changed).not.toHaveProperty("bricklinkType");
+    });
+
+    it("Ein weiteres Exemplar einer Big Fig bleibt ein Teil", () => {
+      const original = aMinifig({ bricklinkId: "11323pb01c01", bricklinkType: "PART" });
+      const extras = extrasForCopy(original);
+      expect(extras).toEqual(fromCatalog);
+      const copy = buildItem("minifig", formForCopy(original), context({ catalog: extras }));
+      expect(copy).toMatchObject({ bricklinkId: "11323pb01c01", bricklinkType: "PART" });
+      expect(extrasForCopy(aMinifig())).toBeUndefined();
+    });
   });
 
   describe("Sonderteil aus dem Katalog: BrickLink-Typ und Jahr", () => {

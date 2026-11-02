@@ -595,19 +595,19 @@ export const TEXTS = {
     back: "Zurück zum Erfassen",
     label: "Nummer oder Name",
     placeholder: {
-      minifig: "z. B. sw0194 oder Captain Rex",
+      minifig: "z. B. sw0194, 11323pb01c01 oder Captain Rex",
       legoSet: "z. B. 75372 oder Battle Pack",
       specialPart: "Nummer, z. B. 5010325",
     },
     kinds: { minifig: "Figuren", legoSet: "Sets", specialPart: "Sonderteile" },
     kindsLabel: "Was suchen?",
-    idle: "Gib eine Nummer oder einen Namen ein. Die Nummer einer Figur ist die BrickLink-Nummer, z. B. sw0194.",
+    idle: "Gib eine Nummer oder einen Namen ein. Die Nummer einer Figur ist die BrickLink-Nummer, z. B. sw0194. Big Figs führt BrickLink als Teil, z. B. 11323pb01c01 (Rancor).",
     idleParts:
       "Gib die Nummer des Sonderteils ein, z. B. 5010325. Die App schlägt sie bei BrickLink als Gear, Set und Buch nach.",
     noneParts:
       "Sonderteile finden sich nur über die Nummer, nicht über den Namen. Prüf die Nummer (bei LEGO steht sie auf der Verpackung und auf der Produktseite) oder leg das Sonderteil von Hand an.",
     /** What BrickLink calls the item: the type the number was found under. */
-    bricklinkTypes: { GEAR: "Gear", SET: "Set", BOOK: "Buch" },
+    bricklinkTypes: { MINIFIG: "Minifigur", PART: "Teil", GEAR: "Gear", SET: "Set", BOOK: "Buch" },
     searching: "Suche läuft …",
     results: (count: number) =>
       count === 1 ? "1 Treffer im Katalog" : `${count} Treffer im Katalog`,
@@ -668,7 +668,7 @@ export const TEXTS = {
     placeholder: "Rebrickable, Merlins Steine oder Hersteller-Seite",
     paste: "Aus Zwischenablage einfügen",
     pasteFailed: "Die Zwischenablage ließ sich nicht lesen. Füg den Link von Hand ein.",
-    idle: "Füg einen Link ein: ein Set von Rebrickable oder BrickLink, ein Sonderteil von BrickLink oder LEGO.com, eine Seite der Merlins Steine SetDB oder die Seite eines Herstellers. Gelesen wird nur diese eine Seite.",
+    idle: "Füg einen Link ein: ein Set oder eine Figur von Rebrickable oder BrickLink (auch eine Big Fig als Teil), ein Sonderteil von BrickLink oder LEGO.com, eine Seite der Merlins Steine SetDB oder die Seite eines Herstellers. Gelesen wird nur diese eine Seite.",
     reading: "Link wird gelesen …",
     notAnAddress: "Das ist keine Web-Adresse. Sie beginnt mit https://.",
     recognized: "Erkannt",

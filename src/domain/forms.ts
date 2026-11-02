@@ -7,6 +7,7 @@ import { parseMoney } from "./money";
 import { cleanFocus } from "./photoFocus";
 import { shortSetNumber } from "./showcase";
 import type {
+  BricklinkType,
   Cents,
   Condition,
   FromSet,
@@ -21,6 +22,7 @@ import type {
   PhotoFocus,
   SetStatus,
   ShowcaseItem,
+  SpecialPart,
   SpecialPartKind,
   Timestamp,
 } from "./types";
@@ -463,11 +465,17 @@ export function buildItem(type: FormType, values: FormValues, context: BuildCont
     const own = label === undefined ? undefined : ownSetByNumber(context.sets, label);
     const fromSet: FromSet | undefined =
       label === undefined ? undefined : { label, ...(own ? { setId: own.id } : {}) };
+    // Only a part (a Big Fig) is stored; no type means a minifig. It belongs to the number.
+    const bricklinkType = typeOfNumber(number, context.catalog?.bricklink, {
+      number: previous?.bricklinkId,
+      type: previous?.bricklinkType,
+    });
     return {
       ...base,
       type: "minifig",
       mods: values.mods.map((mod) => ({ ...mod })),
       ...(number ? { bricklinkId: number } : {}),
+      ...(bricklinkType === "PART" ? { bricklinkType } : {}),
       ...(fromSet ? { fromSet } : {}),
       ...(previous?.dioramaId ? { dioramaId: previous.dioramaId } : {}),
       ...(previous?.standsInSetId !== undefined ? { standsInSetId: previous.standsInSetId } : {}),
@@ -492,12 +500,11 @@ export function buildItem(type: FormType, values: FormValues, context: BuildCont
   const previous = existing?.type === "specialPart" ? existing : undefined;
   const year = trimmed(values.year);
   // The BrickLink type belongs to the number it was found under: another number drops it.
-  const fromCatalog = context.catalog?.bricklink;
-  const bricklinkType = sameNumber(fromCatalog?.number, number)
-    ? fromCatalog?.type
-    : sameNumber(previous?.number, number)
-      ? previous?.bricklinkType
-      : undefined;
+  const found = typeOfNumber(number, context.catalog?.bricklink, {
+    number: previous?.number,
+    type: previous?.bricklinkType,
+  });
+  const bricklinkType = SPECIAL_TYPES.find((candidate) => candidate === found);
   return {
     ...base,
     type: "specialPart",
@@ -508,9 +515,34 @@ export function buildItem(type: FormType, values: FormValues, context: BuildCont
   };
 }
 
+const SPECIAL_TYPES: readonly NonNullable<SpecialPart["bricklinkType"]>[] = ["GEAR", "SET", "BOOK"];
+
 /** Whether two numbers are the same one, without case and surrounding spaces; empty never is. */
 function sameNumber(a: string | undefined, b: string | undefined): boolean {
   return !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+/**
+ * The BrickLink type for `number`: the one the catalog found it under, or the one the object had,
+ * each only as long as the number is the one it was found under. Another number has none.
+ */
+function typeOfNumber(
+  number: string | undefined,
+  fromCatalog: { readonly type: BricklinkType; readonly number: string } | undefined,
+  previous: { readonly number: string | undefined; readonly type: BricklinkType | undefined },
+): BricklinkType | undefined {
+  if (sameNumber(fromCatalog?.number, number)) return fromCatalog?.type;
+  return sameNumber(previous.number, number) ? previous.type : undefined;
+}
+
+/**
+ * What "Weiteres Exemplar" keeps of the catalog's data: the BrickLink type of the figure (a Big Fig
+ * stays a part), which the form has no field for.
+ */
+export function extrasForCopy(minifig: Minifig): CatalogExtras | undefined {
+  return minifig.bricklinkType && minifig.bricklinkId
+    ? { bricklink: { type: minifig.bricklinkType, number: minifig.bricklinkId } }
+    : undefined;
 }
 
 /** What a part of the mod sheet (S8a) holds while typing. */

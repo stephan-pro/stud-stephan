@@ -48,6 +48,20 @@ describe("F13 Reihe anzeigen", () => {
     ]);
   });
 
+  it("Eine Big Fig kommt mit dem Typ in der Nummer an und wird zur Katalogfigur mit Typ PART; ein eigener Rancor zählt als vorhanden", () => {
+    const figures = catalogFiguresOf([
+      { number: "sw0434", name: "Luke" },
+      { number: "PART:11323pb01c01", name: "Large Figure, Rancor" },
+    ]);
+    expect(figures).toEqual([
+      { name: "Luke", bricklinkId: "sw0434" },
+      { name: "Large Figure, Rancor", bricklinkId: "11323pb01c01", bricklinkType: "PART" },
+    ]);
+    const mine = [aMinifig({ bricklinkId: "11323PB01C01", bricklinkType: "PART" })];
+    const rows = seriesProgress(figures, mine, []).figures;
+    expect(rows.map((row) => row.status)).toEqual(["missing", "present"]);
+  });
+
   it("F13 Der Balken zeigt den Anteil in ganzen Prozent, bei leerer Reihe 0", () => {
     expect(seriesPercent(progress)).toBe(40);
     expect(seriesPercent({ present: 0, total: 0 })).toBe(0);

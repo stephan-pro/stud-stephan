@@ -7,7 +7,10 @@ import type { StoreSettings } from "./catalogStore.ts";
 import { CatalogError, type Fetch, isRecord, num, str } from "./json.ts";
 import type { PriceRunStatus } from "./priceRunTypes.ts";
 
-/** A special part's `bricklinkId` is "GEAR:5010325": its BrickLink type and number. */
+/**
+ * A special part's `bricklinkId` is "GEAR:5010325": its BrickLink type and number; a figure's is
+ * the plain BrickLink number, or "PART:11323pb01c01" for a Big Fig.
+ */
 export type PricedKind = "minifig" | "legoSet" | "specialPart";
 
 /** One catalog item taken from the queue. */
