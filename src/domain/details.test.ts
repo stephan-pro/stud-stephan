@@ -75,9 +75,24 @@ describe("F7 Enthaltene Figuren eines Sets", () => {
     ]);
   });
 
-  it("F7 Die Anzeige „2 / 4“ zählt vorhandene Figuren des Sets gegen alle enthaltenen", () => {
-    expect(setFigureProgress(setFigures(collection, set))).toEqual({ have: 3, total: 5 });
-    expect(setFigureProgress([])).toEqual({ have: 0, total: 0 });
+  it("F7 Die Anzeige „2 / 4“ zählt bei „Figuren entnommen“ nur einzeln erfasste Figuren gegen alle enthaltenen", () => {
+    const removed = { ...set, status: "figuresRemoved" as const };
+    const figures = setFigures(collection, removed);
+    expect(figures.map(({ inSet }) => inSet)).toEqual([false, false, false]);
+    expect(setFigureProgress(figures)).toEqual({ have: 3, total: 5, captured: 3 });
+    expect(setFigureProgress([])).toEqual({ have: 0, total: 0, captured: 0 });
+  });
+
+  it("F7 Bei „vollständig“ sind nicht einzeln erfasste Figuren „im Set“ und zählen als vorhanden", () => {
+    const complete = { ...set, status: "complete" as const };
+    const figures = setFigures(collection, complete);
+    expect(figures.map(({ inSet }) => inSet)).toEqual([false, true, false]);
+    expect(setFigureProgress(figures)).toEqual({ have: 5, total: 5, captured: 3 });
+  });
+
+  it("F7 Bei „zerlegt“ fehlen nicht erfasste Figuren", () => {
+    const figures = setFigures(collection, { ...set, status: "disassembled" });
+    expect(figures.some(({ inSet }) => inSet)).toBe(false);
   });
 });
 

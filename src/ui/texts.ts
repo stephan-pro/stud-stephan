@@ -396,9 +396,16 @@ export const TEXTS = {
       pieces: "Teile",
       figures: "Figuren laut Katalog",
       figuresTitle: "Enthaltene Figuren",
-      progress: (have: number, total: number) => `${have} / ${total}`,
-      progressLabel: (have: number, total: number) => `${have} von ${total} Figuren vorhanden`,
+      progress: (have: number, total: number, captured: number, inSet: boolean) =>
+        inSet && captured > 0
+          ? `${have} / ${total} · ${captured} einzeln erfasst`
+          : `${have} / ${total}`,
+      progressLabel: (have: number, total: number, captured: number, inSet: boolean) =>
+        inSet && captured > 0
+          ? `${have} von ${total} Figuren vorhanden, ${captured} einzeln erfasst`
+          : `${have} von ${total} Figuren vorhanden`,
       missing: "fehlt",
+      inSet: "im Set",
       addWish: "+ Wunschliste",
       wished: "auf der Wunschliste",
       addWishLabel: (name: string) => `${name} auf die Wunschliste setzen`,
@@ -849,6 +856,7 @@ export const TEXTS = {
       legend: { present: "vorhanden", wished: "auf Wunschliste", missing: "grau = fehlt" },
       addToWishlist: "+ Wunschliste",
       statusPresent: "vorhanden",
+      statusInSet: (setName: string) => `vorhanden, im Set ${setName}`,
       statusWished: "auf der Wunschliste",
       statusMissing: "fehlt",
       noFigures: (asked: number, total: number) =>

@@ -87,7 +87,8 @@ Mehrere Exemplare:
 - Felder: Nummer, Name, Hersteller, Thema, Jahr, Teilezahl, Anzahl Figuren, Quelle, Kaufpreis, Wert, Fotos, Notiz.
 - **Zustand:** neu (versiegelt) · gebraucht.
 - **Status:** vollständig · Figuren entnommen · zerlegt.
-- Die enthaltenen Figuren werden angezeigt; Figuren aus der eigenen Sammlung sind damit verknüpft.
+- Die enthaltenen Figuren werden angezeigt; Figuren aus der eigenen Sammlung sind damit verknüpft; jede Figur zeigt ihr Bild (eigenes Foto oder Katalogbild, auch die Big Fig).
+- **Akzeptanzkriterium:** Bei Status „vollständig“ heißt eine nicht einzeln erfasste Figur „im Set“ (ohne „+ Wunschliste“) und zählt als vorhanden, z. B. „5 / 5 · 1 einzeln erfasst“; „fehlt“ mit „+ Wunschliste“ gibt es nur bei „Figuren entnommen“ und „zerlegt“.
 
 ### F8 MOCs / Dioramen
 - Felder: Name, Fotos, Links (z. B. Rebrickable), Teilezahl (optional), Notiz.
@@ -141,6 +142,7 @@ Akzeptanzkriterien:
 - Die App zeigt alle offiziellen Figuren daraus mit Status: vorhanden · fehlt · auf der Wunschliste.
 - Fehlende Figuren lassen sich mit einem Tipp auf die Wunschliste setzen.
 - Zusätzlich gilt alles auf der Wunschliste als „fehlend“.
+- **Akzeptanzkriterium:** Eine Figur, die nicht einzeln erfasst ist, aber in einem eigenen Set mit Status „vollständig“ steckt, zählt als vorhanden (und führt zum Set); bei „Figuren entnommen“ und „zerlegt“ nicht.
 
 ### F14 Wunschliste
 - Figuren und Sets, per Suche, Nummer, Link oder aus F13.

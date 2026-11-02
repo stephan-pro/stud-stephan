@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aMinifig, aWish } from "./fixtures";
+import { aMinifig, aSet, aWish } from "./fixtures";
 import { catalogFiguresOf, filterSeries, seriesPercent, seriesProgress } from "./series";
 import type { CatalogFigure } from "./types";
 
@@ -60,6 +60,17 @@ describe("F13 Reihe anzeigen", () => {
     const mine = [aMinifig({ bricklinkId: "11323PB01C01", bricklinkType: "PART" })];
     const rows = seriesProgress(figures, mine, []).figures;
     expect(rows.map((row) => row.status)).toEqual(["missing", "present"]);
+  });
+
+  it("F13 Eine Figur aus einem vollständigen eigenen Set zählt als vorhanden, aus einem zerlegten nicht", () => {
+    const figure: CatalogFigure[] = [{ name: "Plo Koon", bricklinkId: "sw0999" }];
+    const setWith = (status: "complete" | "disassembled") =>
+      aSet({ status, containedFigures: [{ name: "Plo", bricklinkId: "SW0999" }] });
+    const inComplete = seriesProgress(figure, [], [], [setWith("complete")]);
+    expect(inComplete.present).toBe(1);
+    expect(inComplete.missing).toBe(0);
+    expect(inComplete.figures[0]?.inSet?.status).toBe("complete");
+    expect(seriesProgress(figure, [], [], [setWith("disassembled")]).present).toBe(0);
   });
 
   it("F13 Der Balken zeigt den Anteil in ganzen Prozent, bei leerer Reihe 0", () => {

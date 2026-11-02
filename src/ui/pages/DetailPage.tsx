@@ -219,6 +219,7 @@ function SetDetail({
   const valuation = valueOfItem(set, collection.prices);
   const figures = setFigures(collection, set);
   const progress = setFigureProgress(figures);
+  const anyInSet = figures.some(({ inSet }) => inSet);
   const displayed = figuresInSet(collection, set.id);
   const meta = [
     set.setNumber ? shortSetNumber(set.setNumber) : undefined,
@@ -269,9 +270,14 @@ function SetDetail({
             <span
               class="pill"
               role="img"
-              aria-label={T.set.progressLabel(progress.have, progress.total)}
+              aria-label={T.set.progressLabel(
+                progress.have,
+                progress.total,
+                progress.captured,
+                anyInSet,
+              )}
             >
-              {T.set.progress(progress.have, progress.total)}
+              {T.set.progress(progress.have, progress.total, progress.captured, anyInSet)}
             </span>
           )
         }
@@ -280,15 +286,21 @@ function SetDetail({
           <p class="card__text">{T.set.noFigures}</p>
         ) : (
           <ul class="figure-grid">
-            {figures.map(({ figure, owned }, index) => {
+            {figures.map(({ figure, owned, inSet }, index) => {
               const first = owned[0];
               const quantity =
                 figure.quantity && figure.quantity > 1 ? T.set.quantity(figure.quantity) : "";
               const key = `${figure.bricklinkId ?? figure.name}-${index}`;
+              // The own photo or catalog picture of a figure in the collection, else the one of the set's list.
+              const image = first
+                ? galleryImages(first)[0]
+                : figure.imageUrl
+                  ? ({ kind: "catalog", url: figure.imageUrl } as const)
+                  : undefined;
               const body = (
                 <>
                   <Cover
-                    image={figure.imageUrl ? { kind: "catalog", url: figure.imageUrl } : undefined}
+                    image={image}
                     alt=""
                     tintKey={key}
                     scribbleId={`figure-${set.id}-${index}`}
@@ -296,7 +308,7 @@ function SetDetail({
                   />
                   <span class="figure-tile__name">{figure.name}</span>
                   <span class="tile__meta">
-                    {first ? quantity : `${T.set.missing} ${quantity}`.trim()}
+                    {first ? quantity : `${inSet ? T.set.inSet : T.set.missing} ${quantity}`.trim()}
                   </span>
                 </>
               );
@@ -310,9 +322,9 @@ function SetDetail({
                       {body}
                     </a>
                   ) : (
-                    <div class="figure-tile figure-tile--missing">
+                    <div class={`figure-tile${inSet ? "" : " figure-tile--missing"}`}>
                       {body}
-                      {figure.bricklinkId && (
+                      {!inSet && figure.bricklinkId && (
                         <button
                           type="button"
                           class="chip chip--small pressable"

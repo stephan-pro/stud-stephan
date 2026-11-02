@@ -29,8 +29,10 @@ export function ownSetOf(collection: Collection, minifig: Minifig): LegoSet | un
 /** A figure the catalog lists in a set, with the own copies of it. */
 export interface SetFigure {
   figure: CatalogFigure;
-  /** Own copies, newest first; empty = missing. */
+  /** Own copies, newest first; empty = not captured on its own. */
   owned: Minifig[];
+  /** Not (fully) captured on its own, but physically in the set (status "vollständig"); else it is missing. */
+  inSet: boolean;
 }
 
 const sameNumber = (a: string | undefined, b: string | undefined) =>
@@ -50,18 +52,31 @@ export function setFigures(collection: Collection, set: LegoSet): SetFigure[] {
           : minifig.fromSet?.setId === set.id && minifig.name === figure.name,
       )
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id));
-    return { figure, owned };
+    return {
+      figure,
+      owned,
+      inSet: set.status === "complete" && owned.length < (figure.quantity ?? 1),
+    };
   });
 }
 
-/** "2 / 4": figures of the set at hand out of all it contains (a figure counts per piece). */
-export function setFigureProgress(figures: readonly SetFigure[]): { have: number; total: number } {
+/**
+ * "2 / 4": figures of the set at hand out of all it contains (a figure counts per piece). A figure
+ * that sits in a complete set counts as there; `captured` is how many have a copy of their own.
+ */
+export function setFigureProgress(figures: readonly SetFigure[]): {
+  have: number;
+  total: number;
+  captured: number;
+} {
   let have = 0;
   let total = 0;
-  for (const { figure, owned } of figures) {
+  let captured = 0;
+  for (const { figure, owned, inSet } of figures) {
     const quantity = figure.quantity ?? 1;
     total += quantity;
-    have += Math.min(quantity, owned.length);
+    captured += Math.min(quantity, owned.length);
+    have += inSet ? quantity : Math.min(quantity, owned.length);
   }
-  return { have, total };
+  return { have, total, captured };
 }

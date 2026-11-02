@@ -102,6 +102,11 @@ export function minifigImage(number: string): string {
   return `https://img.bricklink.com/ItemImage/MN/0/${encodeURIComponent(number)}.png`;
 }
 
+/** The picture of a part in one colour (a Big Fig: the colour the set lists it in, e.g. 88 for the Rancor). */
+export function partImage(number: string, colorId: number): string {
+  return `https://img.bricklink.com/ItemImage/PN/${colorId}/${encodeURIComponent(number)}.png`;
+}
+
 /** Turns BrickLink's status into the error the app can word. */
 function failureOf(httpStatus: number, body: unknown): CatalogError | undefined {
   const meta = isRecord(body) && isRecord(body.meta) ? body.meta : {};
@@ -155,11 +160,14 @@ function entriesOf(
       const known = found.get(number);
       if (known) known.quantity += quantity;
       else {
+        // A part has no picture in the lists, but its colour is in the entry: that gives the picture.
+        const colorId = wanted === "PART" ? num(entry.color_id) : undefined;
         found.set(number, {
           number,
           name,
           quantity,
           ...(wanted === "PART" ? { bricklinkType: "PART" as const } : {}),
+          ...(colorId === undefined ? {} : { imageUrl: partImage(number, colorId) }),
         });
       }
     }

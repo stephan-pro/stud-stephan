@@ -64,6 +64,7 @@ async function loadEntries(builder: SeriesBuilder, collection: Collection): Prom
         catalogFiguresOf(detail?.figures ?? []),
         collection.minifigs,
         collection.wishlist,
+        collection.sets,
       );
       return { summary, present: progress.present, total: progress.total };
     }),

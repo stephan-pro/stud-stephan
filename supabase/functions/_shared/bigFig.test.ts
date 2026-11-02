@@ -220,7 +220,7 @@ describe("Big Figs in Sets (75005 „Rancor Pit“, echte Antwort)", () => {
       ["gen047", 1],
       ["11323pb01c01", 1],
     ]);
-    // Names come without BrickLink's HTML characters; the Big Fig has no picture and says it is a part.
+    // Names come without BrickLink's HTML characters; the Big Fig says it is a part and has a picture.
     expect(item.figures?.[1]).toEqual({
       number: "sw0433",
       name: "Luke Skywalker (Dark Bluish Gray Jedi Robe, Dual Sided Head)",
@@ -232,6 +232,8 @@ describe("Big Figs in Sets (75005 „Rancor Pit“, echte Antwort)", () => {
       name: "Rancor",
       quantity: 1,
       bricklinkType: "PART",
+      // The picture comes from the colour the set lists the part in (88, reddish brown).
+      imageUrl: "https://img.bricklink.com/ItemImage/PN/88/11323pb01c01.png",
     });
   });
 

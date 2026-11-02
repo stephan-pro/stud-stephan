@@ -1,7 +1,7 @@
 // Missing figures of a series (F13): every official figure of the series with its status.
 // Everything on the wishlist also counts as missing ("18 fehlen · 3 davon auf der Wunschliste").
 
-import type { CatalogFigure, Minifig, WishItem } from "./types";
+import type { CatalogFigure, LegoSet, Minifig, WishItem } from "./types";
 
 export type SeriesStatus = "present" | "missing" | "wished";
 
@@ -10,6 +10,8 @@ export interface SeriesFigure {
   status: SeriesStatus;
   /** Own copies of this figure, found by the BrickLink number. */
   copies: Minifig[];
+  /** The complete own set the figure sits in when it has no copy of its own. */
+  inSet?: LegoSet;
 }
 
 export interface SeriesProgress {
@@ -65,22 +67,34 @@ export function seriesPercent(progress: Pick<SeriesProgress, "present" | "total"
   return progress.total === 0 ? 0 : Math.round((progress.present / progress.total) * 100);
 }
 
-/** A figure that is owned counts as present, even if another copy is wished. */
+/**
+ * A figure that is owned counts as present, even if another copy is wished. So does a figure not
+ * captured on its own that sits in a complete own set (F13): it is physically there.
+ */
 export function seriesProgress(
   catalogFigures: readonly CatalogFigure[],
   minifigs: readonly Minifig[],
   wishlist: readonly WishItem[],
+  sets: readonly LegoSet[] = [],
 ): SeriesProgress {
   const wishedFigures = wishlist.filter((wish) => wish.type === "minifig");
   const figures = catalogFigures.map((figure): SeriesFigure => {
     const copies = minifigs.filter((minifig) => matches(figure, minifig));
-    const status: SeriesStatus =
+    const inSet =
       copies.length > 0
+        ? undefined
+        : sets.find(
+            (set) =>
+              set.status === "complete" &&
+              set.containedFigures.some((contained) => matches(figure, contained)),
+          );
+    const status: SeriesStatus =
+      copies.length > 0 || inSet
         ? "present"
         : wishedFigures.some((wish) => matches(figure, wish))
           ? "wished"
           : "missing";
-    return { figure, status, copies };
+    return { figure, status, copies, ...(inSet ? { inSet } : {}) };
   });
   const present = figures.filter(({ status }) => status === "present").length;
   return {

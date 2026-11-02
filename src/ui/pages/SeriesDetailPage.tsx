@@ -15,6 +15,7 @@ import {
   seriesPercent,
   seriesProgress,
 } from "../../domain/series";
+import { galleryImages } from "../../domain/showcase";
 import {
   newWishValues,
   wishForFigure,
@@ -164,6 +165,7 @@ export function SeriesDetailPage({
     catalogFiguresOf(figures),
     collection.minifigs,
     collection.wishlist,
+    collection.sets,
   );
   const shown = filterSeries(progress.figures, filter);
   const open = seriesOpen(summary);
@@ -246,7 +248,7 @@ export function SeriesDetailPage({
             <p class="card__text">{T.nothingShown}</p>
           ) : (
             <ul class="figure-grid figure-grid--round">
-              {shown.map(({ figure, status, copies }, index) => {
+              {shown.map(({ figure, status, copies, inSet }, index) => {
                 const key = `${figure.bricklinkId ?? figure.name}-${index}`;
                 const first = copies[0];
                 const body = (
@@ -254,7 +256,11 @@ export function SeriesDetailPage({
                     <span class="series-tile__cover">
                       <Cover
                         image={
-                          figure.imageUrl ? { kind: "catalog", url: figure.imageUrl } : undefined
+                          first
+                            ? galleryImages(first)[0]
+                            : figure.imageUrl
+                              ? { kind: "catalog", url: figure.imageUrl }
+                              : undefined
                         }
                         alt=""
                         tintKey={key}
@@ -275,19 +281,23 @@ export function SeriesDetailPage({
                     <span class={status === "missing" ? "series-tile__hint" : "visually-hidden"}>
                       {status === "missing"
                         ? T.addToWishlist
-                        : status === "present"
-                          ? T.statusPresent
-                          : T.statusWished}
+                        : inSet
+                          ? T.statusInSet(inSet.name)
+                          : status === "present"
+                            ? T.statusPresent
+                            : T.statusWished}
                     </span>
                   </>
                 );
+                const target = first
+                  ? detailHash({ type: "minifig", id: first.id })
+                  : inSet
+                    ? detailHash({ type: "legoSet", id: inSet.id })
+                    : undefined;
                 return (
                   <li key={key}>
-                    {first ? (
-                      <a
-                        class="figure-tile pressable"
-                        href={detailHash({ type: "minifig", id: first.id })}
-                      >
+                    {target ? (
+                      <a class="figure-tile pressable" href={target}>
                         {body}
                       </a>
                     ) : (
