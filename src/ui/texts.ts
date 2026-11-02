@@ -423,6 +423,23 @@ export const TEXTS = {
     next: "Weiter zum Wunsch",
     kindsLabel: "Figur oder Set",
     noneHint: "Prüf die Schreibweise oder leg den Wunsch über einen Link an.",
+    setFigures: {
+      title: "Set oder Figur wünschen",
+      intro: (count: number) =>
+        count === 1
+          ? "In diesem Set steckt 1 Figur. Wünsch eine einzelne Figur oder das ganze Set."
+          : `In diesem Set stecken ${count} Figuren. Wünsch eine einzelne Figur oder das ganze Set.`,
+      close: "Set-Ansicht schließen",
+      listLabel: "Figuren des Sets",
+      add: "+ Wunschliste",
+      addLabel: (name: string) => `${name} auf die Wunschliste setzen`,
+      wished: "Gewünscht",
+      wishedLabel: (name: string) => `${name}: Wunsch ansehen`,
+      owned: "Vorhanden",
+      quantity: (count: number) => `${count}×`,
+      wholeSet: "Ganzes Set wünschen",
+      wholeSetWished: "Wunsch für das Set ansehen",
+    },
     failed: {
       offline: "Keine Verbindung zum Katalog. Prüf das Internet und versuch es noch einmal.",
       limit_reached: "Für heute sind alle Katalog-Abfragen verbraucht. Morgen geht es wieder.",
@@ -746,6 +763,9 @@ export const TEXTS = {
     noThemes:
       "Dazu gibt es kein Unterthema. Tipp: Gib englische Namen ein, z. B. Clone Wars, oder eine Set- oder Figurennummer, z. B. 75372 oder sw0194.",
     tooBigTheme: "sehr groß – wähle ein Unterthema",
+    onlySet: (number: string, figures: number) =>
+      `Nur dieses Set: ${number} (${figures === 1 ? "1 Figur" : `${figures} Figuren`})`,
+    onlySetNote: "Eine Reihe aus genau diesem Set",
     foundBy: {
       set: (number: string) => `Thema von Set ${number}`,
       figure: (number: string) => `Thema der Figur ${number}`,

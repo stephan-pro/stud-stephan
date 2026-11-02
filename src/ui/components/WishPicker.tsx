@@ -1,11 +1,20 @@
 import { useEffect, useRef, useState } from "preact/hooks";
-import { type Catalog, CatalogCallError, type CatalogKind } from "../../backend/catalog";
+import {
+  type Catalog,
+  CatalogCallError,
+  type CatalogItem,
+  type CatalogKind,
+} from "../../backend/catalog";
 import type { PageFields } from "../../backend/linkPreview";
 import type { Remote } from "../../backend/remote";
+import type { CatalogFigure } from "../../domain/types";
 import {
   newWishValues,
   type WishSource,
+  wishableFigures,
+  wishForFigure,
   wishForSource,
+  wishSourceOfFigure,
   wishSourceOfItem,
   wishSourceOfPage,
   wishValuesOf,
@@ -14,6 +23,7 @@ import { routeHash } from "../route";
 import { TEXTS } from "../texts";
 import type { LoadedCollection } from "../useCollection";
 import { wishActions } from "../wishActions";
+import { SetFiguresSheet } from "./SetFiguresSheet";
 import { WishSheet } from "./WishSheet";
 
 const T = TEXTS.wishCapture;
@@ -37,7 +47,20 @@ export type WishPick =
 type Found =
   | { readonly status: "loading" }
   | { readonly status: "failed"; readonly message: string }
-  | { readonly status: "ready"; readonly source: WishSource };
+  | {
+      readonly status: "ready";
+      readonly source: WishSource;
+      /** The catalog entry, for the figures of a set. */
+      readonly item?: CatalogItem | undefined;
+    };
+
+/** What the picker shows: the figures of a set, one of them, or the wish for the entry itself. */
+type View =
+  | { readonly kind: "figures" }
+  | { readonly kind: "figure"; readonly figure: CatalogFigure }
+  | { readonly kind: "entry" };
+
+const ENTRY: View = { kind: "entry" };
 
 function failureMessage(error: unknown): string {
   const failure = error instanceof CatalogCallError ? error.failure : "unavailable";
@@ -72,6 +95,7 @@ export function WishPicker({
       : { status: "loading" },
   );
   const [attempt, setAttempt] = useState(0);
+  const [view, setView] = useState<View>(ENTRY);
   /** Whether the sheet saved (or removed) the wish; closing then leads to the wishlist. */
   const saved = useRef(false);
 
@@ -83,7 +107,11 @@ export function WishPicker({
       ? catalog.item(pick.catalogKind, pick.ref)
       : Promise.reject(new CatalogCallError("Kein Katalog", "unavailable"));
     fetched.then(
-      (item) => active && setFound({ status: "ready", source: wishSourceOfItem(item, pick.link) }),
+      (item) => {
+        if (!active) return;
+        setFound({ status: "ready", source: wishSourceOfItem(item, pick.link), item });
+        setView(item.kind === "legoSet" && item.figures?.length ? { kind: "figures" } : ENTRY);
+      },
       (error: unknown) => active && setFound({ status: "failed", message: failureMessage(error) }),
     );
     return () => {
@@ -126,6 +154,42 @@ export function WishPicker({
       saved.current = true;
     },
   };
+  const { item } = found;
+  const rows = item && collection ? wishableFigures(item, collection) : [];
+  const hasFigures = rows.length > 0;
+  const toWishlist = () => {
+    location.hash = routeHash("wishlist");
+  };
+
+  if (item && view.kind === "figures") {
+    return (
+      <SetFiguresSheet
+        item={item}
+        rows={rows}
+        setWished={existing !== undefined}
+        onFigure={(figure) => setView({ kind: "figure", figure })}
+        onSet={() => setView(ENTRY)}
+        onClose={() => (saved.current ? toWishlist() : onClose())}
+      />
+    );
+  }
+
+  if (item && view.kind === "figure") {
+    const wish = wishForFigure(collection?.wishlist ?? [], view.figure.bricklinkId);
+    return (
+      <WishSheet
+        key={view.figure.bricklinkId ?? view.figure.name}
+        source={wishSourceOfFigure(view.figure, { theme: item.theme })}
+        initial={wish ? wishValuesOf(wish) : newWishValues("minifig")}
+        existing={wish}
+        prices={collection?.prices ?? []}
+        actions={actions}
+        // Back to the figures of the set, so more of them can be wished.
+        onClose={() => setView({ kind: "figures" })}
+      />
+    );
+  }
+
   return (
     <WishSheet
       source={found.source}
@@ -134,7 +198,8 @@ export function WishPicker({
       prices={collection?.prices ?? []}
       actions={actions}
       onClose={() => {
-        if (saved.current) location.hash = routeHash("wishlist");
+        if (saved.current) toWishlist();
+        else if (hasFigures) setView({ kind: "figures" });
         else onClose();
       }}
     />

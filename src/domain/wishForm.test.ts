@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { aWish } from "./fixtures";
+import type { CatalogItem } from "../backend/catalog";
+import { aMinifig, aWish } from "./fixtures";
 import {
   formFromWish,
   newWish,
   newWishValues,
   targetCents,
   validateWish,
+  wishableFigures,
   wishForFigure,
   wishSourceOfFigure,
   wishValuesOf,
@@ -13,6 +15,39 @@ import {
 } from "./wishForm";
 
 const CONTEXT = { id: "wish-1", createdAt: "2026-11-03T10:00:00Z" };
+
+describe("Figuren eines Katalog-Sets wünschen", () => {
+  const item: CatalogItem = {
+    kind: "legoSet",
+    number: "75455-1",
+    name: "Set",
+    figures: [
+      { number: "sw1", name: "Eins", quantity: 1 },
+      { number: "sw2", name: "Zwei", quantity: 2 },
+      { number: "sw3", name: "Drei", quantity: 1 },
+    ],
+  };
+
+  it("Figuren sind als vorhanden (LEGO-Exemplar) und als gewünscht markiert", () => {
+    const rows = wishableFigures(item, {
+      minifigs: [
+        aMinifig({ bricklinkId: "SW1" }),
+        aMinifig({ bricklinkId: "sw3", manufacturer: { kind: "other", name: "X" } }),
+      ],
+      wishlist: [aWish({ bricklinkId: "sw2" })],
+    });
+    expect(rows.map((row) => [row.figure.bricklinkId, row.owned, row.wish !== undefined])).toEqual([
+      ["sw1", true, false],
+      ["sw2", false, true],
+      ["sw3", false, false],
+    ]);
+  });
+
+  it("Ein Set ohne Figurenliste gibt keine Zeilen", () => {
+    const { figures: _, ...withoutFigures } = item;
+    expect(wishableFigures(withoutFigures, { minifigs: [], wishlist: [] })).toEqual([]);
+  });
+});
 
 describe("F14 Wunsch anlegen und bearbeiten", () => {
   it("F14 Ein neuer Wunsch beginnt mit Priorität mittel; Figuren gebraucht, Sets neu", () => {

@@ -60,6 +60,10 @@ for (const [size, viewport] of SIZES) {
     await page
       .getByRole("button", { name: W.pick("Clone Trooper & Battle Droid Battle Pack") })
       .click();
+    await page
+      .getByRole("dialog", { name: W.setFigures.title })
+      .getByRole("button", { name: W.setFigures.wholeSet })
+      .click();
 
     const sheet = wishSheet(page);
     await expect(sheet).toBeVisible();
@@ -122,6 +126,10 @@ test("P15 Ein erhaltenes Set aus der Wunschliste bekommt seine enthaltenen Figur
   await page
     .getByRole("button", { name: W.pick("Clone Trooper & Battle Droid Battle Pack") })
     .click();
+  await page
+    .getByRole("dialog", { name: W.setFigures.title })
+    .getByRole("button", { name: W.setFigures.wholeSet })
+    .click();
   await wishSheet(page).getByRole("button", { name: S.add }).click();
 
   await wishEntry(page, "Clone Trooper & Battle Droid Battle Pack").click();
@@ -137,4 +145,56 @@ test("P15 Ein erhaltenes Set aus der Wunschliste bekommt seine enthaltenen Figur
   await expect(page).toHaveURL(/#\/vitrine\/set\//);
   await expect(page.getByText("Commander Bly")).toBeVisible();
   await expect(page.getByText("Battle Droid, Security")).toBeVisible();
+});
+
+for (const [size, viewport] of SIZES) {
+  test(`${size}: Figur aus einem gefundenen Set wünschen, ohne ihre Nummer zu kennen`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await signInDirectly(page, undefined, DEMO_COLLECTION);
+    await openWishWay(page, "search");
+    await page.getByRole("button", { name: TEXTS.search.kinds.legoSet }).click();
+    await page.getByLabel(TEXTS.search.label).fill("75372");
+    await page
+      .getByRole("button", { name: W.pick("Clone Trooper & Battle Droid Battle Pack") })
+      .click();
+
+    const figures = page.getByRole("dialog", { name: W.setFigures.title });
+    await expect(figures.getByText(W.setFigures.intro(3))).toBeVisible();
+    await expect(figures.getByRole("listitem")).toHaveCount(3);
+    await expect(figures.getByText("sw1308")).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+
+    await figures.getByRole("button", { name: W.setFigures.addLabel("Commander Bly") }).click();
+    const sheet = wishSheet(page);
+    await expect(sheet.getByText("Commander Bly")).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+    await sheet.getByRole("button", { name: S.add }).click();
+
+    // Back at the figures: the wished one is marked, the others can still be wished.
+    await expect(figures).toBeVisible();
+    await expect(
+      figures.getByRole("button", { name: W.setFigures.wishedLabel("Commander Bly") }),
+    ).toBeVisible();
+    await expect(
+      figures.getByRole("button", { name: W.setFigures.addLabel("Battle Droid, Security") }),
+    ).toBeVisible();
+
+    await figures.getByRole("button", { name: W.setFigures.close }).click();
+    await expect(page).toHaveURL(/#\/wunschliste$/);
+    await expect(wishEntry(page, "Commander Bly")).toBeVisible();
+  });
+}
+
+test("Figuren, die schon da sind, tragen „Vorhanden“", async ({ page }) => {
+  await signInDirectly(page, undefined, DEMO_COLLECTION);
+  await openWishWay(page, "search");
+  await page.getByRole("button", { name: TEXTS.search.kinds.legoSet }).click();
+  await page.getByLabel(TEXTS.search.label).fill("75345");
+  await page.getByRole("button", { name: W.pick("501st Clone Troopers Battle Pack") }).click();
+  const figures = page.getByRole("dialog", { name: W.setFigures.title });
+  await expect(figures).toBeVisible();
+  const owned = DEMO_COLLECTION.minifigs.some((minifig) => minifig.bricklinkId === "sw1195");
+  await expect(figures.getByText(W.setFigures.owned)).toHaveCount(owned ? 1 : 0);
 });

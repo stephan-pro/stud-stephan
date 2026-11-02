@@ -4,7 +4,7 @@
 
 import type { CatalogItem } from "../backend/catalog";
 import type { PageFields } from "../backend/linkPreview";
-import { type CatalogForm, formFromCatalog } from "./catalog";
+import { type CatalogForm, containedFigures, formFromCatalog } from "./catalog";
 import { emptyForm, FIELD_LIMITS, moneyText, tooLong, trimmed } from "./forms";
 import { manufacturerFromName } from "./linkForm";
 import { MAX_CENTS, parseMoney } from "./money";
@@ -12,6 +12,7 @@ import { shortSetNumber } from "./showcase";
 import type {
   CatalogFigure,
   Cents,
+  Collection,
   Condition,
   Id,
   Manufacturer,
@@ -211,6 +212,33 @@ export function wishForSource(
       wish.setNumber !== undefined &&
       same(shortSetNumber(wish.setNumber), number),
   );
+}
+
+/** A figure of a catalog set with what the collection already says about it. */
+export interface WishableFigure {
+  readonly figure: CatalogFigure;
+  /** Whether a LEGO copy of it is in the collection. */
+  readonly owned: boolean;
+  /** The wish for it, if it is on the list. */
+  readonly wish: WishItem | undefined;
+}
+
+/**
+ * The figures a catalog set holds, each marked as owned (a LEGO copy with the same BrickLink number)
+ * and/or wished (set wish list), for choosing which one to wish (P15 follow-up).
+ */
+export function wishableFigures(
+  item: CatalogItem,
+  collection: Pick<Collection, "minifigs" | "wishlist">,
+): WishableFigure[] {
+  return containedFigures(item).map((figure) => ({
+    figure,
+    owned: collection.minifigs.some(
+      (minifig) =>
+        minifig.manufacturer.kind === "lego" && same(minifig.bricklinkId, figure.bricklinkId),
+    ),
+    wish: wishForFigure(collection.wishlist, figure.bricklinkId),
+  }));
 }
 
 /** The form "Erhalten" opens (S8): the wish's data in the fields, shown as taken over. */
