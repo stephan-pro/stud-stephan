@@ -119,5 +119,7 @@ Den Hinweis auf eine neue Version kann man erst prüfen, wenn es eine neue Versi
 
 | Gerät | Datum | Alles ok? | Bemerkung |
 |---|---|---|---|
-| Redmi (Chrome) | | | |
-| PC (Chrome/Edge) | | | |
+| Redmi (Chrome) | 02.11.2026 | ja | Alle Punkte vom PO abgehakt, per Nachricht bestätigt |
+| PC (Chrome/Edge) | 02.11.2026 | ja | Alle Punkte vom PO abgehakt, per Nachricht bestätigt |
+
+Damit ist Version 1.0 freigegeben (Git-Tag `v1.0.0`, GitHub-Release „Stud Stephan 1.0“).

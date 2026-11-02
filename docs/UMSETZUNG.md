@@ -65,7 +65,7 @@ pg_cron (wöchentlich) ──► Edge Function „bricklink“ ──► BrickLi
 | P12 | Wunschliste und Reihen | Sonnet | Medium | ✅ 01.11.2026 |
 | P13 | Dashboard | Sonnet | Medium | ✅ 01.11.2026 (Prüfung mit der echten Sammlung durch den PO bestätigt) |
 | P14 | Einstellungen und Datensicherung | Sonnet | Medium | ✅ 01.11.2026 (Prüfung durch den PO bestätigt: Export am PC, Import in der Demo, Datei vollständig, Datenquellen nach `npm run deploy:functions`) |
-| P15 | PWA, PC-Feinschliff, Gerätetest, Version 1.0 | Opus | High | umgesetzt 01.11.2026, Entscheidungen des PO eingetragen; wartet auf den Gerätetest des PO (`docs/GERAETETEST.md`), danach Tag `v1.0.0` |
+| P15 | PWA, PC-Feinschliff, Gerätetest, Version 1.0 | Opus | High | ✅ 02.11.2026 (Gerätetest am Redmi und PC vom PO bestätigt, Tag `v1.0.0`, Release „Stud Stephan 1.0“) |
 
 Reihenfolge: strikt von oben nach unten. P2 darf vor P1 fertig werden, braucht aber dessen Gerüst. Fällt in P2 BrickLink weg, schrumpft P11 auf „Wert von Hand“ (siehe P11).
 
