@@ -100,6 +100,8 @@ describe("P1 Design-Tokens aus DESIGN.md", () => {
     ["--nav-clearance", "110px"],
     ["--sidebar-width", "240px"],
     ["--stud", "8px"],
+    ["--ratio-tile", "4 / 3"],
+    ["--ratio-diorama", "16 / 9"],
   ])("P1 Form-Token %s ist %s wie in DESIGN.md", (name, value) => {
     expect(TOKENS[name]).toBe(value);
   });

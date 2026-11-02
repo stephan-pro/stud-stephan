@@ -50,6 +50,8 @@
   --space-6: 24px;
   --page-gutter: 18px;
   --card-gap: 12px;
+  --ratio-tile: 4 / 3;
+  --ratio-diorama: 16 / 9;
   --touch: 44px;
   --icon-button: 50px;
   --button-height: 52px;

@@ -49,6 +49,7 @@ Text auf `--accent`, `--pop` und allen Tints ist immer `--ink`. Text auf `--nav`
 - **Radien:** Karten und Kacheln 22 px · Bottom-Sheet oben 28 px · Eingaben 14 px · Chips, Pills, Knöpfe, Navigation 999 px.
 - Seitenrand 18 px (Handy), Abstand zwischen Karten 12–14 px.
 - Tippflächen mindestens 44 × 44 px; runde Icon-Knöpfe 50 px.
+- Foto-Bereiche haben ein festes Seitenverhältnis statt fester Höhe: Kachel 4 : 3 (`--ratio-tile`), Dioramen-Karte 16 : 9 (`--ratio-diorama`).
 - Unten 110 px frei, damit die schwebende Navigation nichts verdeckt.
 
 ## 5. Muster und Motive
@@ -60,7 +61,7 @@ Text auf `--accent`, `--pop` und allen Tints ist immer `--ink`. Text auf `--nav`
 ## 6. Komponenten
 
 - **Sammlungskarte (Vitrine oben):** `--accent`, Rahmen, Kritzel. Inhalt: „Stud Stephan“ + Wachstums-Pill · Trennlinie · „Deine Sammlung ist **4.820 €** wert“ · Pills „Figuren · Sets · Dioramen“.
-- **Kachel (Vitrine):** weiß, Rahmen, Foto-Bereich oben (132 px) mit Markern „×3“ (`--ink`), „Mod“ (weiß mit Rahmen), „Kein Diorama“; darunter Name, Metazeile, Preis in Mali.
+- **Kachel (Vitrine):** weiß, Rahmen, Foto-Bereich oben (Seitenverhältnis 4 : 3, `--ratio-tile`; eigene Fotos füllen um ihren Bildausschnitt, Standard die Mitte) mit Markern „×3“ (`--ink`), „Mod“ (weiß mit Rahmen), „Kein Diorama“; darunter Name, Metazeile, Preis in Mali.
 - **Wert-Karte (Details):** wie Sammlungskarte, mit Kaufpreis, Differenz, Mini-Verlauf, Preis im anderen Zustand, „Stand vom …“.
 - **Chips:** aktiv `--ink` gefüllt mit weißer Schrift, sonst weiß mit Rahmen.
 - **Haupt-Knopf:** `--ink`, weiße Schrift, Höhe 52 px. **Zweit-Knopf:** weiß mit Rahmen. **Gefahr:** weiß, Rahmen und Schrift `--danger`.

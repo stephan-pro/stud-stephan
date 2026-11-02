@@ -796,7 +796,7 @@ a.button {
 
 .cover--tile {
   width: 100%;
-  height: 132px;
+  aspect-ratio: var(--ratio-tile);
   border-bottom: var(--border) solid var(--ink);
 }
 
@@ -2371,7 +2371,8 @@ button.search-hit {
 }
 
 .diorama-card .cover--banner {
-  height: 190px;
+  height: auto;
+  aspect-ratio: var(--ratio-diorama);
   border-width: 0 0 var(--border);
   border-radius: var(--radius-square);
 }

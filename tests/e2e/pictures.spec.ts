@@ -83,3 +83,24 @@ test("Eigene Fotos: auf der Detailseite ganz auf der Tönung, in Kacheln und kle
     expect(result[key].position, key).toBe("50% 50%");
   }
 });
+
+for (const [size, viewport] of [
+  ["Handy", PHONE],
+  ["PC", PC],
+] as const) {
+  test(`${size}: Foto-Bereich der Kachel 4 : 3, der Dioramen-Karte 16 : 9 statt fester Höhe`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await signInDirectly(page, undefined, DEMO_COLLECTION);
+    await page.goto("#/vitrine");
+    const tile = await page.locator(".cover--tile").first().boundingBox();
+    expect(tile).not.toBeNull();
+    expect((tile?.width ?? 0) / (tile?.height ?? 1)).toBeCloseTo(4 / 3, 1);
+
+    await page.goto("#/dioramen");
+    const card = await page.locator(".diorama-card .cover--banner").first().boundingBox();
+    expect(card).not.toBeNull();
+    expect((card?.width ?? 0) / (card?.height ?? 1)).toBeCloseTo(16 / 9, 1);
+  });
+}
